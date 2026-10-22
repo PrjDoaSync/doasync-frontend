@@ -17,9 +17,9 @@ Organizar o planejamento e, quando o código for incorporado, o desenvolvimento 
 
 ## 3. Escopo de front-end a organizar
 
-O escopo de trabalho solicitado para a Equipe 4 abrange as interfaces Web e as telas Mobile que forem confirmadas como parte do projeto. A lista abaixo é um **inventário preliminar derivado das issues existentes**, não uma confirmação de que cada tela foi conferida no Figma.
+O escopo de trabalho solicitado para a Equipe 4 abrange as interfaces Web e as telas Mobile que forem confirmadas como parte do projeto. A lista abaixo foi conferida diretamente nos metadados dos frames do Figma. Os nomes refletem o arquivo acessível nesta auditoria; estados internos e componentes filhos não são contados como telas independentes, exceto quando o arquivo os organiza como frame de tela separado.
 
-### Campanhas — Desktop (lista descrita na issue #10)
+### Campanhas — Desktop (10 frames identificados no Figma)
 
 1. Home pública / vitrine de campanhas em destaque.
 2. Listagem de campanhas com filtros.
@@ -32,7 +32,7 @@ O escopo de trabalho solicitado para a Equipe 4 abrange as interfaces Web e as t
 9. Acompanhamento da campanha.
 10. Encerramento e prestação de contas.
 
-### Doações — Desktop (lista descrita na issue #46)
+### Doações — Desktop (10 frames identificados no Figma)
 
 1. Escolha do tipo de doação — financeira ou itens.
 2. Doação financeira — valor sugerido/livre e frequência.
@@ -45,18 +45,19 @@ O escopo de trabalho solicitado para a Equipe 4 abrange as interfaces Web e as t
 9. Minhas doações.
 10. Detalhe da doação.
 
-### Gestão e Dashboard — Desktop (lista descrita na issue #47)
+### Gestão e Dashboard — Desktop (11 frames identificados no Figma)
 
 1. Login e recuperação de senha.
 2. Cadastro da entidade e onboarding.
-3. Dashboard geral — KPIs.
+3. Dashboard geral.
 4. Dashboard analítico por campanha.
-5. Gestão de doações recebidas.
-6. Gestão de doadores.
+5. Doações recebidas.
+6. Doadores e histórico.
 7. Controle de itens doados.
 8. Relatórios e exportação.
 9. Usuários e permissões.
-10. Perfil da entidade e configurações.
+10. Editar acesso de usuário (frame específico: Paulo Souza).
+11. Perfil da entidade e configurações.
 
 ### Mobile
 
@@ -64,9 +65,9 @@ As issues #8, #15 e #38–#45 mencionam protótipo, wireframes, adaptação visu
 
 ## 4. Referência de design
 
-- **Arquivo Doasync no Figma:** [Abrir o arquivo](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=55-2)
-- **Estado da inspeção:** pendente. A integração Figma disponível não conseguiu ler os metadados do arquivo por falta de permissão de edição na conta conectada. Os nomes de telas acima foram extraídos das issues do GitHub, não de uma inspeção visual direta do Figma.
-- **Próxima etapa:** conceder acesso apropriado ao arquivo para a conta conectada ou disponibilizar um link de visualização/protótipo acessível. Depois, registrar links diretos para cada frame e validar fluxos, estados, componentes e responsividade.
+- **Arquivo Doasync no Figma:** [Abrir o arquivo](https://www.figma.com/design/JaIKR7tTkfIJ3fSk4weadC/Doasync?node-id=0-1&m=dev)
+- **Estado da inspeção:** acesso aos metadados confirmado. Foram identificadas 10 telas de Campanhas, 10 telas de Doações e 11 frames de Gestão/Dashboard (incluindo um frame separado de edição de acesso). A inspeção de metadados confirma nomes e hierarquia, mas não substitui a revisão visual de cada estado e fluxo.
+- **Próxima etapa:** mapear cada frame para a issue correspondente, revisar os componentes compartilhados e validar os fluxos e estados visuais.
 
 ## 5. Componentes compartilhados
 
@@ -133,8 +134,8 @@ O fluxo acima é uma proposta de organização e precisa ser alinhado ao procedi
 
 ## 10. Pendências conhecidas
 
-- [ ] Obter acesso de visualização/inspeção ao arquivo Figma e inventariar páginas, frames, fluxos e componentes.
-- [ ] Validar se as 30 telas Desktop listadas nas issues representam o escopo aprovado completo.
+- [x] Obter acesso de inspeção aos metadados do arquivo Figma e inventariar os frames de tela principais.
+- [ ] Revisar visualmente os fluxos e estados de cada frame e confirmar com a coordenação se o frame separado “Editar acesso · Paulo Souza” deve ser tratado como tela ou estado.
 - [ ] Inventariar e mapear as telas Mobile individualmente.
 - [ ] Criar matriz de rastreabilidade Figma → issue → dependências → status.
 - [ ] Revisar todas as issues e distinguir prototipação, front-end Web, Mobile, back-end e banco de dados.
