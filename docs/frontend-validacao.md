@@ -58,12 +58,12 @@ Referência geral: [#46](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard
 
 | Código | Tela descrita no inventário | Issue do protótipo | Status da revisão | Evidência / divergência |
 |---|---|---:|---|---|
-| DOA-01 | Escolha do tipo de doação — financeira ou itens | #58 | Pendente | A preencher durante a revisão |
-| DOA-02 | Doação financeira — valor e frequência | #59 | Pendente | A preencher durante a revisão |
-| DOA-03 | Doação de itens — seleção e quantidades | #60 | Pendente | A preencher durante a revisão |
-| DOA-04 | Identificação do doador | #61 | Pendente | A preencher durante a revisão |
-| DOA-05 | Pagamento via PIX | #62 | Pendente | A preencher durante a revisão |
-| DOA-06 | Pagamento via cartão ou boleto | #63 | Pendente | A preencher durante a revisão |
+| DOA-01 | Escolha do tipo de doação | #58 | Pendente | A preencher durante a revisão |
+| DOA-02 | Identificação do doador | #59 | Pendente | A preencher durante a revisão |
+| DOA-03 | Doação financeira | #60 | Pendente | A preencher durante a revisão |
+| DOA-04 | Pagamento via PIX | #61 | Pendente | A preencher durante a revisão |
+| DOA-05 | Pagamento via cartão ou boleto | #62 | Pendente | A preencher durante a revisão |
+| DOA-06 | Doação de itens | #63 | Pendente | A preencher durante a revisão |
 | DOA-07 | Agendamento de entrega/retirada | #64 | Pendente | A preencher durante a revisão |
 | DOA-08 | Confirmação da doação | #65 | Pendente | A preencher durante a revisão |
 | DOA-09 | Minhas doações | #66 | Pendente | A preencher durante a revisão |
