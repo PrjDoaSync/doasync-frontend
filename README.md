@@ -50,7 +50,6 @@ As issues do projeto mencionam **React** para Web, **Expo** para Mobile, **Axios
 | Lucas I.         | CSTADS125N4-T | Front-end / Back-end |
 | Julio C. R.      | CSTADS125N4-T | Front-end            |
 | Nícolas O. C. S. | CSTADS126N2   | Front-end            |
-| Pietro F. R. S. | CSTADS126N2-S | Banco de Dados       |
 | Matheus D. P.    | CSTADS125N4-T | Front-end / Back-end |
-| Juan A. C.       | CSTADS125N4-T | Banco de Dados       |
-| João V. L.       | CSTADS126N2   | Back-end             |
+| nick0lasrm       | —             | Front-end            |
+| Joao-Pedro-Matias | —             | Front-end / Testes   |
