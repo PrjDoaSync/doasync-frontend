@@ -1,5 +1,9 @@
 // Tabela genérica. `colunas`: [{ chave, titulo, render?(linha) }]
-export default function DataTable({ colunas, linhas, vazio = 'Nenhum registro encontrado.' }) {
+export default function DataTable({
+  colunas,
+  linhas,
+  vazio = 'Nenhum registro encontrado.',
+}) {
   if (linhas.length === 0) {
     return <p className="tabela-vazia">{vazio}</p>
   }
@@ -10,7 +14,9 @@ export default function DataTable({ colunas, linhas, vazio = 'Nenhum registro en
         <thead>
           <tr>
             {colunas.map((coluna) => (
-              <th key={coluna.chave}>{coluna.titulo}</th>
+              <th key={coluna.chave} scope="col">
+                {coluna.titulo}
+              </th>
             ))}
           </tr>
         </thead>
