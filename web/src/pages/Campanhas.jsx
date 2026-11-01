@@ -80,6 +80,21 @@ export default function Campanhas() {
       titulo: 'Status',
       render: (c) => <StatusBadge valor={c.status} />,
     },
+    {
+      chave: 'acoes',
+      titulo: 'Ações',
+      render: (c) => (
+        <>
+          <Link to={`/campanhas/${c.id}/acompanhamento`}>Acompanhar</Link>
+          {c.status === 'Ativa' && (
+            <>
+              {' · '}
+              <Link to={`/campanhas/${c.id}/editar`}>Editar</Link>
+            </>
+          )}
+        </>
+      ),
+    },
   ]
 
   return (
