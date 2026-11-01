@@ -33,6 +33,11 @@ describe('regras da prestação de contas (#94)', () => {
 })
 
 describe('tela de prestação de contas (#94)', () => {
+  it('chega à tela pelo link "Prestar contas" da lista de campanhas', async () => {
+    const user = await abrir('/campanhas')
+    await user.click(await screen.findByRole('link', { name: /Prestar contas/ }))
+    expect(await screen.findByRole('heading', { level: 1, name: /Encerramento e prestação de contas/ })).toBeTruthy()
+  })
   it('só permite prestar contas de campanha encerrada', async () => {
     await abrir('/campanhas/1/prestacao-de-contas')
     expect(screen.getByText(/só está disponível para campanhas encerradas/)).toBeTruthy()

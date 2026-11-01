@@ -8,6 +8,7 @@ export const campanhas = [
   { id: 4, nome: 'Cesta básica mensal', entidade: 'Mãos que Ajudam', categoria: 'Alimentação', meta: 20000, arrecadado: 4300, status: 'Ativa', encerraEm: '2026-12-20' },
   { id: 5, nome: 'Reforma do abrigo', entidade: 'Casa Acolher', categoria: 'Infraestrutura', meta: 45000, arrecadado: 0, status: 'Rascunho', encerraEm: '2027-02-10' },
   { id: 6, nome: 'Higiene para todos', entidade: 'Amor Inclusivo', categoria: 'Higiene', meta: 6000, arrecadado: 2150, status: 'Ativa', encerraEm: '2026-11-05' },
+  { id: 7, nome: 'Inverno com acolhimento', entidade: 'Rede Esperança', categoria: 'Assistência social', meta: 15000, arrecadado: 15000, status: 'Encerrada', encerraEm: '2026-08-31' },
 ]
 
 export const doacoes = [
