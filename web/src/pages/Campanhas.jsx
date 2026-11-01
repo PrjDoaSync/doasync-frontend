@@ -86,6 +86,12 @@ export default function Campanhas() {
       render: (c) => (
         <>
           <Link to={`/campanhas/${c.id}/acompanhamento`}>Acompanhar</Link>
+          {c.status === 'Encerrada' && (
+            <>
+              {' · '}
+              <Link to={`/campanhas/${c.id}/prestacao-de-contas`}>Prestar contas</Link>
+            </>
+          )}
           {c.status === 'Ativa' && (
             <>
               {' · '}

@@ -10,6 +10,7 @@ import FluxoDoacao from './pages/FluxoDoacao'
 import CriarCampanha from './pages/CriarCampanha'
 import EditarCampanha from './pages/EditarCampanha'
 import AcompanhamentoCampanha from './pages/AcompanhamentoCampanha'
+import PrestacaoContas from './pages/PrestacaoContas'
 import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="campanhas/nova" element={<CriarCampanha />} />
           <Route path="campanhas/:id/editar" element={<EditarCampanha />} />
           <Route path="campanhas/:id/acompanhamento" element={<AcompanhamentoCampanha />} />
+          <Route path="campanhas/:id/prestacao-de-contas" element={<PrestacaoContas />} />
           <Route path="doacoes" element={<Doacoes />} />
           <Route path="entidades" element={<Entidades />} />
           <Route path="doadores" element={<Doadores />} />
