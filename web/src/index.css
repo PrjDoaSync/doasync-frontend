@@ -1784,3 +1784,521 @@ small {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Componentes de Layout Compartilhados (Figma Desktop: 1440px / 1280px / 1024px)
+   ========================================================================== */
+
+/* Header Público Conforme Figma */
+.public-header {
+  height: 72px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--borda);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.public-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1440px;
+  height: 100%;
+  padding: 0 40px;
+  margin: 0 auto;
+}
+
+.public-header__marca {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.public-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-left: 56px;
+  margin-right: auto;
+}
+
+.public-header__link {
+  font-size: 15px;
+  font-weight: 500;
+  color: #475569;
+  text-decoration: none;
+  padding: 8px 0;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.public-header__link:hover {
+  color: var(--azul);
+}
+
+.public-header__link.active {
+  color: var(--azul);
+  font-weight: 600;
+}
+
+.public-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.public-header__link-entidade {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.public-header__link-entidade:hover {
+  color: var(--azul);
+}
+
+.public-header__btn-entrar {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  min-height: 38px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.public-header__btn-entrar:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #020617 !important;
+}
+
+/* Footer Público Conforme Figma */
+.public-footer {
+  border-top: 1px solid var(--borda);
+  background: #ffffff;
+  padding: 24px 40px;
+  width: 100%;
+}
+
+.public-footer__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.public-footer__left {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.public-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.public-footer__link {
+  font-size: 13px;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.public-footer__link:hover {
+  color: var(--azul);
+  text-decoration: underline;
+}
+
+/* Header Administrativo (Topo) com Perfil e Ações */
+.topo {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--borda);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.topo__titulo {
+  font-size: 16px;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.topo__acoes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topo__notificacao {
+  position: relative;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.topo__notificacao:hover {
+  background: #f8fafc;
+  color: var(--azul);
+  border-color: #cbd5e1;
+}
+
+.topo__notificacao-badge {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+}
+
+.topo__perfil-container {
+  position: relative;
+}
+
+.topo__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.topo__usuario:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.topo__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-weight: 650;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.topo__usuario-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.topo__usuario-info strong {
+  font-size: 13px;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.topo__usuario-info small {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.topo__usuario-seta {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+.topo__usuario-seta--aberto {
+  transform: rotate(90deg);
+}
+
+.topo__menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 230px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  padding: 8px 0;
+}
+
+.topo__menu-cabecalho {
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.topo__menu-cabecalho strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.topo__menu-cabecalho small {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.topo__menu-divisor {
+  border: 0;
+  border-top: 1px solid #f1f5f9;
+  margin: 6px 0;
+}
+
+.topo__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #334155;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.topo__menu-item:hover {
+  background: #f8fafc;
+  color: var(--azul);
+}
+
+.topo__menu-item--sair {
+  color: #ef4444;
+}
+
+.topo__menu-item--sair:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Vitrine pública de entidades */
+.public-vitrine-entidades {
+  padding: 10px 0 40px;
+}
+
+.entidades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.entidade-card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: #ffffff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.entidade-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.entidade-card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.entidade-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.entidade-card__nome {
+  font-size: 17px;
+  font-weight: 650;
+  color: #0f172a;
+  margin: 0;
+}
+
+.entidade-card__local {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.entidade-card__descricao {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  flex-grow: 1;
+}
+
+.entidade-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.entidade-card__campanhas {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.entidade-card__botao {
+  width: 100%;
+}
+
+/* Páginas institucionais de Suporte, Privacidade e Termos */
+.public-ajuda,
+.public-institucional {
+  padding: 10px 0 40px;
+}
+
+.duvidas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 24px 0 32px;
+}
+
+.duvida-item {
+  padding: 18px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--borda);
+  background: #ffffff;
+}
+
+.duvida-pergunta {
+  cursor: pointer;
+  font-size: 15px;
+  color: #1e293b;
+  outline: none;
+}
+
+.duvida-pergunta:focus-visible {
+  outline: 2px solid var(--azul);
+  outline-offset: 3px;
+}
+
+.duvida-resposta {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+.ajuda-contato {
+  padding: 28px;
+  margin-bottom: 30px;
+  text-align: center;
+  border: 1px solid var(--borda);
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.ajuda-contato h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.ajuda-contato p {
+  color: #64748b;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ajuda-contato__acoes {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.institucional-conteudo {
+  padding: 32px;
+  margin: 20px 0 40px;
+  line-height: 1.7;
+  border: 1px solid var(--borda);
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.institucional-conteudo h2 {
+  font-size: 18px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.institucional-conteudo p {
+  font-size: 14px;
+  color: #475569;
+}
+
+.institucional-voltar {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borda);
+}
+
+/* Ajustes de larguras desktop relevantes (1440px / 1280px / 1024px) */
+@media (max-width: 1280px) {
+  .public-header__inner,
+  .public-footer__inner {
+    padding: 0 28px;
+  }
+  .public-header__nav {
+    margin-left: 36px;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .public-header__inner {
+    padding: 0 20px;
+  }
+  .public-header__nav {
+    margin-left: 20px;
+    gap: 18px;
+  }
+  .public-header__actions {
+    gap: 16px;
+  }
+  .sidebar {
+    width: 200px;
+  }
+}
