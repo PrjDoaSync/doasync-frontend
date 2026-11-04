@@ -8,6 +8,8 @@ import { DemoProvider } from './context/DemoContext'
 import { Home, Explorar, DetalheCampanha } from './pages/Publico'
 import FluxoDoacao from './pages/FluxoDoacao'
 import CriarCampanha from './pages/CriarCampanha'
+import MinhasDoacoes from './pages/MinhasDoacoes'
+import ConfirmacaoDoacao from './pages/ConfirmacaoDoacao'
 import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="explorar" element={<Explorar />} />
           <Route path="campanhas/:id" element={<DetalheCampanha />} />
           <Route path="doar/:id" element={<FluxoDoacao />} />
+          <Route path="doar/:id/confirmacao/:doacaoId" element={<ConfirmacaoDoacao />} />
+          <Route path="minhas-doacoes" element={<MinhasDoacoes />} />
           <Route path="login" element={<Login />} />
           <Route
             path="*"
