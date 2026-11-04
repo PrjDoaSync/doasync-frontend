@@ -7,9 +7,11 @@ import Entidades from './pages/Entidades'
 import { DemoProvider } from './context/DemoContext'
 import { Home, Explorar, DetalheCampanha } from './pages/Publico'
 import FluxoDoacao from './pages/FluxoDoacao'
-import CriarCampanha from './pages/CriarCampanha'
 import MinhasDoacoes from './pages/MinhasDoacoes'
 import ConfirmacaoDoacao from './pages/ConfirmacaoDoacao'
+import EditarCampanha from './pages/EditarCampanha'
+import AcompanhamentoCampanha from './pages/AcompanhamentoCampanha'
+import PrestacaoContas from './pages/PrestacaoContas'
 import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
@@ -60,6 +62,9 @@ export default function App() {
           <Route path="dashboard/campanha" element={<Dashboard analitico />} />
           <Route path="campanhas" element={<Campanhas />} />
           <Route path="campanhas/nova" element={<CriarCampanha />} />
+          <Route path="campanhas/:id/editar" element={<EditarCampanha />} />
+          <Route path="campanhas/:id/acompanhamento" element={<AcompanhamentoCampanha />} />
+          <Route path="campanhas/:id/prestacao-de-contas" element={<PrestacaoContas />} />
           <Route path="doacoes" element={<Doacoes />} />
           <Route path="entidades" element={<Entidades />} />
           <Route path="doadores" element={<Doadores />} />
