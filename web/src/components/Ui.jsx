@@ -10,6 +10,13 @@ const caminhos = {
   relatorios: 'M4 20V10 M10 20V4 M16 20v-8 M22 20H2',
   configuracoes:
     'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2',
+  carteira: 'M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M3 7l2-3h12 M16 13h3',
+  relogio: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18 M12 7v5l3 2',
+  arquivo: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 14l2 2 4-4',
+  email: 'M3 5h18v14H3z M3 7l9 6 9-6',
+  enviar: 'M22 2L11 13 M22 2l-7 20-4-9-9-4z',
+  info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18 M12 11v6 M12 7.5v.5',
+  chevron: 'M9 6l6 6-6 6',
   seta: 'M5 12h14 M14 7l5 5-5 5',
   voltar: 'M19 12H5 M10 7l-5 5 5 5',
   busca: 'M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14 M15 15l6 6',
