@@ -1,127 +1,84 @@
-# Checklist de conformidade visual — Figma × Frontend Web
+# Matriz de validação — Figma × Frontend Web
 
-> **Responsável pelo registro:** LucasIanovski  
-> **Issue de validação do protótipo:** [#21](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/21)  
-> **Documentação relacionada:** [DOC-WEB-01 / #78](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/78)  
-> **Figma:** [Doasync — arquivo de design](https://www.figma.com/design/JaIKR7tTkfIJ3fSk4weadC/Doasync?node-id=0-1&m=dev)
+> Responsável: LucasIanovski — [Issue #21](https://github.com/PrjDoaSync/doasync-frontend/issues/21) e documentação [#78](https://github.com/PrjDoaSync/doasync-frontend/issues/78)<br>
+> Figma de referência: [Doasync](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=0-1&m=dev)<br>
+> Repositório: [PrjDoaSync/doasync-frontend](https://github.com/PrjDoaSync/doasync-frontend), branch `develop` na revisão de 10/11/2026
 
-## 1. Objetivo
+## Como interpretar esta matriz
 
-Usar esta checklist para registrar a conferência entre o protótipo aprovado no Figma e a interface Web realmente implementada. A lista de telas é uma base de rastreabilidade; ela **não significa que as telas já estejam implementadas, revisadas ou aprovadas**.
+O inventário estrutural do Figma contém 30 frames desktop, dez em cada página. O acesso público confirmou os nomes/grupos dos frames; isso **não equivale a aceite visual**. Não foram registrados aqui resultados de comparação pixel a pixel, interação do protótipo ou aprovação do cliente/equipe sem evidência suficiente.
 
-## 2. Status permitidos
+O campo “situação técnica” indica a correspondência observável entre rota/arquivo em `develop` e o fluxo nomeado no Figma. **“Parcial” não é aprovação visual** e a presença de um arquivo não satisfaz os critérios de implementação. Telas ainda não localizadas no roteador estão descritas como ausentes, não como comprovadamente inexistentes em branches não integradas.
 
-Use apenas um estado que corresponda à evidência disponível:
-- **Pendente:** ainda não revisada.
-- **Em revisão:** comparação iniciada, faltam verificações.
-- **Divergência identificada:** existe diferença que precisa ser avaliada.
-- **Bloqueada:** depende de informação, decisão, API ou trabalho externo.
-- **Conforme:** revisão realizada e critérios acordados atendidos.
-- **Não aplicável:** justificado e aprovado pela coordenação.
+### Evidência disponível e limitações
 
-Não marque uma tela como “Conforme” sem inspecionar a versão implementada e o frame correspondente. Registre a data, o revisor e evidências/link quando a revisão for concluída.
+- `web/src/App.jsx` foi inspecionado para inventariar rotas.
+- Os componentes das páginas, os mocks e os serviços foram inspecionados para identificar limites de comportamento.
+- Os testes unitários passaram em execução local; eles cobrem apenas os cenários declarados nos arquivos de teste e não substituem comparação com Figma ou aprovação de produto.
+- O protótipo contém os 30 frames principais em páginas Campanhas, Doações e Gestão/Dashboard. Os frames examinados não apresentaram evidência de interações configuradas suficiente para afirmar que todos os fluxos clicáveis foram validados.
+- A conta Figma conectada ao navegador interno não estava autenticada; a sessão MCP não foi criada. A inspeção restrita ao visual público não permitiu examinar Dev Mode, propriedades de componentes ou especificações restritas. A revisão formal da Issue #21 e o aceite do cliente/equipe continuam pendentes.
 
-## 3. Critérios de comparação
+## Campanhas — 10 telas
 
-Para cada tela, conferir somente os aspectos definidos no protótipo e nos critérios de aceite:
-- hierarquia e organização visual;
-- tipografia, cores, espaçamento, bordas e componentes;
-- conteúdo, rótulos e ações visíveis;
-- navegação e destino das ações;
-- estados de carregamento, vazio, erro e sucesso quando especificados;
-- comportamento responsivo nos tamanhos acordados;
-- validações e mensagens que tenham requisito confirmado;
-- consistência com componentes compartilhados.
+| Código | Frame / Issue | Rota e arquivo em `develop` | Situação técnica observada | Pendente de validação visual |
+|---|---|---|---|---|
+| CAM-01 | Home pública — #48 | `/` — `pages/Publico.jsx` | Parcial; conteúdo de demonstração | Sim |
+| CAM-02 | Listagem e filtros — #49 | `/explorar` — `pages/Publico.jsx` | Parcial; filtros locais | Sim |
+| CAM-03 | Detalhe da campanha — #50 | `/campanhas/:id` — `pages/Publico.jsx` | Parcial; dados locais | Sim |
+| CAM-04 | Criar: dados básicos — #51 | `/campanhas/nova` — `pages/CriarCampanha.jsx` | Parcial; rascunho local | Sim |
+| CAM-05 | Criar: metas e itens — #52 | `/campanhas/nova` — `pages/CriarCampanha.jsx` | Fluxo não separado como no Figma | Sim |
+| CAM-06 | Criar: imagens, revisão e publicação — #53 | `/campanhas/nova` — `pages/CriarCampanha.jsx` | Etapa completa não identificada | Sim |
+| CAM-07 | Minhas campanhas — #54 | `/campanhas` — `pages/Campanhas.jsx` | Parcial; dados de demonstração | Sim |
+| CAM-08 | Editar campanha — #55 | `/campanhas/:id/editar` — `pages/EditarCampanha.jsx` | Parcial; alteração local | Sim |
+| CAM-09 | Acompanhamento — #56 | `/campanhas/:id/acompanhamento` — `pages/AcompanhamentoCampanha.jsx` | Parcial; dados de demonstração | Sim |
+| CAM-10 | Encerramento/prestação — #57 | `/campanhas/:id/prestacao-de-contas` — `pages/PrestacaoContas.jsx` | Parcial; publicação local | Sim |
 
-Uma diferença visual não deve ser corrigida com base em preferência pessoal sem avaliar o protótipo aprovado. Comportamentos de negócio não definidos devem ser registrados como pendência, não inventados.
+Responsáveis das Issues de implementação: #85–88 `Nicolas75460`; #89–91 `pulcinelli123`; #92–94 `nick0lasrm`. A atribuição não determina autoria de código.
 
-## 4. Campanhas — Desktop
+## Doações — 10 telas
 
-Referência geral: [#10](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/10). Issues individuais de protótipo: [#48–#57](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/48). Implementação Web relacionada: [#28](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/28).
+| Código | Frame / Issue | Rota e arquivo em `develop` | Situação técnica observada | Pendente de validação visual |
+|---|---|---|---|---|
+| DOA-01 | Escolha do tipo — #58 | `/doar/:id` — `pages/FluxoDoacao.jsx` | Parcial; fluxo agregado | Sim |
+| DOA-02 | Identificação — #59 | `/doar/:id` — `pages/FluxoDoacao.jsx` | Parcial; fluxo agregado | Sim |
+| DOA-03 | Doação financeira — #60 | `/doar/:id` — `pages/FluxoDoacao.jsx` | Parcial; sem processamento de pagamento | Sim |
+| DOA-04 | Pagamento PIX — #61 | `/doar/:id` | Pagamento real não disponível | Sim |
+| DOA-05 | Cartão/boleto — #62 | `/doar/:id` | Pagamento real não disponível | Sim |
+| DOA-06 | Doação de itens — #63 | `/doar/:id` — `pages/FluxoDoacao.jsx` | Parcial; demonstração | Sim |
+| DOA-07 | Agendamento — #64 | `/doar/:id` | Fluxo de agendamento não concluído | Sim |
+| DOA-08 | Confirmação — #65 | Rota não encontrada em `App.jsx` | Ausente em `develop`; PR #138 foi fechado sem merge | Sim |
+| DOA-09 | Minhas doações — #66 | Rota não encontrada em `App.jsx` | Ausente em `develop`; PR #138 foi fechado sem merge | Sim |
+| DOA-10 | Detalhe da doação — #67 | Rota não encontrada em `App.jsx` | Ausente em `develop` | Sim |
 
-| Código | Tela descrita no inventário | Issue do protótipo | Status da revisão | Evidência / divergência |
-|---|---|---:|---|---|
-| CAM-01 | Home pública / vitrine de campanhas | #48 | Pendente | A preencher durante a revisão |
-| CAM-02 | Listagem de campanhas com filtros | #49 | Pendente | A preencher durante a revisão |
-| CAM-03 | Detalhe da campanha | #50 | Pendente | A preencher durante a revisão |
-| CAM-04 | Criar campanha — dados básicos | #51 | Pendente | A preencher durante a revisão |
-| CAM-05 | Criar campanha — meta financeira e/ou itens | #52 | Pendente | A preencher durante a revisão |
-| CAM-06 | Criar campanha — imagens, revisão e publicação | #53 | Pendente | A preencher durante a revisão |
-| CAM-07 | Minhas campanhas | #54 | Pendente | A preencher durante a revisão |
-| CAM-08 | Editar campanha | #55 | Pendente | A preencher durante a revisão |
-| CAM-09 | Acompanhamento da campanha | #56 | Pendente | A preencher durante a revisão |
-| CAM-10 | Encerramento e prestação de contas | #57 | Pendente | A preencher durante a revisão |
+Responsáveis das Issues de implementação: #95–97 `Nicolas75460`; #98–101 `pulcinelli123`; #102–104 `nick0lasrm`.
 
-## 5. Doações — Desktop
+## Gestão e Dashboard — 10 telas
 
-Referência geral: [#46](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/46). Issues individuais de protótipo: [#58–#67](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/58). A divisão final das issues de implementação Web deve ser confirmada com a coordenação; a issue #28 menciona Campanhas e Doações.
+| Código | Frame / Issue | Rota e arquivo em `develop` | Situação técnica observada | Pendente de validação visual |
+|---|---|---|---|---|
+| GES-01 | Login/recuperação — #68 | `/login` — `pages/Login.jsx` | Login demonstrativo; recuperação não envia e-mail | Sim |
+| GES-02 | Cadastro/onboarding — #69 | `/cadastro-entidade` — `pages/CadastroEntidade.jsx` | Parcial; sem persistência/upload real | Sim |
+| GES-03 | Dashboard geral — #70 | `/dashboard` — `pages/Dashboard.jsx` | Parcial; dados de demonstração | Sim |
+| GES-04 | Dashboard por campanha — #71 | `/dashboard/campanha` — `pages/Dashboard.jsx` | Parcial; dados de demonstração | Sim |
+| GES-05 | Doações recebidas — #72 | `/doacoes` — `pages/DoacoesGestao.jsx` | Parcial; dados simulados | Sim |
+| GES-06 | Doadores/histórico — #73 | `/doadores` — `pages/Doadores.jsx` | Parcial; dados simulados | Sim |
+| GES-07 | Controle de itens — #74 | `/itens` — `pages/Itens.jsx` | Parcial; alterações locais | Sim |
+| GES-08 | Relatórios/exportação — #75 | `/relatorios` — `pages/Relatorios.jsx` | Prévia disponível; geração/download não implementados | Sim |
+| GES-09 | Usuários/permissões — #76 | `/configuracoes/usuarios` — `pages/Usuarios.jsx` | Edição local; acesso real não controlado | Sim |
+| GES-10 | Perfil/configurações — #77 | `/configuracoes` — `pages/CadastroEntidade.jsx` | Parcial; estado local | Sim |
 
-| Código | Tela descrita no inventário | Issue do protótipo | Status da revisão | Evidência / divergência |
-|---|---|---:|---|---|
-| DOA-01 | Escolha do tipo de doação | #58 | Pendente | A preencher durante a revisão |
-| DOA-02 | Identificação do doador | #59 | Pendente | A preencher durante a revisão |
-| DOA-03 | Doação financeira | #60 | Pendente | A preencher durante a revisão |
-| DOA-04 | Pagamento via PIX | #61 | Pendente | A preencher durante a revisão |
-| DOA-05 | Pagamento via cartão ou boleto | #62 | Pendente | A preencher durante a revisão |
-| DOA-06 | Doação de itens | #63 | Pendente | A preencher durante a revisão |
-| DOA-07 | Agendamento de entrega/retirada | #64 | Pendente | A preencher durante a revisão |
-| DOA-08 | Confirmação da doação | #65 | Pendente | A preencher durante a revisão |
-| DOA-09 | Minhas doações | #66 | Pendente | A preencher durante a revisão |
-| DOA-10 | Detalhe da doação | #67 | Pendente | A preencher durante a revisão |
+Responsáveis das Issues de implementação: #105 e #108 `JV2008`; #106–107 `Nicolas75460`; #109–110 `pulcinelli123`; #111–114 `nick0lasrm`.
 
-> A descrição das telas de pagamento reflete o inventário de protótipos; não confirma que integrações financeiras estejam implementadas ou aprovadas.
+O frame extra “Editar acesso · Paulo Souza” está identificado como estado relacionado à tela de usuários/permissões nas descrições de protótipo. Não o contei como uma 31ª tela nem inventei novo requisito.
 
-## 6. Gestão e Dashboard — Desktop
+## Próximos passos para concluir a validação (#21)
 
-Referência geral: [#47](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/47). Issues individuais de protótipo: [#68–#77](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/68). Implementação relacionada: [#6](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/6), [#27](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/27), [#29](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/29).
+1. Autenticar o responsável no Figma e confirmar os frames/specs aprovados.
+2. Comparar visualmente cada tela Web (incluindo larguras e estados exigidos) com o frame correto.
+3. Percorrer os fluxos de protótipo quando interações estiverem configuradas; registrar lacunas e pedir decisões quando a regra não estiver especificada.
+4. Registrar diferenças por tela, apontando a Issue de implementação e seu responsável.
+5. Obter e registrar o aceite formal da equipe/cliente. Não marcar #21 como concluída antes disso.
 
-| Código | Tela descrita no inventário | Issue do protótipo | Status da revisão | Evidência / divergência |
-|---|---|---:|---|---|
-| GES-01 | Login e recuperação de senha | #68 | Pendente | A preencher durante a revisão |
-| GES-02 | Cadastro da entidade e onboarding | #69 | Pendente | A preencher durante a revisão |
-| GES-03 | Dashboard geral | #70 | Pendente | A preencher durante a revisão |
-| GES-04 | Dashboard analítico por campanha | #71 | Pendente | A preencher durante a revisão |
-| GES-05 | Doações recebidas | #72 | Pendente | A preencher durante a revisão |
-| GES-06 | Doadores e histórico | #73 | Pendente | A preencher durante a revisão |
-| GES-07 | Controle de itens doados | #74 | Pendente | A preencher durante a revisão |
-| GES-08 | Relatórios e exportação | #75 | Pendente | A preencher durante a revisão |
-| GES-09 | Usuários e permissões | #76 | Pendente | A preencher durante a revisão |
-| GES-10 | Perfil da entidade e configurações | #77 | Pendente | A preencher durante a revisão |
-| A confirmar | “Editar acesso · Paulo Souza” — confirmar se é tela independente ou estado de GES-09 | Confirmar com a coordenação | Pendente | Não contar como tela aprovada até decisão |
+## Histórico desta revisão
 
-O inventário anterior registra 11 frames de Gestão/Dashboard, mas as issues #68–#77 cobrem dez itens. A divergência precisa ser resolvida com a coordenação; não criar um código GES adicional sem confirmar a correspondência no Figma.
-
-## 7. Mobile
-
-O escopo do repositório menciona prototipagem e desenvolvimento Mobile em issues como #8, #15 e #38–#45. Esta checklist é voltada principalmente à validação **Web desktop**; os frames e estados Mobile devem ser inventariados separadamente antes de declarar cobertura.
-
-- [ ] Identificar os frames Mobile diretamente no Figma.
-- [ ] Mapear cada frame para sua issue.
-- [ ] Confirmar quais entregas Mobile pertencem à Equipe 4 e quais dependem de outras equipes.
-- [ ] Criar uma matriz própria somente após confirmar o inventário.
-
-## 8. Registro de uma revisão
-
-Para cada revisão realizada, preencher:
-
-- **Código/tela:**
-- **Data da revisão:**
-- **Revisor:**
-- **Link do frame Figma:**
-- **Link da implementação/PR:**
-- **Resultado:** Pendente / Em revisão / Divergência identificada / Bloqueada / Conforme / Não aplicável.
-- **Diferenças observadas:**
-- **Ação necessária e responsável:**
-- **Issue relacionada:**
-
-## 9. Conclusão da validação
-
-A validação do conjunto desktop só deve ser concluída depois de:
-- [ ] Revisar cada tela e os estados relevantes.
-- [ ] Registrar divergências e encaminhá-las às issues responsáveis.
-- [ ] Confirmar com a coordenação o frame “Editar acesso · Paulo Souza”.
-- [ ] Separar pendências de interface das dependências de API e regras de negócio.
-- [ ] Vincular evidências ou PRs quando disponíveis.
-- [ ] Registrar a aprovação final conforme o processo definido pela equipe.
-
-**Estado inicial deste documento:** as linhas estão como **Pendente** porque não foi apresentada evidência de revisão visual da implementação. Isso não significa que todas as telas estejam incorretas; significa apenas que a validação ainda não foi registrada aqui.
+- 10/11/2026: inventário de rotas e páginas em `develop`; estado de demonstração e rotas ausentes registrados. 30 frames reconhecidos nas três páginas do Figma. Acesso não autenticado limitou a validação de design detalhada. Nenhuma tela foi declarada visualmente conforme e nenhum aceite de cliente foi presumido.
