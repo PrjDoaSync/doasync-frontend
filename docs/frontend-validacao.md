@@ -15,8 +15,10 @@ O campo “situação técnica” indica a correspondência observável entre ro
 - `web/src/App.jsx` foi inspecionado para inventariar rotas.
 - Os componentes das páginas, os mocks e os serviços foram inspecionados para identificar limites de comportamento.
 - Os testes unitários passaram em execução local; eles cobrem apenas os cenários declarados nos arquivos de teste e não substituem comparação com Figma ou aprovação de produto.
-- O protótipo contém os 30 frames principais em páginas Campanhas, Doações e Gestão/Dashboard. Os frames examinados não apresentaram evidência de interações configuradas suficiente para afirmar que todos os fluxos clicáveis foram validados.
-- A conta Figma conectada ao navegador interno não estava autenticada; a sessão MCP não foi criada. A inspeção restrita ao visual público não permitiu examinar Dev Mode, propriedades de componentes ou especificações restritas. A revisão formal da Issue #21 e o aceite do cliente/equipe continuam pendentes.
+- O usuário autenticou a conta no navegador interno. Foi possível abrir visualmente as páginas Campanhas, Doações e Gestão/Dashboard e observar a organização dos fluxos e miniaturas dos frames. Na página Gestão/Dashboard, por exemplo, estão visíveis os grupos “Acesso e onboarding”, “Indicadores e operação”, “Relacionamento e recursos” e “Relatórios e administração da entidade”; a página Doações exibe os grupos de identificação, pagamento, itens/agendamento e confirmação/acompanhamento.
+- A leitura do arquivo foi visual, pelo navegador. A sessão de leitura pelo Figma MCP continuou indisponível: o serviço retornou “you don't have edit access to this file” ao tentar criar a sessão, embora o usuário estivesse autenticado no navegador. Não houve acesso a propriedades detalhadas/Dev Mode por MCP nem revisão individual em escala de inspeção de todos os 30 frames. Portanto, esta revisão não atesta correspondência visual tela a tela, estados responsivos, fluxos clicáveis ou aprovação de cliente/equipe.
+- Na amostra visual da Home, o protótipo mostra a chamada “Encontre uma causa. Faça a diferença.”, enquanto a Home local apresenta “Pequenos gestos. Grandes transformações.”. É uma divergência observada que requer validação contra o conteúdo aprovado e a issue de implementação; não foi alterada nesta documentação.
+- A revisão formal da Issue #21 e o aceite do cliente/equipe continuam pendentes. A autenticação no navegador permite consultar o canvas, mas não substitui esse aceite nem a inspeção detalhada dos 30 frames.
 
 ## Campanhas — 10 telas
 
@@ -73,7 +75,7 @@ O frame extra “Editar acesso · Paulo Souza” está identificado como estado 
 
 ## Próximos passos para concluir a validação (#21)
 
-1. Autenticar o responsável no Figma e confirmar os frames/specs aprovados.
+1. Habilitar acesso de leitura detalhada ao Figma MCP (o conector recusou a sessão por falta de permissão de edição) ou inspecionar manualmente cada frame em escala legível e capturar evidências.
 2. Comparar visualmente cada tela Web (incluindo larguras e estados exigidos) com o frame correto.
 3. Percorrer os fluxos de protótipo quando interações estiverem configuradas; registrar lacunas e pedir decisões quando a regra não estiver especificada.
 4. Registrar diferenças por tela, apontando a Issue de implementação e seu responsável.
@@ -81,4 +83,4 @@ O frame extra “Editar acesso · Paulo Souza” está identificado como estado 
 
 ## Histórico desta revisão
 
-- 10/11/2026: inventário de rotas e páginas em `develop`; estado de demonstração e rotas ausentes registrados. 30 frames reconhecidos nas três páginas do Figma. Acesso não autenticado limitou a validação de design detalhada. Nenhuma tela foi declarada visualmente conforme e nenhum aceite de cliente foi presumido.
+- 10/11/2026: inventário de rotas e páginas em `develop`; estado de demonstração e rotas ausentes registrados. As três páginas e grupos principais foram vistos no navegador após autenticação do usuário. A sessão MCP foi recusada por falta de permissão de edição e não foi possível inspecionar os 30 frames em detalhe. Uma divergência textual entre a Home local e o protótipo foi registrada para validação. Nenhuma tela foi declarada visualmente conforme e nenhum aceite de cliente foi presumido.
