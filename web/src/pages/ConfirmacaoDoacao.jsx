@@ -4,6 +4,7 @@ import { useDemo } from '../context/DemoContext'
 import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
 import { mensagemConfirmacao } from '../utils/doacoes'
 import { formatarData, formatarMoeda } from '../utils/format'
+import '../styles/detalhe-doacao.css'
 
 // [DEV-DOA-08] Confirmação da doação (#102). Mostra o estado REAL da doação
 // (recebida, aplicada ou pendente). SEM CONTRATO na API: PDFs de comprovante e recibo,
@@ -91,6 +92,7 @@ export default function ConfirmacaoDoacao() {
               <div><dt>Destinação</dt><dd><strong>{d.status}</strong></dd></div>
             </dl>
             <p className="nota-caixa"><Icon nome="info" size={16} /> Recebida não significa aplicada. A {d.entidade} atualizará o status quando o recurso for usado na campanha.</p>
+            <Botao para={`/minhas-doacoes/${d.id}`}><Icon nome="seta" /> Ver detalhe da doação</Botao>
           </div>
           <div className="cartao">
             <Icon nome="email" size={20} />

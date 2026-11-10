@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
 import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
-import { filtrarDoacoes, mensagemConfirmacao, mesesDisponiveis, nomeDoMes, resumoDoador } from '../utils/doacoes'
+import { eventosDoacao, filtrarDoacoes, mensagemConfirmacao, mesesDisponiveis, nomeDoMes, resumoDoador } from '../utils/doacoes'
 
 let semDoacoes = false
 beforeEach(() => {
@@ -39,6 +39,12 @@ describe('regras do doador (#102, #103)', () => {
     expect(mesesDisponiveis(historicoDoadorDemo)).toEqual(['2026-10'])
     expect(nomeDoMes('2026-10')).toBe('Outubro de 2026')
   })
+  it('monta a linha do tempo da doação', () => {
+    const [recebida, itensPendente, , aplicada] = historicoDoadorDemo
+    expect(eventosDoacao(aplicada).map((e) => e.estado)).toEqual(['feito', 'feito', 'final'])
+    expect(eventosDoacao(recebida).map((e) => e.estado)).toEqual(['feito', 'feito', 'futuro'])
+    expect(eventosDoacao(itensPendente).map((e) => e.estado)).toEqual(['feito', 'futuro', 'futuro'])
+  })
   it('descreve o estado real da doação', () => {
     const [recebida, itensPendente, boleto] = historicoDoadorDemo
     expect(mensagemConfirmacao(recebida, DOADOR.nome).texto).toBe('Mariana, sua contribuição de R$ 100,00 chegou à Rede Esperança. Guarde os documentos e acompanhe a destinação.')
@@ -69,10 +75,32 @@ describe('telas do doador (#102, #103)', () => {
     await abrir('/minhas-doacoes')
     expect(screen.getByText(/ainda não fez nenhuma doação/)).toBeTruthy()
   })
-  it('abre a confirmação a partir do histórico', async () => {
+  it('abre o detalhe a partir do histórico', async () => {
     const user = await abrir('/minhas-doacoes')
     await user.click(screen.getAllByRole('link', { name: /Ver detalhe/ })[0])
-    expect(await screen.findByRole('heading', { level: 1, name: /Sua doação foi recebida/ })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: /O caminho da sua contribuição/ })).toBeTruthy()
+  })
+  it('mostra o caminho completo de uma doação aplicada', async () => {
+    await abrir('/minhas-doacoes/DS-1042')
+    expect(screen.getAllByText('Aplicada na campanha').length).toBeGreaterThan(0)
+    expect(screen.getByText(/O pagamento foi confirmado em 02\/10\. A aplicação foi registrada em 05\/10/)).toBeTruthy()
+    expect(screen.getByText(/Uma mensagem da Rede Esperança/)).toBeTruthy()
+    expect(screen.getByText('Destinação registrada')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Baixar recibo/ }).disabled).toBe(true)
+    expect(screen.getByRole('link', { name: /Apoiar esta campanha novamente/ }).getAttribute('href')).toBe('/doar/1')
+  })
+  it('mostra doação pendente sem mensagem nem aplicação', async () => {
+    await abrir('/minhas-doacoes/DS-1087')
+    expect(screen.queryByText(/Uma mensagem da/)).toBe(null)
+    expect(screen.getByText(/Aguardando destinação/)).toBeTruthy()
+  })
+  it('informa detalhe inexistente', async () => {
+    await abrir('/minhas-doacoes/DS-9999')
+    expect(screen.getByRole('heading', { level: 1, name: /não encontrada/ })).toBeTruthy()
+  })
+  it('liga a confirmação ao detalhe', async () => {
+    await abrir('/doar/1/confirmacao/DS-1086')
+    expect(screen.getByRole('link', { name: /Ver detalhe da doação/ }).getAttribute('href')).toBe('/minhas-doacoes/DS-1086')
   })
   it('confirma a doação financeira como no protótipo', async () => {
     await abrir('/doar/1/confirmacao/DS-1086')

@@ -33,7 +33,7 @@ export default function MinhasDoacoes() {
     { chave: 'campanha', titulo: 'Campanha', render: (d) => <><strong>{d.campanha}</strong><br /><small>{d.entidade}</small></> },
     { chave: 'pagamento', titulo: 'Pagamento', render: (d) => <><strong>{d.pagamento}</strong><br /><small>{d.pagamentoSub}</small></> },
     { chave: 'status', titulo: 'Destinação', render: (d) => <>{selo(d.status)}<br /><small>{d.statusSub}</small></> },
-    { chave: 'acao', titulo: '', render: (d) => <Link className="link-azul" to={`/doar/${d.campanhaId}/confirmacao/${d.id}`}>Ver detalhe <Icon nome="chevron" size={14} /></Link> },
+    { chave: 'acao', titulo: '', render: (d) => <Link className="link-azul" to={`/minhas-doacoes/${d.id}`}>Ver detalhe <Icon nome="chevron" size={14} /></Link> },
   ]
 
   return (
