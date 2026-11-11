@@ -48,8 +48,8 @@ Responsáveis das Issues de implementação: #85–88 `Nicolas75460`; #89–91 `
 | DOA-05 | Cartão/boleto — #62 | `/doar/:id` | Pagamento real não disponível | Sim |
 | DOA-06 | Doação de itens — #63 | `/doar/:id` — `pages/FluxoDoacao.jsx` | Parcial; demonstração | Sim |
 | DOA-07 | Agendamento — #64 | `/doar/:id` | Fluxo de agendamento não concluído | Sim |
-| DOA-08 | Confirmação — #65 | Rota não encontrada em `App.jsx` | Ausente em `develop`; PR #138 foi fechado sem merge | Sim |
-| DOA-09 | Minhas doações — #66 | Rota não encontrada em `App.jsx` | Ausente em `develop`; PR #138 foi fechado sem merge | Sim |
+| DOA-08 | Confirmação — #65 | Rota não encontrada em `App.jsx` | Ausente em `develop`; implementação no PR #138, ainda aberto e não integrado | Sim |
+| DOA-09 | Minhas doações — #66 | Rota não encontrada em `App.jsx` | Ausente em `develop`; implementação no PR #138, ainda aberto e não integrado | Sim |
 | DOA-10 | Detalhe da doação — #67 | Rota não encontrada em `App.jsx` | Ausente em `develop` | Sim |
 
 Responsáveis das Issues de implementação: #95–97 `Nicolas75460`; #98–101 `pulcinelli123`; #102–104 `nick0lasrm`.
