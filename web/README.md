@@ -27,6 +27,10 @@ npm run preview    # servir o bundle gerado
 
 O comando `npm run lint` existente continua disponível para revisão manual.
 
+### Pipeline de Testes (GitHub Actions)
+
+O repositório conta com o workflow [`.github/workflows/frontend-qa.yml`](../.github/workflows/frontend-qa.yml), que executa automaticamente `npm ci`, `npm run lint`, `npm test` (Vitest + React Testing Library) e `npm run build` em eventos de `push` e `pull_request` relacionados ao diretório `web/`. Detalhes sobre o estado atual e próximos passos (incluindo alinhamento com DevOps e expansão para E2E Selenium) estão documentados em [`docs/frontend-pipeline-qa.md`](../docs/frontend-pipeline-qa.md).
+
 ## Rotas
 
 | Rota | Tela |

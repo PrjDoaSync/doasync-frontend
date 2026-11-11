@@ -52,7 +52,7 @@ Os testes exercitam a implementação local e seus mocks; não validam contratos
 
 As Issues #79–#82 descrevem testes por componentes/infraestrutura, Campanhas, Doações e Gestão. Os 63 testes aprovados não demonstram que todos os critérios e cenários requeridos nessas issues estejam cobertos. Cada responsável deve vincular casos/evidências à sua Issue e relacionar lacunas ao comportamento confirmado, sem presumir regras ausentes.
 
-A Issue #136 registra a necessidade de workflow de testes em GitHub Actions. Esta verificação local não substitui o pipeline; a existência e execução da CI devem ser confirmadas com o responsável de DevOps/QA.
+A Issue #136 registra a necessidade de workflow de testes em GitHub Actions, estruturado inicialmente em [`.github/workflows/frontend-qa.yml`](../.github/workflows/frontend-qa.yml) e documentado em [`docs/frontend-pipeline-qa.md`](frontend-pipeline-qa.md). Esta verificação local não substitui o pipeline; a execução contínua da CI deve ser acompanhada junto ao responsável de DevOps/QA.
 
 ## Segurança de dependências
 

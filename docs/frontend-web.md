@@ -110,7 +110,7 @@ Há tratamento compartilhado de carregamento/erro e foco programático do títul
 - [Issue #78 — documentação Web](https://github.com/PrjDoaSync/doasync-frontend/issues/78)
 - [Issue #21 — validação com equipe/cliente](https://github.com/PrjDoaSync/doasync-frontend/issues/21)
 - [Issue #79–#82 — testes unitários por área](https://github.com/PrjDoaSync/doasync-frontend/issues/79)
-- [Issue #136 — pipeline de testes](https://github.com/PrjDoaSync/doasync-frontend/issues/136)
+- [Issue #136 — pipeline de testes](https://github.com/PrjDoaSync/doasync-frontend/issues/136) — documentada em [docs/frontend-pipeline-qa.md](frontend-pipeline-qa.md) (`.github/workflows/frontend-qa.yml`)
 - [Figma Doasync](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=0-1&m=dev)
 
-Contratos e endpoints dependem do backend. Revisão visual/aceite depende da autenticação no Figma e da equipe/cliente. A pipeline de testes depende da atividade da equipe responsável por DevOps/QA.
+Contratos e endpoints dependem do backend. Revisão visual/aceite depende da autenticação no Figma e da equipe/cliente. A evolução e sustentação da pipeline de CI/CD dependem do alinhamento com a equipe responsável por DevOps/QA.

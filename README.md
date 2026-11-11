@@ -43,6 +43,7 @@ O frontend Web está em `web/` e usa React 19, Vite 8, JavaScript/JSX, React Rou
 - [Documentação técnica do Front-end Web](docs/frontend-web.md)
 - [Checklist de conformidade visual — Figma × Front-end Web](docs/frontend-validacao.md)
 - [Registro de testes unitários e evidências](docs/frontend-testes-unitarios.md)
+- [Pipeline de testes automatizados de QA (GitHub Actions)](docs/frontend-pipeline-qa.md)
 
 ## Integrantes do grupo
 
