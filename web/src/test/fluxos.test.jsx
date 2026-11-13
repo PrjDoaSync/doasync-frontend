@@ -103,31 +103,25 @@ describe('doação financeira', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByLabelText('Doação anônima'))
     await user.click(
-      screen.getByRole('button', { name: 'Continuar na demonstração' }),
+      screen.getByRole('button', { name: 'Continuar para o pagamento' }),
     )
     expect(
-      screen.getByRole('heading', {
-        name: 'Como você prefere se identificar?',
-        level: 1,
-      }),
+      screen.getByRole('heading', { name: 'Pague com PIX', level: 1 }),
     ).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: 'Pagamento indisponível' }).disabled,
-    ).toBe(true)
-    expect(
-      screen.getByText(/Nenhuma cobrança, QR Code ou boleto foi gerado/),
-    ).toBeTruthy()
+    expect(screen.getByText(/Este PIX é uma demonstração/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Voltar' }))
     expect(screen.getByLabelText('Doação anônima').checked).toBe(true)
   })
-  it('seleção de itens explica a dependência do agendamento', async () => {
+  it('doação de itens segue para a seleção de itens', async () => {
     const user = await abrir('/doar/1')
     await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    expect(screen.getByText(/seleção de itens e o agendamento/)).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', { name: /Continuar com doação de itens/ }),
+    )
     expect(
-      screen
-        .getByRole('link', { name: 'Consultar itens necessários' })
-        .getAttribute('href'),
-    ).toBe('/campanhas/1?aba=itens')
+      screen.getByRole('heading', { name: 'Quais itens você vai doar?', level: 1 }),
+    ).toBeTruthy()
+    expect(screen.getByLabelText('Quantidade de Cesta básica')).toBeTruthy()
   })
   it('campanha encerrada não permite iniciar o pagamento', async () => {
     await abrir('/doar/3')

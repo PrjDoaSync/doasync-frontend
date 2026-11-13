@@ -11,20 +11,47 @@ import {
   Vazio,
 } from '../components/Ui'
 import { Progresso } from '../components/CampanhaCard'
-import { formatarMoeda } from '../utils/format'
+import Agendamento from '../components/doacao/Agendamento'
+import PagamentoCartaoBoleto from '../components/doacao/PagamentoCartaoBoleto'
+import PagamentoPix from '../components/doacao/PagamentoPix'
+import SelecaoItens from '../components/doacao/SelecaoItens'
+import { detalheCampanha, HOJE_DEMO } from '../mocks/campanhasDetalhe'
+import { formatarData, formatarMoeda } from '../utils/format'
 import { valorDoacao } from '../utils/gestao'
+import {
+  itensEscolhidos,
+  montarDoacao,
+  validarItens,
+} from '../utils/doacao'
+
+const ETAPAS_FINANCEIRA = [
+  'Tipo de doação',
+  'Sua contribuição',
+  'Identificação',
+  'Pagamento',
+]
+const ETAPAS_ITENS = ['Tipo de doação', 'Itens', 'Identificação', 'Agendamento']
+const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default function FluxoDoacao() {
   const { id } = useParams(),
-    { dados } = useDemo(),
+    { dados, atualizar } = useDemo(),
     [etapa, setEtapa] = useState(0),
     [tipo, setTipo] = useState('Financeira'),
     [valor, setValor] = useState('100'),
     [metodo, setMetodo] = useState('PIX'),
+    [selecao, setSelecao] = useState({}),
+    [agendamento, setAgendamento] = useState({
+      modo: 'entrega',
+      data: '',
+      janela: '',
+      endereco: '',
+    }),
     [identificacao, setIdentificacao] = useState('rapido'),
     [doador, setDoador] = useState({ nome: '', email: '' }),
     [erro, setErro] = useState(''),
-    [aviso, setAviso] = useState('')
+    [enviando, setEnviando] = useState(false),
+    [concluida, setConcluida] = useState(null)
   const campanha = dados.campanhas.find(
     (c) => String(c.id) === id && c.status === 'Ativa',
   )
@@ -34,20 +61,36 @@ export default function FluxoDoacao() {
         <Link to="/explorar">Explorar campanhas ativas</Link>
       </Vazio>
     )
+  const financeira = tipo === 'Financeira'
+  const itensCampanha = detalheCampanha(campanha).itens
+  const limites = Object.fromEntries(
+    itensCampanha.map((i) => [i.nome, Math.max(i.meta - i.recebido, 0)]),
+  )
+  const escolhidos = itensEscolhidos(selecao)
   const titulos = [
     'Como você quer ajudar?',
-    'Qual o valor da sua doação?',
+    financeira ? 'Qual o valor da sua doação?' : 'Quais itens você vai doar?',
     'Como você prefere se identificar?',
+    financeira
+      ? { PIX: 'Pague com PIX', Cartão: 'Pague com cartão', Boleto: 'Pague com boleto' }[metodo]
+      : 'Agende a entrega ou a retirada',
   ]
+
   function proxima(e) {
     e?.preventDefault()
     setErro('')
-    setAviso('')
-    if (etapa === 1 && !valorDoacao(valor)) {
+    if (etapa === 1 && financeira && !valorDoacao(valor)) {
       setErro('Informe um valor maior que zero com até duas casas decimais.')
       return
     }
-    setEtapa((e) => Math.min(e + 1, 2))
+    if (etapa === 1 && !financeira) {
+      const mensagem = validarItens(selecao, limites)
+      if (mensagem) {
+        setErro(mensagem)
+        return
+      }
+    }
+    setEtapa((atual) => Math.min(atual + 1, 3))
   }
   function identificar(e) {
     e.preventDefault()
@@ -61,10 +104,91 @@ export default function FluxoDoacao() {
       email: f.email?.trim() ?? '',
     })
     setErro('')
-    setAviso(
-      `Identificação preenchida para a contribuição de ${formatarMoeda(valorDoacao(valor) ?? 0)} por ${metodo}. A próxima tela de pagamento depende de outra entrega. Nenhuma cobrança, QR Code ou boleto foi gerado e a doação não foi registrada.`,
-    )
+    setEtapa(3)
   }
+  async function registrar(extra) {
+    setEnviando(true)
+    setErro('')
+    try {
+      await pausa(300)
+      const doacao = montarDoacao({
+        id: `demo-${dados.doacoes.length + 1}`,
+        campanha,
+        doador: doador.nome || 'Doador anônimo',
+        tipo,
+        valor: valorDoacao(valor),
+        metodo: extra.metodo ?? metodo,
+        itens: escolhidos,
+        agendamento: financeira ? null : extra,
+        hoje: HOJE_DEMO,
+      })
+      atualizar('doacoes', [...dados.doacoes, doacao])
+      setConcluida(doacao)
+    } catch {
+      setErro('Não foi possível registrar a doação. Tente novamente.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (concluida)
+    return (
+      <section className="public-section doacao-fluxo">
+        <div className="breadcrumb">
+          <Link to={`/campanhas/${campanha.id}`}>Campanha</Link>
+          <span>/</span>Doar
+        </div>
+        <div className="public-page-title">
+          <h1>Doação registrada na demonstração</h1>
+          <p>Obrigado por experimentar o fluxo de doação do DoaSync.</p>
+        </div>
+        <Secao titulo="Resumo da doação">
+          <ul className="resumo-final">
+            <li>
+              <span>Campanha</span>
+              <strong>{campanha.nome}</strong>
+            </li>
+            <li>
+              <span>Doador</span>
+              <strong>{concluida.doador}</strong>
+            </li>
+            <li>
+              <span>Contribuição</span>
+              <strong>{concluida.detalhe}</strong>
+            </li>
+            {financeira ? (
+              <li>
+                <span>Forma de pagamento</span>
+                <strong>{concluida.metodo}</strong>
+              </li>
+            ) : (
+              <li>
+                <span>{concluida.agendamento.modo === 'entrega' ? 'Entrega' : 'Retirada'}</span>
+                <strong>
+                  {formatarData(concluida.agendamento.data)} · {concluida.agendamento.janela}
+                </strong>
+              </li>
+            )}
+            <li>
+              <span>Situação</span>
+              <strong>
+                {financeira ? 'Aguardando confirmação do pagamento' : 'Aguardando recebimento dos itens'}
+              </strong>
+            </li>
+          </ul>
+          <Aviso>
+            Registro de demonstração, válido apenas nesta sessão. Nenhum valor foi cobrado e a entidade não foi avisada.
+          </Aviso>
+          <div className="acoes">
+            <Botao secundario para="/explorar">
+              Explorar outras campanhas
+            </Botao>
+            <Botao para={`/campanhas/${campanha.id}`}>Voltar à campanha</Botao>
+          </div>
+        </Secao>
+      </section>
+    )
+
   return (
     <section className="public-section doacao-fluxo">
       <div className="breadcrumb">
@@ -80,12 +204,7 @@ export default function FluxoDoacao() {
       </div>
       <Etapas
         atual={etapa}
-        itens={[
-          'Tipo de doação',
-          'Sua contribuição',
-          'Identificação',
-          'Pagamento',
-        ]}
+        itens={financeira ? ETAPAS_FINANCEIRA : ETAPAS_ITENS}
       />
       <div className="detalhe-grid">
         <div className="fluxo-conteudo">
@@ -124,25 +243,30 @@ export default function FluxoDoacao() {
                   </label>
                 ))}
               </fieldset>
-              {tipo === 'Itens' && (
-                <Aviso>
-                  A seleção de itens e o agendamento fazem parte das próximas
-                  entregas desse fluxo. Você pode consultar as necessidades na
-                  campanha.
-                </Aviso>
-              )}
               <div className="acoes">
-                {tipo === 'Financeira' ? (
-                  <Botao onClick={proxima}>
-                    Continuar com doação financeira <Icon nome="seta" />
-                  </Botao>
-                ) : (
-                  <Botao para={`/campanhas/${id}?aba=itens`}>
-                    Consultar itens necessários
-                  </Botao>
-                )}
+                <Botao onClick={proxima}>
+                  {financeira
+                    ? 'Continuar com doação financeira'
+                    : 'Continuar com doação de itens'}{' '}
+                  <Icon nome="seta" />
+                </Botao>
               </div>
             </Secao>
+          ) : etapa === 1 && !financeira ? (
+            <SelecaoItens
+              itens={itensCampanha}
+              selecao={selecao}
+              onChange={(nome, quantidade) =>
+                setSelecao((atual) => ({ ...atual, [nome]: quantidade }))
+              }
+              erro={erro}
+              campanhaId={campanha.id}
+              onVoltar={() => {
+                setErro('')
+                setEtapa(0)
+              }}
+              onContinuar={proxima}
+            />
           ) : etapa === 1 ? (
             <Secao titulo="Escolha o valor">
               <form onSubmit={proxima}>
@@ -210,7 +334,7 @@ export default function FluxoDoacao() {
                 </div>
               </form>
             </Secao>
-          ) : (
+          ) : etapa === 2 ? (
             <>
               <fieldset className="identificacao-opcoes">
                 <legend className="sr-only">Identificação do doador</legend>
@@ -231,7 +355,6 @@ export default function FluxoDoacao() {
                       onChange={() => {
                         setIdentificacao(value)
                         setErro('')
-                        setAviso('')
                       }}
                     />
                     <strong>{titulo}</strong>
@@ -283,19 +406,20 @@ export default function FluxoDoacao() {
                       )}
                     </>
                   )}
-                  {erro && <Aviso erro>{erro}</Aviso>}
-                  {aviso && (
+                  {erro && (
                     <div className="campo--inteiro">
-                      <Aviso>{aviso}</Aviso>
-                      <Botao disabled>Pagamento indisponível</Botao>
+                      <Aviso erro>{erro}</Aviso>
                     </div>
                   )}
                   <div className="acoes campo--inteiro">
                     <Botao secundario onClick={() => setEtapa(1)}>
-                      Voltar à contribuição
+                      {financeira ? 'Voltar à contribuição' : 'Voltar aos itens'}
                     </Botao>
                     <Botao type="submit">
-                      Continuar na demonstração <Icon nome="seta" />
+                      {financeira
+                        ? 'Continuar para o pagamento'
+                        : 'Continuar para o agendamento'}{' '}
+                      <Icon nome="seta" />
                     </Botao>
                   </div>
                   <small className="campo--inteiro">
@@ -305,6 +429,41 @@ export default function FluxoDoacao() {
                 </form>
               </Secao>
             </>
+          ) : financeira ? (
+            metodo === 'PIX' ? (
+              <PagamentoPix
+                valor={valorDoacao(valor)}
+                campanha={campanha}
+                enviando={enviando}
+                erro={erro}
+                onVoltar={() => setEtapa(2)}
+                onConcluir={registrar}
+              />
+            ) : (
+              <PagamentoCartaoBoleto
+                metodo={metodo}
+                valor={valorDoacao(valor)}
+                campanha={campanha}
+                hoje={HOJE_DEMO}
+                enviando={enviando}
+                erro={erro}
+                onVoltar={() => setEtapa(2)}
+                onConcluir={registrar}
+              />
+            )
+          ) : (
+            <Agendamento
+              campanha={campanha}
+              hoje={HOJE_DEMO}
+              valorInicial={agendamento}
+              enviando={enviando}
+              erro={erro}
+              onVoltar={() => setEtapa(2)}
+              onConcluir={(dadosAgendamento) => {
+                setAgendamento(dadosAgendamento)
+                registrar(dadosAgendamento)
+              }}
+            />
           )}
         </div>
         <aside className="cartao doar-resumo">
@@ -318,14 +477,18 @@ export default function FluxoDoacao() {
           <hr />
           <h3>Sua contribuição</h3>
           <strong className="numero-destaque">
-            {tipo === 'Financeira'
+            {financeira
               ? formatarMoeda(valorDoacao(valor) ?? 0)
-              : 'Doação de itens'}
+              : escolhidos.length > 0
+                ? `${escolhidos.reduce((s, i) => s + i.quantidade, 0)} itens`
+                : 'Doação de itens'}
           </strong>
           <p>
-            {tipo === 'Financeira'
+            {financeira
               ? `${metodo} · contribuição única`
-              : 'Seleção disponível em uma próxima entrega'}
+              : escolhidos.length > 0
+                ? escolhidos.map((i) => `${i.quantidade} ${i.nome}`).join(', ')
+                : 'Escolha os itens na próxima etapa'}
           </p>
           <Aviso>Dados fictícios · nenhum valor é cobrado.</Aviso>
         </aside>
