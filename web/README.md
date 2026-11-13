@@ -38,13 +38,13 @@ O repositório conta com o workflow [`.github/workflows/frontend-qa.yml`](../.gi
 | `/` | Home pública e campanhas em destaque |
 | `/explorar` | Campanhas com busca, filtros, ordenação e paginação |
 | `/campanhas/:id` | Detalhe da campanha e abas de informações |
-| `/doar/:id` | Tipo, contribuição financeira e identificação; limite nas próximas telas de pagamento |
+| `/doar/:id` | Fluxo de doação em 4 etapas: tipo, contribuição (valor ou itens), identificação e pagamento (PIX, cartão ou boleto) ou agendamento de entrega/retirada |
 | `/login` | Acesso/recuperação com indisponibilidade de integração e entrada na demonstração |
 | `/cadastro-entidade` | Dados, seleção local de documentos e onboarding |
 | `/dashboard` | Indicadores, período e evolução financeira |
 | `/dashboard/campanha?campanha=1` | Análise financeira, evolução de itens e metas por item |
 | `/campanhas` | Gestão das campanhas da entidade |
-| `/campanhas/nova` | Dados básicos e rascunho de campanha |
+| `/campanhas/nova` | Assistente em 3 etapas: dados básicos, metas e itens necessários, revisão (imagem de capa) e publicação; permite salvar rascunho em qualquer etapa |
 | `/doacoes` | Doações recebidas, filtros e detalhes |
 | `/doadores` | Doadores e histórico de contribuições |
 | `/itens` | Saldo e registro local de entradas/saídas |
@@ -78,7 +78,13 @@ Os endpoints dos services Axios e `VITE_API_URL` de `.env.example` são hipótes
 preexistentes. Eles não são utilizados pelo mock central. Nenhum endpoint novo
 foi presumido como disponível.
 
-O fluxo financeiro não gera PIX/boleto nem recebe dados de cartão. Recuperação
+O fluxo financeiro só demonstra PIX, boleto e cartão: o código PIX e a linha
+digitável são fictícios e inválidos, os dados do cartão são apenas validados no
+formulário (nunca enviados nem guardados) e nenhum valor é cobrado. A doação
+concluída é registrada como Pendente na sessão e aparece em Doações recebidas
+para a entidade confirmar. O agendamento de itens também é só de demonstração:
+a entidade não é avisada. O envio de imagens da campanha não é integrado; o
+assistente oferece imagens de exemplo. Recuperação
 de senha não envia e-mail. Documentos selecionados não são enviados. Alteração
 de papéis não concede acessos reais. Geração e download de PDF/CSV ficam como
 dependências externas, sem gerador local de arquivos.
@@ -94,6 +100,17 @@ dependências ou aparecem em uma issue de agrupamento.
 Validação local: 48 testes aprovados e build de produção gerado. As integrações
 externas e a comparação visual completa continuam pendentes; isso não representa
 o encerramento automático das issues no GitHub.
+
+### Telas de doação e criação de campanha (pulcinelli123)
+
+Escopo: #98 (PIX), #99 (cartão e boleto), #100 (doação de itens), #101
+(agendamento), #89 (metas e itens) e #90 (imagens, revisão e publicação). Regras
+em `src/utils/doacao.js` e `src/utils/criarCampanha.js`; telas em
+`src/components/doacao/` e `src/pages/CriarCampanha.jsx`; testes em
+`src/test/doacao.test.jsx` e `src/test/criarCampanha.test.jsx`. As telas de
+Doações recebidas (#109), Doadores e histórico (#110) e Minhas campanhas (#91)
+já existiam e não foram alteradas. Validação local: 87 testes aprovados e build
+gerado; a comparação visual com o Figma continua pendente.
 
 Referência visual informada:
 [Figma Doasync](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync).
