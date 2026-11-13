@@ -16,3 +16,8 @@ export function validarEdicao(form, campanha) {
     erros.encerraEm = 'Data de término deve ser igual ou posterior à data de início.'
   return erros
 }
+
+// Dias restantes até o término, a partir de uma data de referência (relógio de demonstração).
+export function diasRestantes(fim, hoje = '2026-10-06') {
+  return Math.max(0, Math.round((Date.parse(fim) - Date.parse(hoje)) / 86400000))
+}
