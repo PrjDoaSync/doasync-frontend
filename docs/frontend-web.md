@@ -45,6 +45,7 @@ web/src/
   components/layout/         Layout público e administrativo
   context/DemoContext.jsx    Estado em memória da demonstração
   hooks/useRequest.js        Estado assíncrono, cancelamento e nova tentativa
+  hooks/useAsyncAction.js    Ações do usuário com pending/success/error e trava contra envio duplicado
   mocks/                     Amostras e serviços locais simulados
   pages/                     Páginas e fluxos das três áreas
   services/                  Cliente Axios e serviços por domínio
@@ -89,6 +90,19 @@ Os dados exibidos pelas páginas vêm principalmente de `src/mocks/` e do `DemoC
 `src/services/api.js` cria um cliente Axios com `VITE_API_URL` e fallback `http://localhost:8080/api`, timeout de 15 segundos e normalização de erros. Existem serviços de leitura para campanhas, doações e entidades em `src/services/*Service.js`. **A revisão do código não encontrou consumidores desses serviços Axios nas telas;** algumas páginas usam serviços simulados importados de `src/mocks`. A URL fallback e os caminhos de serviço são código existente, não confirmação de endpoint ou contrato do backend.
 
 Nenhuma integração nova foi iniciada. Antes dela, as equipes precisam confirmar contratos, autenticação, permissões, uploads, pagamentos, persistência e comportamento de erros. Não inserir segredos no repositório; valores de ambiente reais não devem ser copiados para esta documentação.
+
+## Estados de carregamento, vazio, erro e sucesso ([#36](https://github.com/PrjDoaSync/doasync-frontend/issues/36))
+
+Peças compartilhadas para feedback assíncrono:
+
+| Peça | Uso | Comportamento |
+|---|---|---|
+| `useRequest(request, deps)` | Leitura de dados | Expõe `data`, `loading`, `error` e `reload`. Cancela a chamada ao desmontar, ao recarregar e quando as dependências mudam; ignora respostas antigas e erros marcados com `cancelled`. |
+| `RequestState` | Renderização da leitura | Mostra loading enquanto não há dados e erro com “Tentar novamente”. A propriedade opcional `vazio` (texto ou elemento) é exibida quando a lista chega vazia; sem ela, a lista vazia segue para `children`, que decide o que mostrar (por exemplo, a mensagem da `DataTable`). Se uma nova tentativa falha mas já existem dados, o conteúdo é mantido e o erro aparece acima dele. |
+| `ErrorMessage` | Erro acessível (`role="alert"`) | Aceita o erro normalizado de `services/api.js`, um `Error` ou texto; usa mensagem padrão quando não há texto. |
+| `useAsyncAction(action)` | Ações do usuário (salvar, enviar, confirmar) | Expõe `executar`, `pending`, `success`, `error` e `reset`. Ignora nova chamada enquanto há outra em andamento (evita envio duplicado, mesmo antes de o botão ser redesenhado como desabilitado) e não trata cancelamento como erro. |
+
+Estado de adoção: `useAsyncAction` e a propriedade `vazio` são novos e **ainda não foram adotados pelas telas**. As telas existentes mantêm seus tratamentos próprios (`salvando`/`enviando` em Criar e Editar campanha, Cadastro da entidade e fluxo de doação). A adoção nas telas e a integração com serviços reais seguem a issue [#35](https://github.com/PrjDoaSync/doasync-frontend/issues/35). Os estados não foram comparados com o Figma nesta alteração.
 
 ## Limites funcionais confirmados
 
