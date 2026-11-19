@@ -788,8 +788,8 @@ describe('DemoProvider e layouts', () => {
   }
   it('layout de gestão: navegação principal, entidade, título e aviso de demonstração', async () => {
     montarAdmin('/campanhas')
-    await screen.findByRole('navigation', { name: 'Principal' })
-    const nav = screen.getByRole('navigation', { name: 'Principal' })
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    const nav = screen.getByRole('navigation', { name: 'Navegação administrativa' })
     expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual([
       'Dashboard',
       'Campanhas',
@@ -800,7 +800,7 @@ describe('DemoProvider e layouts', () => {
       'Configurações',
     ])
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('aria-current')).toBe('page')
-    expect(document.querySelector('.topo__titulo').textContent).toBe('Campanhas')
+    expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de campanhas')
     expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(
       fonte.criarDadosDemo().entidade.nome,
     )
@@ -810,17 +810,17 @@ describe('DemoProvider e layouts', () => {
   })
   it('layout de gestão: título de rotas fora do menu', async () => {
     const { unmount } = montarAdmin('/cadastro-entidade')
-    await screen.findByRole('navigation', { name: 'Principal' })
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
     expect(document.querySelector('.topo__titulo').textContent).toBe('Cadastro da entidade')
     unmount()
     montarAdmin('/entidades')
-    await screen.findByRole('navigation', { name: 'Principal' })
-    expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão da entidade')
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de entidades')
   })
   it('exibe o aviso (Toast) e permite dispensá-lo', async () => {
     const user = userEvent.setup()
     montarAdmin('/dashboard')
-    await screen.findByRole('navigation', { name: 'Principal' })
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
     expect(document.querySelector('.toast')).toBe(null)
     await user.click(screen.getByRole('button', { name: 'Avisar' }))
     expect(document.querySelector('.toast').textContent).toContain('Salvo na sessão')
@@ -841,8 +841,8 @@ describe('DemoProvider e layouts', () => {
     )
     await screen.findByRole('heading', { name: 'Início' })
     const nav = screen.getByRole('navigation', { name: 'Navegação pública' })
-    expect(within(nav).getByRole('link', { name: 'Explorar campanhas' }).getAttribute('href')).toBe('/explorar')
-    expect(within(nav).getByRole('link', { name: 'Para entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('href')).toBe('/explorar')
+    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
     expect(screen.getByRole('link', { name: 'Entrar' }).getAttribute('href')).toBe('/login')
     expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
     expect(screen.getByText(/Projeto de extensão/)).toBeTruthy()
