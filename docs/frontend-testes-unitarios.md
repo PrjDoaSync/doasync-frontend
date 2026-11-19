@@ -37,6 +37,26 @@ Ambiente observado: Node.js 22.19.0 e npm 10.9.2. Os resultados são locais e n�
 
 Os avisos foram registrados, não corrigidos nesta tarefa documental. O segundo pode indicar código sem efeito; precisa de revisão do responsável técnico antes de qualquer alteração funcional.
 
+## Execução registrada — 18/11/2026
+
+Branch `feature/gustavo-testes-e-estados-web`, criada a partir de `develop` no commit `c65621d`. Ambiente: Node.js 24.20.0, npm 11.19.0, Windows 11. Todos os comandos foram executados a partir de `web/`.
+
+| Verificação | Comando | Resultado | Evidência/observação |
+|---|---|---|---|
+| Instalação reproduzível | `npm ci` | Aprovada | Encerrou com código 0. |
+| Testes (antes das alterações) | `npm test` | Aprovado | 6 arquivos e 87 testes na `develop` (o registro de 10/11 tinha 4 arquivos e 63 testes). |
+| Testes (depois) | `npm test` | Aprovado | 10 arquivos e 241 testes passaram. Duração reportada pelo Vitest: 63,14 s. |
+| Lint | `npm run lint` | Aprovado com avisos | Código 0 e os mesmos 2 avisos listados acima; nenhum aviso novo. |
+| Build | `npm run build` | Aprovado | Vite transformou 73 módulos e gerou `dist/`. |
+
+Foram adicionados 154 testes em 4 arquivos novos (tabela abaixo). Eles exercitam a implementação local e seus mocks; não validam contratos de API, pagamentos, autenticação, persistência nem a aderência visual ao Figma. Os resultados são locais e não demonstram execução em CI nem aprovação de QA.
+
+### Lacunas conhecidas
+
+- `web/src/pages/Doacoes.jsx` (lista com `useRequest`) e `web/src/components/layout/Layout.jsx` não são importados por nenhum arquivo; não receberam testes por serem código sem uso. Cabe ao responsável técnico decidir se permanecem.
+- `web/src/pages/CadastroEntidade.jsx` continua coberto apenas pelos cenários de `fluxos.test.jsx` (CNPJ e arquivo acima de 10 MB).
+- Os critérios de aceite das Issues #79–#82 que dependem de revisão interna, QA ou comparação com o Figma permanecem para os responsáveis; este registro não os considera atendidos.
+
 ## Escopo e limites dos testes existentes
 
 | Arquivo | Área observada |
@@ -45,6 +65,10 @@ Os avisos foram registrados, não corrigidos nesta tarefa documental. O segundo 
 | `web/src/test/fluxos.test.jsx` | Navegação pública, doação demonstrativa, gestão, relatórios e estados |
 | `web/src/test/gestao.test.js` | Cálculos, filtros, validações, estoque e carregamento da amostra |
 | `web/src/test/prestacao.test.jsx` | Regras e tela demonstrativa de prestação de contas |
+| `web/src/test/infra.test.jsx` | [#79](https://github.com/PrjDoaSync/doasync-frontend/issues/79): hooks `useRequest` e `useAsyncAction`, `RequestState`, `ErrorMessage`, `Loading`, cliente Axios e services, serviços simulados, `DemoProvider`, layouts, `DataTable`, `Filtros` e UI base (`Ui.jsx`) |
+| `web/src/test/campanhasGestao.test.jsx` | [#80](https://github.com/PrjDoaSync/doasync-frontend/issues/80): gestão e filtros de campanhas, `CampanhaCard`/`Progresso`, edição (erros e salvamento), acompanhamento e `diasRestantes` |
+| `web/src/test/doacoesFluxo.test.jsx` | [#81](https://github.com/PrjDoaSync/doasync-frontend/issues/81): `valorDoacao`, `SelecaoItens`, `PagamentoPix`, `Agendamento`, identificação do doador e gestão de doações recebidas |
+| `web/src/test/gestaoTelas.test.jsx` | [#82](https://github.com/PrjDoaSync/doasync-frontend/issues/82): Login, Entidades, Doadores, Usuários, Itens/estoque, Relatórios, Dashboard e `Grafico` |
 
 Os testes exercitam a implementação local e seus mocks; não validam contratos, autenticação, pagamentos, persistência, endpoints de backend, visual de todas as 30 telas nem integração com QA.
 
