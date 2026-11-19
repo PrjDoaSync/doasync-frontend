@@ -10,6 +10,7 @@ const caminhos = {
   relatorios: 'M4 20V10 M10 20V4 M16 20v-8 M22 20H2',
   configuracoes:
     'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2',
+  editar: 'M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z',
   seta: 'M5 12h14 M14 7l5 5-5 5',
   voltar: 'M19 12H5 M10 7l-5 5 5 5',
   busca: 'M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14 M15 15l6 6',
@@ -72,13 +73,13 @@ export function Campo({ rotulo, children, ajuda, className = '', ...props }) {
   const ajudaId = useId()
   const controle =
     children &&
-    isValidElement(children) &&
-    ['input', 'select', 'textarea'].includes(children.type)
+      isValidElement(children) &&
+      ['input', 'select', 'textarea'].includes(children.type)
       ? cloneElement(children, {
-          'aria-describedby': ajuda
-            ? ajudaId
-            : children.props['aria-describedby'],
-        })
+        'aria-describedby': ajuda
+          ? ajudaId
+          : children.props['aria-describedby'],
+      })
       : children
   return (
     <div className={`campo ${className}`}>

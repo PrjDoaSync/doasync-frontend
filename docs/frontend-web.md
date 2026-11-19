@@ -1,153 +1,116 @@
-# Documentação técnica do Frontend Web — DoaSync
+# Documentação técnica do frontend Web — DoaSync
 
-> **Responsável pela documentação:** LucasIanovski  
-> **Repositório:** [PrjDoaSync/equipe-4-gestao-dashboard](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard)  
-> **Issue principal:** [#78 — DOC-WEB-01](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/78)  
-> **Referência de design:** [Arquivo Doasync no Figma](https://www.figma.com/design/JaIKR7tTkfIJ3fSk4weadC/Doasync?node-id=0-1&m=dev)
+> Responsável pela documentação: LucasIanovski (Issue [#78](https://github.com/PrjDoaSync/doasync-frontend/issues/78))<br>
+> Repositório: [PrjDoaSync/doasync-frontend](https://github.com/PrjDoaSync/doasync-frontend)<br>
+> Referência de design: [Doasync no Figma](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=0-1&m=dev)
 
-## 1. Objetivo e estado desta documentação
+## Estado e escopo
 
-Este documento registra como documentar, implementar, validar e manter o frontend Web do DoaSync de forma rastreável aos protótipos, às issues e às dependências das outras áreas.
+Esta documentação descreve o código observado em `web/` na branch `develop` durante a revisão de 10/11/2026. A aplicação Web existe e pode ser compilada. Ela é uma demonstração local baseada em dados fictícios; não há autenticação real, processamento financeiro, upload persistente ou integração de tela confirmada com API. As conclusões abaixo não declaram aceite visual ou funcional das 30 telas.
 
-**Estado verificado no repositório durante a criação deste documento:** a branch padrão consultada contém o `README.md`, mas não foram encontrados `package.json`, diretório `web/`, diretório `frontend/` ou código de aplicação nos caminhos verificados. Portanto, a arquitetura executável, os comandos de instalação, as versões e o framework de testes **ainda não podem ser confirmados a partir do código deste repositório**. As referências a React, Axios e outras tecnologias nas issues são planejamento, não prova de configuração existente.
+O escopo documentado é o frontend Web desktop de Campanhas, Doações e Gestão/Dashboard. As Issues de Mobile e backend permanecem em suas frentes correspondentes. Não foram introduzidos contratos, regras de negócio ou telas fora do escopo aprovado.
 
-Atualize este documento quando o código real for incorporado. Não registre uma estrutura, comando, dependência ou comportamento como existente sem verificar no repositório e executar quando aplicável.
+## Stack e comandos disponíveis
 
-## 2. Escopo funcional Web
+| Item | Evidência no projeto |
+|---|---|
+| Framework | React 19 (`web/package.json`) |
+| Build/desenvolvimento | Vite 8 (`web/vite.config.js`) |
+| Linguagem | JavaScript e JSX (`web/src`) |
+| Rotas | React Router DOM 7 (`web/src/App.jsx`) |
+| Cliente HTTP | Axios (`web/src/services/api.js`) |
+| Testes | Vitest 5, jsdom e React Testing Library (`web/vitest.config.js`, `web/src/test`) |
+| Lint | oxlint (`web/package.json`) |
+| Gerenciador | npm; lockfile em `web/package-lock.json` |
 
-O escopo de prototipagem desktop registrado está organizado em três áreas:
+Execute a partir de `web/`:
 
-- **Campanhas:** home/vitrine pública, listagem e filtros, detalhe, criação, edição, acompanhamento e encerramento/prestação de contas.
-- **Doações:** escolha do tipo, doação financeira, doação de itens, identificação do doador, opções de pagamento representadas no protótipo, agendamento, confirmação, listagem e detalhe.
-- **Gestão e Dashboard:** autenticação/onboarding, indicadores gerais e por campanha, doações recebidas, doadores, itens, relatórios/exportação, usuários/permissões e perfil/configurações.
+```bash
+npm ci
+npm run dev
+npm test
+npm run build
+npm run lint
+```
 
-A descrição acima resume os frames inventariados no README. Ela não define regras de negócio, integrações de pagamento ou permissões que não tenham sido aprovadas.
+Os resultados efetivamente verificados em 10/11/2026 estão no [registro de testes](frontend-testes-unitarios.md). Não usar o lockfile não rastreado da raiz do repositório como lockfile da aplicação.
 
-### Referências do GitHub
+## Estrutura observada
 
-| Área | Protótipo/validação | Implementação Web |
+```text
+web/src/
+  App.jsx                    Rotas e composição dos layouts
+  main.jsx                   Entrada React
+  components/                UI compartilhada, feedback, formulários, tabelas e gráficos
+  components/layout/         Layout público e administrativo
+  context/DemoContext.jsx    Estado em memória da demonstração
+  hooks/useRequest.js        Estado assíncrono, cancelamento e nova tentativa
+  mocks/                     Amostras e serviços locais simulados
+  pages/                     Páginas e fluxos das três áreas
+  services/                  Cliente Axios e serviços por domínio
+  test/                      Testes Vitest/Testing Library
+  utils/                     Formatação, validações e cálculos de domínio
+```
+
+`App.jsx` define as rotas. `DemoProvider` carrega os dados locais por `carregarDemo` e mantém alterações somente na memória da sessão. Há componentes reutilizáveis, por exemplo `RequestState`, `Loading`, `ErrorMessage`, `PageHeader`, `DataTable`, `Filtros`, `StatusBadge`, `KpiCard` e `Grafico`.
+
+## Rotas implementadas
+
+| Rota | Página / arquivo | Observação do comportamento atual |
 |---|---|---|
-| Escopo desktop | [#4](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/4), [#21](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/21) | [#6](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/6), [#12](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/12) |
-| Campanhas | [#10](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/10), [#48–#57](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/48) | [#28](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/28) |
-| Doações | [#46](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/46), [#58–#67](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/58) | Interfaces Web incluídas no escopo de [#28](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/28); confirmar divisão final das issues |
-| Gestão/Dashboard | [#47](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/47), [#68–#77](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/68) | [#6](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/6), [#27](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/27), [#29](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/29) |
+| `/` | Home — `pages/Publico.jsx` | Vitrine com dados de demonstração |
+| `/explorar` | Explorar — `pages/Publico.jsx` | Busca, filtros e paginação locais |
+| `/campanhas/:id` | Detalhe — `pages/Publico.jsx` | Detalhe da amostra; campanha inexistente tem estado próprio |
+| `/doar/:id` | Fluxo — `pages/FluxoDoacao.jsx` | Fluxo parcial; não processa pagamento |
+| `/login` | Login — `pages/Login.jsx` | Demonstração local; recuperação/envio de e-mail não conectado |
+| `/dashboard` | Dashboard — `pages/Dashboard.jsx` | Indicadores da amostra |
+| `/dashboard/campanha` | Análise — `pages/Dashboard.jsx` | Dashboard analítico com dados locais |
+| `/campanhas` | Campanhas — `pages/Campanhas.jsx` | Gestão local das campanhas |
+| `/campanhas/nova` | Criar — `pages/CriarCampanha.jsx` | Cadastro/rascunho local; não representa as três etapas separadas do Figma |
+| `/campanhas/:id/editar` | Editar — `pages/EditarCampanha.jsx` | Alterações em estado de demonstração |
+| `/campanhas/:id/acompanhamento` | Acompanhamento — `pages/AcompanhamentoCampanha.jsx` | Indicadores e atualizações de demonstração |
+| `/campanhas/:id/prestacao-de-contas` | Prestação — `pages/PrestacaoContas.jsx` | Regras e publicação apenas na demonstração |
+| `/doacoes` | Doações recebidas — `pages/DoacoesGestao.jsx` | Não é “Minhas doações” do usuário doador |
+| `/entidades` | Entidades — `pages/Entidades.jsx` | Diretório local preservado |
+| `/doadores` | Doadores — `pages/Doadores.jsx` | Histórico local |
+| `/itens` | Itens — `pages/Itens.jsx` | Estoque local |
+| `/relatorios` | Relatórios — `pages/Relatorios.jsx` | Prévia local; exportação de arquivo não implementada |
+| `/cadastro-entidade` | Cadastro — `pages/CadastroEntidade.jsx` | Dados/documentos apenas locais; sem envio persistente |
+| `/configuracoes` | Perfil — `pages/CadastroEntidade.jsx` | Reutiliza a tela de cadastro em modo perfil |
+| `/configuracoes/usuarios` | Usuários — `pages/Usuarios.jsx` | Edição local; sem convite ou controle real de acesso |
+| `*` | Página não encontrada — `components/Ui.jsx` | Fallback definido dentro do layout público |
 
-> **Atenção:** o README registra 11 frames de Gestão/Dashboard, enquanto a série #68–#77 representa 10 issues de tela. O frame “Editar acesso · Paulo Souza” precisa ser confirmado com a coordenação como tela independente ou estado de uma tela existente antes de fechar a matriz.
+As rotas administrativas não possuem proteção de autenticação identificada. O fallback e a navegação direta estão definidos no roteador; sua cobertura por teste está indicada no registro de testes, não presumida por esta tabela.
 
-## 3. Arquitetura e estrutura de pastas
+## Dados, serviços e configuração
 
-**Status: pendente de confirmação no código.** O esqueleto abaixo é um roteiro de auditoria, não uma declaração da estrutura existente.
+Os dados exibidos pelas páginas vêm principalmente de `src/mocks/` e do `DemoContext`. O serviço em `src/mocks/index.js` simula chamadas assíncronas. Isso deve ser diferenciado dos serviços Axios em `src/services/`.
 
-Quando a aplicação estiver disponível, registrar:
-- diretório raiz da aplicação Web;
-- ponto de entrada e configuração de build;
-- organização de páginas, rotas e layouts;
-- organização de componentes compartilhados e específicos por área;
-- camada de acesso a serviços/API;
-- organização de estilos, imagens e outros recursos;
-- arquivos de configuração e variáveis de ambiente necessárias;
-- estratégia de tratamento de erros e estados de interface.
+`src/services/api.js` cria um cliente Axios com `VITE_API_URL` e fallback `http://localhost:8080/api`, timeout de 15 segundos e normalização de erros. Existem serviços de leitura para campanhas, doações e entidades em `src/services/*Service.js`. **A revisão do código não encontrou consumidores desses serviços Axios nas telas;** algumas páginas usam serviços simulados importados de `src/mocks`. A URL fallback e os caminhos de serviço são código existente, não confirmação de endpoint ou contrato do backend.
 
-Não criar uma estrutura nova apenas para fazer o documento parecer completo. Descrever primeiro a estrutura efetivamente adotada pelo projeto.
+Nenhuma integração nova foi iniciada. Antes dela, as equipes precisam confirmar contratos, autenticação, permissões, uploads, pagamentos, persistência e comportamento de erros. Não inserir segredos no repositório; valores de ambiente reais não devem ser copiados para esta documentação.
 
-## 4. Rotas e navegação
+## Limites funcionais confirmados
 
-**Status: pendente de inventário.** Ao confirmar o roteador e as rotas no código, preencher a tabela:
+- Pagamento via PIX, boleto ou cartão não é processado.
+- Recuperação de senha não envia e-mail.
+- Dados e edições da demonstração não persistem ao recarregar a página.
+- Seleção de documentos não envia arquivos.
+- Usuários/permissões são representados localmente, sem conceder acesso real.
+- Relatórios não geram ou baixam PDF/CSV.
+- As telas ausentes de confirmação, “Minhas doações” e detalhe da doação não têm rota correspondente em `App.jsx` na `develop` consultada.
+- A criação de campanha ainda não reproduz como fluxo separado as três etapas descritas no protótipo.
 
-| Rota | Página/fluxo | Acesso/condição | Estado |
-|---|---|---|---|
-| A preencher após inspeção do código | A preencher | Somente regras confirmadas | Pendente |
+## Qualidade, acessibilidade e responsividade
 
-Documentar rotas protegidas, redirecionamentos, parâmetros e links entre telas apenas quando estiverem implementados e aprovados. Não inventar URLs nem presumir regras de autenticação.
+Há tratamento compartilhado de carregamento/erro e foco programático do título após a troca de rota em `App.jsx`. A presença desses elementos não comprova que todas as telas tratem todos os estados aplicáveis. Os resultados de lint incluem dois avisos descritos no [registro de testes](frontend-testes-unitarios.md). A comparação visual completa com o Figma, teste responsivo sistemático e aprovação de acessibilidade permanecem pendentes.
 
-## 5. Componentes e padrões de interface
+## Referências e dependências
 
-As issues de frontend citam um layout compartilhado com Header, Sidebar e Content e telas de dashboard, campanhas, doações e relatórios. A existência e a API real desses componentes precisam ser verificadas no código.
+- [Issue #78 — documentação Web](https://github.com/PrjDoaSync/doasync-frontend/issues/78)
+- [Issue #21 — validação com equipe/cliente](https://github.com/PrjDoaSync/doasync-frontend/issues/21)
+- [Issue #79–#82 — testes unitários por área](https://github.com/PrjDoaSync/doasync-frontend/issues/79)
+- [Issue #136 — pipeline de testes](https://github.com/PrjDoaSync/doasync-frontend/issues/136) — documentada em [docs/frontend-pipeline-qa.md](frontend-pipeline-qa.md) (`.github/workflows/frontend-qa.yml`)
+- [Figma Doasync](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=0-1&m=dev)
 
-Ao implementar/documentar, registrar para cada componente compartilhado:
-- finalidade e telas consumidoras;
-- propriedades/entradas e eventos públicos;
-- comportamento responsivo;
-- estados de carregamento, vazio, erro e sucesso, quando aplicáveis;
-- validações e acessibilidade relevantes;
-- exemplos reais de uso.
-
-Verificar no Figma e no código os padrões de botões, campos, seletores, tabelas, filtros, paginação, cards, gráficos, modais, alertas, cores, tipografia e espaçamento. A lista é um roteiro de inspeção, não uma biblioteca já confirmada.
-
-## 6. Integrações e dados
-
-As issues mencionam uma camada de cliente HTTP/serviços e integração às APIs. A documentação deve identificar, depois de confirmar os contratos:
-- serviço/endpoint utilizado e finalidade;
-- método HTTP e formato dos dados;
-- estados de carregamento, sucesso, vazio e falha;
-- comportamento para erros e tentativas novamente, se implementado;
-- origem de mocks de desenvolvimento/teste;
-- dependências e bloqueios sob responsabilidade de outras equipes.
-
-**Não inventar endpoints, payloads, autenticação ou regras de negócio.** Enquanto o contrato estiver indefinido, registrar a pendência e a equipe responsável. Dados simulados podem ser usados em desenvolvimento/testes conforme necessário, mas não devem ser apresentados como integração real nem usados como dados de produção.
-
-Nunca versionar tokens, senhas, chaves privadas ou valores secretos. Documentar apenas nomes e finalidade de variáveis de configuração; usar valores fictícios de exemplo quando necessário.
-
-## 7. Instalação, execução e testes locais
-
-**Status: pendente de verificação.** Os comandos abaixo não são fornecidos porque não há manifesto de aplicação confirmado nos caminhos verificados. Após a incorporação do código:
-
-1. identificar o gerenciador de pacotes e as versões realmente usadas;
-2. registrar os comandos de instalação, desenvolvimento, build e testes presentes nos arquivos do projeto;
-3. executar cada comando em ambiente limpo ou reproduzível;
-4. registrar pré-requisitos e variáveis necessárias sem incluir segredos;
-5. atualizar esta seção com o comando exato e o resultado observado.
-
-Não copiar comandos genéricos de outra aplicação sem validá-los.
-
-## 8. Qualidade, testes e fluxo de QA
-
-Os testes unitários de frontend são uma etapa interna antes do encaminhamento para QA:
-
-1. implementar a funcionalidade conforme issue e protótipo aprovado;
-2. executar testes unitários e revisão interna;
-3. corrigir falhas ou registrar justificativa e risco;
-4. confirmar critérios de aceite;
-5. encaminhar à equipe de QA pelo fluxo acordado.
-
-Issues relacionadas:
-- [#79 — componentes compartilhados e infraestrutura Web](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/79)
-- [#80 — Campanhas](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/80)
-- [#81 — Doações](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/81)
-- [#82 — Gestão e Dashboard](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard/issues/82)
-
-Não declarar testes executados, cobertura atingida ou QA aprovado sem evidência de execução e resultado.
-
-## 9. Acessibilidade, responsividade e experiência
-
-Registrar critérios acordados e implementados, tais como navegação por teclado, rótulos de campos, mensagens de validação compreensíveis, contraste, foco visível e adaptação a tamanhos de tela. Não afirmar conformidade com um padrão formal de acessibilidade sem avaliação correspondente.
-
-## 10. Decisões, riscos e pendências
-
-Manter nesta seção ou na issue correspondente as questões ainda não resolvidas:
-- confirmar a classificação do frame “Editar acesso · Paulo Souza”;
-- mapear individualmente as telas Mobile, se permanecerem no escopo da equipe;
-- confirmar os contratos de API e os comportamentos dependentes do backend;
-- confirmar regras de autenticação, permissões, pagamentos e exportação com as equipes responsáveis;
-- identificar a estrutura real, as dependências e os comandos quando o código Web for incorporado;
-- registrar divergências entre Figma, critérios de aceite e implementação.
-
-Para cada pendência, indicar descrição, impacto, responsável/equipe a consultar e issue relacionada. Não transformar hipótese em decisão aprovada.
-
-## 11. Manutenção deste documento
-
-- Atualizar o documento quando arquitetura, rotas, componentes, integrações ou comandos mudarem.
-- Manter os links para Figma e issues.
-- Descrever o comportamento real, distinguindo fatos confirmados de itens pendentes.
-- Revisar junto às mudanças relevantes de frontend e antes de concluir a issue #78.
-- Evitar duplicar resultados de testes: manter evidências nas issues #79–#82 e nos PRs, com um resumo ou link aqui quando útil.
-
-## 12. Critérios de conclusão
-
-- [ ] Estrutura real e arquitetura do frontend descritas.
-- [ ] Rotas e componentes compartilhados inventariados.
-- [ ] Instalação, execução e testes documentados com comandos efetivamente verificados.
-- [ ] Integrações e configurações documentadas sem segredos.
-- [ ] Links e rastreabilidade para protótipos/issues revisados.
-- [ ] Pendências e divergências explicitadas.
-- [ ] Conteúdo revisado por LucasIanovski.
+Contratos e endpoints dependem do backend. Revisão visual/aceite depende da autenticação no Figma e da equipe/cliente. A evolução e sustentação da pipeline de CI/CD dependem do alinhamento com a equipe responsável por DevOps/QA.
