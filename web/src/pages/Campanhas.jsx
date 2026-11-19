@@ -9,6 +9,7 @@ import { useDemo } from '../context/DemoContext'
 import { Link } from 'react-router-dom'
 import { Botao, Icon } from '../components/Ui'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
+import '../styles/cam-publico.css'
 
 const STATUS = ['Ativa', 'Encerrada', 'Rascunho']
 
@@ -41,6 +42,7 @@ export default function Campanhas() {
       render: (c) => (
         <>
           <Link to={`/dashboard/campanha?campanha=${c.id}`}>
+            <img className="cam-miniatura" src={c.imagem} alt="" loading="lazy" />
             <strong>{c.nome}</strong>
           </Link>
           <small>
@@ -104,7 +106,7 @@ export default function Campanhas() {
   ]
 
   return (
-    <>
+    <div className="cam-gestao">
       <PageHeader
         titulo="Gestão de campanhas"
         descricao="Acompanhe as campanhas e o quanto falta para atingir cada meta."
@@ -160,6 +162,6 @@ export default function Campanhas() {
           </>
         )}
       </RequestState>
-    </>
+    </div>
   )
 }

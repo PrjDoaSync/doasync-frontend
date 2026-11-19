@@ -27,13 +27,17 @@ export default function SelecaoItens({ itens, selecao, onChange, erro, campanhaI
           const restante = Math.max(item.meta - item.recebido, 0)
           const id = `item-${item.nome}`
           return (
-            <li key={item.nome}>
+            <li key={item.nome} className={Number(selecao[item.nome]) > 0 ? 'selecionado' : ''}>
               <div>
+                <label className="item-escolha">
+                  <input type="checkbox" aria-label={`Selecionar ${item.nome}`} disabled={restante === 0} checked={Number(selecao[item.nome]) > 0} onChange={(e) => onChange(item.nome, e.target.checked ? '1' : '0')} />
                 <strong>{item.nome}</strong>
+                </label>
                 {item.especificacao && <small>{item.especificacao}</small>}
                 <small>
                   {restante > 0 ? `Ainda faltam ${restante} de ${item.meta} unidades` : 'Meta deste item atingida'}
                 </small>
+                <progress max={item.meta || 1} value={item.recebido} aria-label={`Progresso de ${item.nome}`} />
               </div>
               <label htmlFor={id}>
                 <span className="sr-only">Quantidade de {item.nome}</span>

@@ -139,6 +139,10 @@ export default function CriarCampanha() {
           >
             <form
               ref={formRef}
+              onChange={(e) => {
+                const { name, value } = e.target
+                if (name) setBasicos((atual) => ({ ...atual, [name]: value }))
+              }}
               onSubmit={(e) => {
                 e.preventDefault()
                 salvar('Rascunho')
@@ -358,16 +362,17 @@ export default function CriarCampanha() {
             </div>
           </Secao>
         )}
-        <Secao titulo="Uma boa campanha começa com uma boa história">
-          <p>
-            Seja claro sobre o objetivo e as pessoas que serão beneficiadas.
-          </p>
-          <ul className="lista-dicas">
-            <li>Escolha um nome fácil de entender.</li>
-            <li>Explique como os recursos serão utilizados.</li>
-            <li>Informe o período da campanha.</li>
-            <li>Mantenha as informações transparentes.</li>
-          </ul>
+        <Secao titulo={etapa === 2 ? 'Prévia da campanha' : basicos.nome || 'Sua campanha'} className="cam-previa">
+          <span className="badge">Rascunho · não publicado</span>
+          {etapa === 2 && <img src={imagem} alt="Prévia da imagem de capa" />}
+          <p>{dados.entidade.nome} · {basicos.categoria || 'Categoria a definir'}</p>
+          <hr />
+          <small>PERÍODO DA CAMPANHA</small>
+          <p>{basicos.inicio ? formatarData(basicos.inicio) : 'Início a definir'} a {basicos.encerraEm ? formatarData(basicos.encerraEm) : 'término a definir'}</p>
+          <p>{basicos.descricao || 'Conte a história e as necessidades da sua campanha.'}</p>
+          {basicos.meta && <strong className="numero-destaque">{formatarMoeda(Number(basicos.meta))}</strong>}
+          {itens.length > 0 && <p>Itens previstos: {itens.map((i) => `${i.nome}: ${i.meta}`).join(' · ')}</p>}
+          <Aviso>A prévia é local. A publicação e o envio de imagens dependem da integração com o backend.</Aviso>
         </Secao>
       </div>
     </>

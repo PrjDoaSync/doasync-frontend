@@ -27,6 +27,18 @@ async function abrir(rota) {
 }
 
 describe('campanhas públicas e navegação', () => {
+  it('leva a busca da home para a listagem sem perder o filtro', async () => {
+    const user = await abrir('/')
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar uma campanha ou entidade' }), 'kits escolares')
+    await user.click(screen.getByRole('button', { name: 'Explorar campanhas' }))
+    expect(screen.getByRole('searchbox', { name: 'Buscar campanha' }).value).toBe('kits escolares')
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+  })
+  it('abre a doação de itens diretamente pelo detalhe da campanha', async () => {
+    const user = await abrir('/campanhas/1')
+    await user.click(screen.getByRole('link', { name: 'Doar itens necessários' }))
+    expect((await screen.findByRole('radio', { name: /Doação de itens/ })).checked).toBe(true)
+  })
   it('busca, apresenta estado vazio e limpa os filtros', async () => {
     const user = await abrir('/explorar')
     expect(screen.getAllByRole('article')).toHaveLength(4)

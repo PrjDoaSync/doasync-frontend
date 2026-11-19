@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useDemo } from '../context/DemoContext'
 import {
   Aviso,
@@ -15,6 +15,8 @@ import Agendamento from '../components/doacao/Agendamento'
 import PagamentoCartaoBoleto from '../components/doacao/PagamentoCartaoBoleto'
 import PagamentoPix from '../components/doacao/PagamentoPix'
 import SelecaoItens from '../components/doacao/SelecaoItens'
+import IdentificacaoDoador from '../components/doacao/IdentificacaoDoador'
+import '../styles/doacao.css'
 import { detalheCampanha, HOJE_DEMO } from '../mocks/campanhasDetalhe'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { valorDoacao } from '../utils/gestao'
@@ -34,10 +36,11 @@ const ETAPAS_ITENS = ['Tipo de doação', 'Itens', 'Identificação', 'Agendamen
 const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default function FluxoDoacao() {
+  const [params] = useSearchParams()
   const { id } = useParams(),
     { dados, atualizar } = useDemo(),
     [etapa, setEtapa] = useState(0),
-    [tipo, setTipo] = useState('Financeira'),
+    [tipo, setTipo] = useState(params.get('tipo') === 'itens' ? 'Itens' : 'Financeira'),
     [valor, setValor] = useState('100'),
     [metodo, setMetodo] = useState('PIX'),
     [selecao, setSelecao] = useState({}),
@@ -206,7 +209,12 @@ export default function FluxoDoacao() {
         atual={etapa}
         itens={financeira ? ETAPAS_FINANCEIRA : ETAPAS_ITENS}
       />
-      <div className="detalhe-grid">
+      {etapa === 2 && <div className="doa-campanha-resumo cartao">
+        <img src={campanha.imagem} alt="" />
+        <div><strong>{campanha.nome}</strong><small>{campanha.entidade} · {campanha.cidade}</small></div>
+        <strong>{financeira ? formatarMoeda(valorDoacao(valor) ?? 0) : `${escolhidos.reduce((s, i) => s + i.quantidade, 0)} itens`}</strong>
+      </div>}
+      <div className={`detalhe-grid ${etapa === 2 ? 'doa-identificacao' : ''}`}>
         <div className="fluxo-conteudo">
           {etapa === 0 ? (
             <Secao titulo="Escolha o tipo de doação">
@@ -243,7 +251,9 @@ export default function FluxoDoacao() {
                   </label>
                 ))}
               </fieldset>
+              <Aviso>Doações de itens seguem para identificação e agendamento, sem pagamento. Todas as operações desta tela são demonstrativas.</Aviso>
               <div className="acoes">
+                <Botao secundario para={`/campanhas/${campanha.id}`}>Voltar à campanha</Botao>
                 <Botao onClick={proxima}>
                   {financeira
                     ? 'Continuar com doação financeira'
@@ -319,6 +329,12 @@ export default function FluxoDoacao() {
                     </label>
                   ))}
                 </fieldset>
+                <fieldset className="doa-frequencia">
+                  <legend>Com que frequência você quer contribuir?</legend>
+                  <label><input type="radio" name="frequencia" checked readOnly /> Única</label>
+                  <label><input type="radio" name="frequencia" disabled /> Recorrente · semanal</label>
+                  <small>A recorrência depende de um endpoint futuro. Esta contribuição é única, sem débito automático.</small>
+                </fieldset>
                 <Aviso>
                   Você está experimentando o fluxo de doação. As formas de
                   pagamento ainda não estão integradas.
@@ -335,100 +351,15 @@ export default function FluxoDoacao() {
               </form>
             </Secao>
           ) : etapa === 2 ? (
-            <>
-              <fieldset className="identificacao-opcoes">
-                <legend className="sr-only">Identificação do doador</legend>
-                {[
-                  ['conta', 'Já tenho uma conta'],
-                  ['rapido', 'Cadastro rápido'],
-                  ['anonimo', 'Doação anônima'],
-                ].map(([value, titulo]) => (
-                  <label
-                    key={value}
-                    className={identificacao === value ? 'selecionado' : ''}
-                  >
-                    <input
-                      type="radio"
-                      name="identificacao"
-                      value={value}
-                      checked={identificacao === value}
-                      onChange={() => {
-                        setIdentificacao(value)
-                        setErro('')
-                      }}
-                    />
-                    <strong>{titulo}</strong>
-                  </label>
-                ))}
-              </fieldset>
-              <Secao
-                titulo={
-                  identificacao === 'anonimo'
-                    ? 'Continue sem exibir seu nome'
-                    : identificacao === 'conta'
-                      ? 'Acesso à sua conta'
-                      : 'Identificação rápida'
-                }
-              >
-                <form onSubmit={identificar} className="form-grid">
-                  {identificacao === 'anonimo' ? (
-                    <Aviso>
-                      Seu nome não será exibido na demonstração. Nenhum cadastro
-                      será criado.
-                    </Aviso>
-                  ) : (
-                    <>
-                      <Campo
-                        className="campo--inteiro"
-                        rotulo="Nome completo"
-                        name="nome"
-                        required
-                        defaultValue={doador.nome}
-                        autoComplete="name"
-                      />
-                      <Campo
-                        className="campo--inteiro"
-                        rotulo="E-mail"
-                        name="email"
-                        type="email"
-                        required
-                        defaultValue={doador.email}
-                        autoComplete="email"
-                      />
-                      {identificacao === 'conta' && (
-                        <div className="campo--inteiro">
-                          <Aviso>
-                            A autenticação ainda não está integrada. Você pode
-                            continuar apenas na demonstração, sem informar
-                            senha.
-                          </Aviso>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {erro && (
-                    <div className="campo--inteiro">
-                      <Aviso erro>{erro}</Aviso>
-                    </div>
-                  )}
-                  <div className="acoes campo--inteiro">
-                    <Botao secundario onClick={() => setEtapa(1)}>
-                      {financeira ? 'Voltar à contribuição' : 'Voltar aos itens'}
-                    </Botao>
-                    <Botao type="submit">
-                      {financeira
-                        ? 'Continuar para o pagamento'
-                        : 'Continuar para o agendamento'}{' '}
-                      <Icon nome="seta" />
-                    </Botao>
-                  </div>
-                  <small className="campo--inteiro">
-                    As informações ficam somente na memória desta sessão.
-                    Nenhuma conta será criada.
-                  </small>
-                </form>
-              </Secao>
-            </>
+            <IdentificacaoDoador
+              valor={identificacao}
+              onEscolher={(valor) => { setIdentificacao(valor); setErro('') }}
+              doador={doador}
+              financeira={financeira}
+              erro={erro}
+              onVoltar={() => setEtapa(1)}
+              onSubmit={identificar}
+            />
           ) : financeira ? (
             metodo === 'PIX' ? (
               <PagamentoPix
