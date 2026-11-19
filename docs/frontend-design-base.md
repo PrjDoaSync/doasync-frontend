@@ -1,5 +1,7 @@
 # Base visual — marcos 1 e 2
 
+Atualização CAM/DOA: ver [frontend-cam-doa.md](frontend-cam-doa.md). A limitação de carregamento da Inter descrita abaixo foi resolvida com fontes locais e licença; a matriz CAM/DOA foi inspecionada. Os demais registros abaixo representam o estado histórico da base.
+
 Referência: [Figma oficial](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync), inspecionado em modo View em 19/11/2026.
 
 ## Tokens confirmados
