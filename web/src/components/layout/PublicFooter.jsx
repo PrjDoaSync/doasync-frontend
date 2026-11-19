@@ -6,6 +6,7 @@ export default function PublicFooter() {
       <div className="public-footer__inner">
         <div className="public-footer__left">
           <span>DoaSync · Conectando pessoas a causas</span>
+          <small>© 2026 DoaSync · Projeto de extensão</small>
         </div>
         <nav className="public-footer__links" aria-label="Links institucionais e suporte">
           <Link to="/ajuda" className="public-footer__link">
