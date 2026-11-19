@@ -276,7 +276,7 @@ describe('fluxo de doação: identificação do doador', () => {
     expect(screen.getByText('PIX')).toBeTruthy()
     await user.click(screen.getByRole('link', { name: 'Entrar' }))
     await user.click(screen.getByRole('link', { name: 'Acessar demonstração' }))
-    await user.click(within(await screen.findByRole('navigation', { name: 'Principal' })).getByRole('link', { name: 'Doações' }))
+    await user.click(within(await screen.findByRole('navigation', { name: 'Navegação administrativa' })).getByRole('link', { name: 'Doações' }))
     const linha = (await screen.findByText('Maria Teste')).closest('tr')
     expect(linha.textContent).toContain('Pendente')
     expect(kpi('Aguardando confirmação').textContent).toContain(String(pendentesAntes + 1))
