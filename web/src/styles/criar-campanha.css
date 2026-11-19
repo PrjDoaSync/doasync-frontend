@@ -1,0 +1,23 @@
+/* Etapas "Metas e necessidades" e "Revisão e publicação" de Criar campanha (#89 e #90). */
+.subtitulo { margin: 20px 0 8px; font-size: 16px; }
+.lista-vazia { color: var(--texto-suave); font-size: 14px; margin: 0 0 12px; }
+.itens-campanha { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+.itens-campanha li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--borda); border-radius: 10px; }
+.itens-campanha small { display: block; color: var(--texto-suave); }
+.novo-item { display: grid; grid-template-columns: 1fr 140px auto; gap: 12px; align-items: end; margin-bottom: 12px; }
+.imagens-campanha { border: 0; padding: 0; margin: 0 0 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.imagens-campanha legend { font-weight: 600; margin-bottom: 8px; }
+.imagens-campanha label { display: grid; gap: 6px; padding: 8px; border: 2px solid var(--borda); border-radius: 10px; cursor: pointer; font-size: 13px; }
+.imagens-campanha label.selecionada { border-color: var(--azul); background: var(--azul-claro); }
+.imagens-campanha input { position: absolute; opacity: 0; pointer-events: none; }
+.imagens-campanha img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; }
+.imagens-campanha label:focus-within { outline: 2px solid var(--azul); outline-offset: 2px; }
+.revisao { display: grid; gap: 0; margin: 16px 0; }
+.revisao > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.revisao dt { color: var(--texto-suave); font-size: 13px; }
+.revisao dd { margin: 0; font-weight: 600; text-align: right; }
+.confirmacao { display: flex; align-items: center; gap: 10px; margin: 8px 0 14px; font-size: 14px; }
+@media (max-width: 760px) {
+  .novo-item { grid-template-columns: 1fr; }
+  .imagens-campanha { grid-template-columns: 1fr 1fr; }
+}

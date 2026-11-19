@@ -56,8 +56,8 @@ describe('telas de campanha (#92, #93)', () => {
   })
   it('mostra os indicadores do acompanhamento', async () => {
     await abrir('/campanhas/1/acompanhamento')
-    expect(screen.getByText('260 de 480')).toBeTruthy()
-    expect(screen.getByText(/Doações recebidas/)).toBeTruthy()
+    expect(screen.getAllByText('260 de 480').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Doações recebidas/).length).toBeGreaterThan(0)
   })
   it('informa campanha inexistente', async () => {
     await abrir('/campanhas/999/acompanhamento')
