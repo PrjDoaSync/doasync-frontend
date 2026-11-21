@@ -1,0 +1,28 @@
+/* Usuários e permissões (#113): medidas do protótipo (escala ~2,3), escopado em .usr */
+.usr { display: grid; gap: 26px; }
+.usr-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.usr-kpi { display: grid; gap: 6px; padding: 20px 22px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.usr-kpi__topo { display: flex; justify-content: space-between; align-items: center; color: var(--texto-suave); font-size: 13px; }
+.usr-kpi__topo svg { color: #2563eb; }
+.usr-kpi strong { font-size: 26px; line-height: 1.2; }
+.usr-kpi small { color: var(--texto-suave); }
+.usr-card { display: grid; gap: 16px; align-content: start; padding: 22px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.usr-card h2 { font-size: 17px; }
+.usr-sub { color: var(--texto-suave); font-size: 12px; }
+.usr-filtros { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.usr .tabela th { background: #f8fafc; padding: 10px 12px; }
+.usr .tabela td { padding: 14px 12px; vertical-align: middle; border-top: 1px solid var(--borda); }
+.usr .tabela small { display: block; color: var(--texto-suave); font-size: 11.5px; }
+.usr-sel td { background: #eef4ff; }
+.usr-ok { color: #15803d; }
+.usr-pend { color: #c2410c; }
+.usr-susp { color: #b91c1c; }
+.usr-acao { padding: 0; border: 0; background: none; color: #2563eb; font: inherit; font-size: 13px; cursor: pointer; }
+.usr-matriz td, .usr-matriz th { text-align: center; }
+.usr-matriz td:first-child, .usr-matriz th:first-child { text-align: left; }
+.usr-sim { color: #15803d; }
+.usr-nao { color: #94a3b8; }
+.usr-edicao { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: 16px; }
+.usr-edicao__rodape { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.usr-selo2fa { padding: 3px 10px; border-radius: 6px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 600; }
+@media (max-width: 1000px) { .usr-kpis, .usr-filtros, .usr-edicao { grid-template-columns: 1fr; } }

@@ -249,16 +249,12 @@ describe('gestão e estados de dados', () => {
   })
   it('edita o acesso local sem simular um convite enviado', async () => {
     const user = await abrir('/configuracoes/usuarios')
-    await user.click(
-      screen.getByRole('button', { name: 'Editar acesso de Paulo Souza' }),
-    )
-    const dialog = screen.getByRole('dialog')
-    await user.selectOptions(within(dialog).getByLabelText('Status'), 'Inativo')
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Salvar na demonstração' }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Editar acesso de Paulo Souza' }))
+    const edicao = screen.getByRole('region', { name: /Editar acesso/ })
+    await user.selectOptions(within(edicao).getByLabelText('Estado de acesso'), 'Suspenso')
+    await user.click(within(edicao).getByRole('button', { name: 'Salvar permissões' }))
     const linha = screen.getByText('Paulo Souza').closest('tr')
-    expect(linha.textContent).toContain('Inativo')
+    expect(linha.textContent).toContain('Suspenso')
     expect(screen.getByText(/Nenhum convite foi enviado/)).toBeTruthy()
   })
   it('consulta o histórico do doador selecionado', async () => {

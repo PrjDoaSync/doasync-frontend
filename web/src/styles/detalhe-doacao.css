@@ -1,0 +1,45 @@
+/* Detalhe da doação (#104): medidas do protótipo; escopado em .det-doacao */
+.det-doacao .det-resumo { display: flex; align-items: center; gap: 56px; margin-bottom: 22px; padding: 16px 24px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.det-resumo__bloco { display: grid; gap: 6px; }
+.det-rotulo { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--texto-suave); }
+.det-resumo__pagto { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.det-resumo__pagto svg { color: #2563eb; }
+.det-resumo > :last-child { margin-left: auto; }
+.det-doacao .detalhe-grid { grid-template-columns: minmax(0, 2.22fr) minmax(280px, 1fr); gap: 22px; align-items: start; }
+.det-col { display: grid; gap: 22px; min-width: 0; }
+.det-card { display: grid; gap: 22px; padding: 24px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.det-card h2 { font-size: 18px; }
+.det-cab { display: flex; justify-content: space-between; align-items: center; }
+.det-tl { display: grid; margin: 0; padding: 0; list-style: none; }
+.det-tl li { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 14px; padding-bottom: 30px; }
+.det-tl li:last-child { padding-bottom: 0; }
+.det-tl li:not(:last-child)::before { content: ''; position: absolute; left: 16px; top: 36px; bottom: 2px; width: 2px; background: #dbe4f3; }
+.det-tl__no { z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #e8f0fe; color: #2563eb; }
+.det-tl__no--final { background: #15803d; color: #fff; }
+.det-tl__no--futuro { background: #f1f5f9; color: #94a3b8; }
+.det-tl strong { display: block; font-size: 15px; }
+.det-tl .final strong { color: #15803d; }
+.det-tl p { margin: 2px 0 0; font-size: 13px; color: var(--texto-suave); }
+.det-tl__quando { font-size: 12px; color: var(--texto-suave); white-space: nowrap; }
+.det-nota-ok { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 8px; background: #ecfdf5; color: #166534; font-size: 12px; }
+.det-msg { display: grid; gap: 16px; padding: 24px; background: #eef4ff; border: 1px solid #c7d9f7; border-radius: 12px; }
+.det-msg__cab { display: flex; align-items: center; gap: 12px; }
+.det-msg__icone { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: #fff; color: #2563eb; }
+.det-msg__cab small { display: block; color: var(--texto-suave); }
+.det-msg blockquote { margin: 0; font-size: 15px; line-height: 1.55; }
+.det-msg > small { color: var(--texto-suave); }
+.det-lateral { display: grid; gap: 16px; }
+.det-lateral .det-card { gap: 0; padding: 0; overflow: hidden; }
+.det-lateral img { display: block; width: 100%; aspect-ratio: 5 / 2; object-fit: cover; background: #e2e8f0; }
+.det-lateral__corpo { display: grid; gap: 14px; padding: 22px; }
+.det-lateral__corpo h2 { font-size: 17px; line-height: 1.3; }
+.det-lateral__corpo hr { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--borda); }
+.det-valor { font-size: 28px; font-weight: 800; }
+.det-linhas { display: grid; gap: 2px; margin: 0; }
+.det-linhas > div { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 13px; }
+.det-linhas dt { color: var(--texto-suave); }
+.det-linhas dd { margin: 0; font-weight: 700; text-align: right; }
+.det-baixar button, .det-baixar a { width: 100%; justify-content: center; }
+.det-rodape { display: flex; justify-content: space-between; margin-top: 24px; }
+.lateral-confirmacao .cartao a { width: 100%; justify-content: center; }
+@media (max-width: 1000px) { .det-doacao .detalhe-grid { grid-template-columns: 1fr; } .det-doacao .det-resumo { flex-wrap: wrap; gap: 20px; } }

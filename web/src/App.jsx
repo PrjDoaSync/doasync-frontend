@@ -14,6 +14,7 @@ import PrestacaoContas from './pages/PrestacaoContas'
 import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
+import PerfilEntidade from './pages/PerfilEntidade'
 import Login from './pages/Login'
 import Doadores from './pages/Doadores'
 import Itens from './pages/Itens'
@@ -68,7 +69,7 @@ export default function App() {
           <Route path="itens" element={<Itens />} />
           <Route path="relatorios" element={<Relatorios />} />
           <Route path="cadastro-entidade" element={<CadastroEntidade />} />
-          <Route path="configuracoes" element={<CadastroEntidade perfil />} />
+          <Route path="configuracoes" element={<PerfilEntidade />} />
           <Route path="configuracoes/usuarios" element={<Usuarios />} />
         </Route>
       </Routes>
