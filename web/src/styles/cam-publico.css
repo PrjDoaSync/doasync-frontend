@@ -1,0 +1,40 @@
+/* CAM-01 a CAM-03: composição consultada no Figma em 19/11/2026. */
+.cam-publico { min-width: 0; }
+.cam-home .public-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 40px 0 24px; }
+.cam-home .public-intro h1 { font-size: 28px; line-height: 1.25; letter-spacing: -0.025em; margin: 0 0 8px; }
+.cam-home .public-intro p { margin: 0; font-size: 14px; }
+.cam-busca { display: flex; align-items: center; gap: 12px; width: 390px; max-width: 100%; padding: 0 12px; background: var(--branco); border: 1px solid var(--borda); border-radius: 6px; }
+.cam-busca > svg { flex-shrink: 0; color: var(--texto-suave); }
+.cam-busca input { border: 0; padding: 12px 0; background: transparent; }
+.cam-busca button { display: grid; place-items: center; padding: 6px; border: 0; background: transparent; color: var(--azul); }
+.cam-home .destaque { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+.cam-home .destaque > img { min-height: 240px; max-height: 310px; }
+.cam-home .destaque__conteudo { padding: 24px; gap: 12px; }
+.cam-home .destaque__conteudo h2 { font-size: 24px; }
+.cam-home .destaque__conteudo .botao { align-self: flex-end; }
+.cam-home .public-section { padding: 24px 0; }
+.cam-home .public-section .secao__cabecalho h2 { font-size: 18px; }
+.cam-home .como-ajudar { padding: 16px 0; border-top: 1px solid var(--borda); }
+.cam-home .como-ajudar summary { cursor: pointer; color: var(--texto-suave); }
+.cam-home .como-ajudar h2 { margin: 20px 0; }
+.cam-publico .campanha-card__imagem { height: 150px; }
+.cam-publico .campanha-card__conteudo { padding: 16px; }
+.cam-publico .campanha-card__conteudo h2 { font-size: 16px; min-height: 42px; }
+.cam-publico .campanha-card__conteudo > p { display: none; }
+.cam-publico .campanha-card__link { align-self: flex-end; }
+.cam-publico .public-page-title h1 { font-size: 28px; line-height: 1.25; }
+.cam-detalhe .campanha-capa { aspect-ratio: 3 / 1; height: auto; object-fit: cover; }
+.cam-detalhe .doar-resumo { align-self: start; }
+.cam-gestao { display: grid; gap: 24px; min-width: 0; }
+.cam-miniatura { width: 96px; height: 72px; object-fit: cover; float: left; margin: 0 16px 8px 0; border-radius: 6px; }
+.cam-gestao .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cam-gestao .filtros { display: flex; flex-wrap: wrap; gap: 12px; }
+.cam-gestao .tabela td { vertical-align: middle; padding-top: 20px; padding-bottom: 20px; }
+@media (max-width: 760px) {
+  .cam-home .public-intro { align-items: stretch; flex-direction: column; padding-top: 24px; }
+  .cam-busca { width: 100%; }
+  .cam-home .destaque { grid-template-columns: 1fr; }
+  .cam-home .destaque > img { min-height: 0; height: 220px; }
+  .cam-gestao .kpis { grid-template-columns: 1fr; }
+  .cam-miniatura { width: 64px; height: 56px; margin-right: 10px; }
+}
