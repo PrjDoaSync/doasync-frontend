@@ -80,9 +80,17 @@ export default function Usuarios() {
       </div>
 
       <section className="usr-kpis">
-        <div className="usr-kpi"><span className="usr-kpi__topo">Acessos ativos <Ico d={ICONES.pessoas} /></span><strong>{plural(resumo.ativos, 'pessoa', 'pessoas')}</strong><small>{plural(resumo.admins, 'administradora', 'administradoras')} · {plural(resumo.naEquipe, 'pessoa', 'pessoas')} na equipe</small></div>
-        <div className="usr-kpi"><span className="usr-kpi__topo">Convites pendentes <Ico d={ICONES.email} /></span><strong>{plural(resumo.convites, 'convite', 'convites')}</strong><small>{resumo.expira ? `Expira em ${resumo.expira}` : 'Nenhum convite aguardando'}</small></div>
-        <div className="usr-kpi"><span className="usr-kpi__topo">Acesso suspenso <Ico d={ICONES.bloqueio} /></span><strong>{plural(resumo.suspensos, 'pessoa', 'pessoas')}</strong><small>Sem acesso até a reativação</small></div>
+        {[
+          ['Acessos ativos', plural(resumo.ativos, 'pessoa', 'pessoas'), `${plural(resumo.admins, 'administradora', 'administradoras')} · ${plural(resumo.naEquipe, 'pessoa', 'pessoas')} na equipe`, ICONES.pessoas],
+          ['Convites pendentes', plural(resumo.convites, 'convite', 'convites'), resumo.expira ? `Expira em ${resumo.expira}` : 'Nenhum convite aguardando', ICONES.email],
+          ['Acesso suspenso', plural(resumo.suspensos, 'pessoa', 'pessoas'), 'Sem acesso até a reativação', ICONES.bloqueio],
+        ].map(([rotulo, valor, detalhe, icone]) => (
+          <div className="kpi usr-kpi" key={rotulo}>
+            <span className="kpi__rotulo usr-kpi__topo"><span>{rotulo}</span><Ico d={icone} /></span>
+            <strong className="kpi__valor">{valor}</strong>
+            <small className="kpi__detalhe">{detalhe}</small>
+          </div>
+        ))}
       </section>
 
       <section className="usr-card" aria-labelledby="usr-equipe">
@@ -163,7 +171,7 @@ export default function Usuarios() {
             <Campo rotulo="E-mail" required><input type="email" value={convite.email} onChange={(e) => setConvite({ ...convite, email: e.target.value })} /></Campo>
             <Campo rotulo="Papel"><select value={convite.papel} onChange={(e) => setConvite({ ...convite, papel: e.target.value })}>{PAPEIS.map((p) => <option key={p}>{p}</option>)}</select></Campo>
             {erroConvite && <Aviso erro>{erroConvite}</Aviso>}
-            <Botao type="submit">Registrar convite na demonstração</Botao>
+            <Botao type="submit">Adicionar convite de demonstração</Botao>
           </form>
         </Modal>
       )}
