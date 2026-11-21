@@ -47,7 +47,7 @@ export const aplicarAcesso = (equipe, id, novo) => equipe.map((u) => (u.id === i
 export function validarConvite(f, equipe) {
   if (!f.nome.trim()) return 'Informe o nome da pessoa.'
   if (!f.email.includes('@')) return 'Informe um e-mail válido.'
-  if (equipe.some((u) => u.email.toLowerCase() === f.email.trim().toLowerCase())) return 'Já existe uma pessoa com este e-mail na equipe.'
+  if (equipe.some((u) => u.email.toLowerCase() === f.email.trim().toLowerCase())) return 'Já existe uma pessoa com este e-mail na amostra.'
   return ''
 }
 

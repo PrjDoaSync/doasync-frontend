@@ -159,24 +159,27 @@ describe('Usuários e permissões (GES-09)', () => {
     await user.click(screen.getByRole('button', { name: /Convidar pessoa/ }))
     return within(document.querySelector('dialog'))
   }
+  // A tela tem duas tabelas (equipe e matriz de permissões); as linhas da equipe são as da primeira.
+  const equipe = () => linhasDe(within(screen.getAllByRole('table')[0]))
+  const filtrosDaEquipe = () => within(screen.getByRole('region', { name: /Equipe da/ }))
 
   it('resume os acessos por situação', async () => {
     await abrir('/configuracoes/usuarios')
-    expect(kpi('Acessos ativos').textContent).toContain('2 pessoas')
-    expect(kpi('Convites na demonstração').textContent).toContain('0')
-    expect(kpi('Acessos inativos').textContent).toContain('1')
+    expect(kpi('Acessos ativos').textContent).toContain('4 pessoas')
+    expect(kpi('Convites pendentes').textContent).toContain('1 convite')
+    expect(kpi('Acesso suspenso').textContent).toContain('1 pessoa')
   })
   it('filtra por papel e por nome ou e-mail', async () => {
     const user = await abrir('/configuracoes/usuarios')
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Todos os papéis' }), 'Operador')
-    expect(linhasDe()).toHaveLength(1)
-    expect(screen.getByText('Paulo Souza')).toBeTruthy()
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Todos os papéis' }), '')
-    await user.type(screen.getByRole('searchbox', { name: 'Buscar pessoa ou e-mail' }), 'mariana@')
-    expect(linhasDe()).toHaveLength(1)
-    expect(screen.getByText('Mariana Lima')).toBeTruthy()
+    await user.selectOptions(filtrosDaEquipe().getByLabelText('Papel'), 'Financeiro')
+    expect(equipe()).toHaveLength(1)
+    expect(screen.getByText('Beatriz Rocha')).toBeTruthy()
+    await user.selectOptions(filtrosDaEquipe().getByLabelText('Papel'), '')
+    await user.type(filtrosDaEquipe().getByLabelText('Buscar pessoa'), 'camila@')
+    expect(equipe()).toHaveLength(1)
+    expect(screen.getByText('Camila Ferreira')).toBeTruthy()
   })
-  it('convida uma pessoa como "Convite simulado" e avisa que nada foi enviado', async () => {
+  it('convida uma pessoa como "Convite pendente" e avisa que nada foi enviado', async () => {
     const user = await abrir('/configuracoes/usuarios')
     const dialog = await abrirConvite(user)
     expect(dialog.getByRole('heading', { name: 'Convidar pessoa' })).toBeTruthy()
@@ -185,9 +188,9 @@ describe('Usuários e permissões (GES-09)', () => {
     await user.click(dialog.getByRole('button', { name: 'Adicionar convite de demonstração' }))
     expect(document.querySelector('dialog')).toBe(null)
     expect(screen.getByText(/Nenhum convite foi enviado ou acesso real alterado/)).toBeTruthy()
-    expect(screen.getByText('Carlos Dias').closest('tr').textContent).toContain('Convite simulado')
-    expect(kpi('Convites na demonstração').textContent).toContain('1')
-    expect(kpi('Acessos ativos').textContent).toContain('2 pessoas')
+    expect(screen.getByText('Carlos Dias').closest('tr').textContent).toContain('Convite pendente')
+    expect(kpi('Convites pendentes').textContent).toContain('2 convites')
+    expect(kpi('Acessos ativos').textContent).toContain('4 pessoas')
   })
   it('recusa e-mail já existente, sem diferenciar maiúsculas', async () => {
     const user = await abrir('/configuracoes/usuarios')
@@ -196,7 +199,7 @@ describe('Usuários e permissões (GES-09)', () => {
     await user.type(dialog.getByLabelText(/E-mail/), 'ANA@redeesperanca.org.br')
     await user.click(dialog.getByRole('button', { name: 'Adicionar convite de demonstração' }))
     expect(dialog.getByRole('alert').textContent).toContain('Já existe uma pessoa com este e-mail na amostra.')
-    expect(linhasDe()).toHaveLength(3)
+    expect(equipe()).toHaveLength(6)
   })
   it('recusa nome formado só por espaços', async () => {
     const user = await abrir('/configuracoes/usuarios')
@@ -205,7 +208,7 @@ describe('Usuários e permissões (GES-09)', () => {
     await user.type(dialog.getByLabelText(/E-mail/), 'novo@redeesperanca.org.br')
     await user.click(dialog.getByRole('button', { name: 'Adicionar convite de demonstração' }))
     expect(dialog.getByRole('alert').textContent).toContain('Informe o nome da pessoa.')
-    expect(linhasDe()).toHaveLength(3)
+    expect(equipe()).toHaveLength(6)
   })
   it('fechar o convite descarta os dados sem alterar a equipe', async () => {
     const user = await abrir('/configuracoes/usuarios')
@@ -214,7 +217,7 @@ describe('Usuários e permissões (GES-09)', () => {
     await user.click(dialog.getByRole('button', { name: 'Fechar' }))
     expect(document.querySelector('dialog')).toBe(null)
     expect(screen.queryByText('Pessoa Descartada')).toBe(null)
-    expect(linhasDe()).toHaveLength(3)
+    expect(equipe()).toHaveLength(6)
   })
 })
 
