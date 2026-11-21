@@ -1,39 +1,44 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useDemo } from '../context/DemoContext'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
 import { categorias } from '../mocks/gestao'
 import { formatarData } from '../utils/format'
+import '../styles/cam-publico.css'
 
 export function Home() {
+  const navigate = useNavigate()
+  const [busca, setBusca] = useState('')
   const { dados } = useDemo()
   const destaques = dados.campanhas
     .filter((c) => c.status === 'Ativa')
     .slice(0, 3)
   return (
-    <>
+    <div className="cam-publico cam-home">
       <section className="public-intro">
-        <span className="sobretitulo">SOLIDARIEDADE QUE CONECTA</span>
-        <h1>
-          Pequenos gestos.
-          <br />
-          Grandes <span>transformações.</span>
-        </h1>
+        <div>
+        <h1>Encontre uma causa. Faça a diferença.</h1>
         <p>
-          Encontre uma causa que toca o seu coração.
-          <br />
-          Doe com confiança e acompanhe o impacto da sua ajuda.
+          Apoie campanhas e entidades com doações financeiras ou itens.
         </p>
-        <Botao para="/explorar">
-          Explorar campanhas <Icon nome="seta" />
-        </Botao>
+        </div>
+        <form className="cam-busca" onSubmit={(event) => {
+          event.preventDefault()
+          const params = new URLSearchParams()
+          if (busca.trim()) params.set('busca', busca.trim())
+          navigate(`/explorar${params.size ? `?${params}` : ''}`)
+        }}>
+          <Icon nome="busca" />
+          <input name="busca" type="search" aria-label="Buscar uma campanha ou entidade" placeholder="Busque uma campanha ou entidade" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <button type="submit" aria-label="Explorar campanhas"><Icon nome="seta" /></button>
+        </form>
       </section>
       {destaques[0] && (
         <section className="destaque">
           <img src={destaques[0].imagem} alt="Alimentos destinados à doação" />
           <div className="destaque__conteudo">
-            <span className="sobretitulo">CAMPANHA EM DESTAQUE</span>
+            <span className="badge">Campanha em destaque</span>
             <h2>{destaques[0].nome}</h2>
             <p>{destaques[0].descricao}</p>
             <Progresso
@@ -41,7 +46,7 @@ export function Home() {
               meta={destaques[0].meta}
             />
             <Botao para={`/campanhas/${destaques[0].id}`}>
-              Quero ajudar <Icon nome="seta" />
+              Conhecer e doar <Icon nome="seta" />
             </Botao>
           </div>
         </section>
@@ -49,8 +54,7 @@ export function Home() {
       <section className="public-section">
         <div className="secao__cabecalho">
           <div>
-            <h2>Encontre uma causa para apoiar</h2>
-            <p>Cada campanha é uma oportunidade de fazer a diferença.</p>
+            <h2>Mais causas para apoiar</h2>
           </div>
           <Link className="link-azul" to="/explorar">
             Ver todas as campanhas →
@@ -62,7 +66,8 @@ export function Home() {
           ))}
         </div>
       </section>
-      <section className="como-ajudar">
+      <details className="como-ajudar">
+        <summary>Como ajudar</summary>
         <h2>Fazer o bem é mais simples do que parece</h2>
         <div className="tres-colunas">
           {[
@@ -89,8 +94,8 @@ export function Home() {
             </div>
           ))}
         </div>
-      </section>
-    </>
+      </details>
+    </div>
   )
 }
 
@@ -104,7 +109,8 @@ export function Explorar() {
     ordem = params.get('ordem') ?? 'recentes'
   function filtrar(chave, valor) {
     const nova = new URLSearchParams(params)
-    valor ? nova.set(chave, valor) : nova.delete(chave)
+    if (valor) nova.set(chave, valor)
+    else nova.delete(chave)
     setParams(nova)
     setPagina(1)
   }
@@ -128,14 +134,14 @@ export function Explorar() {
     [dados.campanhas, busca, categoria, cidade, ordem],
   )
   return (
-    <section className="public-section">
+    <section className="public-section cam-publico cam-explorar">
       <div className="breadcrumb">
         <Link to="/">Início</Link>
         <span>/</span>Explorar campanhas
       </div>
       <div className="public-page-title">
-        <h1>Encontre sua próxima boa ação</h1>
-        <p>Descubra campanhas e ajude a transformar histórias.</p>
+        <h1>Campanhas para transformar realidades</h1>
+        <p>Encontre uma causa por entidade, categoria ou localização.</p>
       </div>
       <div className="cartao filtros-publicos">
         <Campo rotulo="Buscar campanha">
@@ -249,7 +255,7 @@ export function DetalheCampanha() {
     )
   const abas = ['Sobre a campanha', 'Itens necessários', 'Atualizações']
   return (
-    <section className="public-section">
+    <section className="public-section cam-publico cam-detalhe">
       <div className="breadcrumb">
         <Link to="/explorar">Campanhas</Link>
         <span>/</span>
@@ -358,6 +364,11 @@ export function DetalheCampanha() {
             <Aviso>Esta campanha está encerrada.</Aviso>
           )}
           <small>Você escolhe como e quanto deseja contribuir.</small>
+          {campanha.status === 'Ativa' && (
+            <Botao secundario para={`/doar/${campanha.id}?tipo=itens`}>
+              <Icon nome="itens" /> Doar itens necessários
+            </Botao>
+          )}
           <hr />
           <h3>Sobre a entidade</h3>
           <strong>{campanha.entidade}</strong>

@@ -1,0 +1,23 @@
+/* Valores confirmados no Figma e cores semânticas já usadas pela aplicação. */
+:root {
+  --azul: #2563eb;
+  --azul-claro: #eff4ff;
+  --texto: #0f172a;
+  --texto-suave: #66758a;
+  --borda: #e7ecf2;
+  --fundo: #f8fafc;
+  --branco: #ffffff;
+  --sucesso: #15803d;
+  --sucesso-bg: #e8f7ee;
+  --alerta: #b45309;
+  --alerta-bg: #fff4e0;
+  --perigo: #b91c1c;
+  --perigo-bg: #fdeaea;
+
+  --fonte-interface: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --titulo-tamanho: 28px;
+  --titulo-entrelinha: 1.25;
+  --acao-tamanho: 14px;
+  --conteudo-padding: 40px;
+  --conteudo-gap: 24px;
+}
