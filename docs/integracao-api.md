@@ -74,13 +74,13 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | 2 | `.env.example` (`/api/v1`) e flag `VITE_USE_API` (`src/services/config.js`) | ✅ |
 | 3 | `normalizeError` lendo `error` / `erros` | ✅ |
 | 4 | Interceptor `Authorization: Bearer` | ✅ |
-| 5 | Mappers API → front (campanha) | ⏳ |
+| 5 | Mappers API → front (campanha) | ✅ |
 | — | CORS no backend (`fix/cors-frontend`) | ⏳ |
 | 6 | Home/Explorar via `GET /campanhas` | ⏳ |
 | 7 | Detalhe via `GET /campanhas/{id}` | ⏳ |
 
 ### Próximo passo
-**Passo 5** — mappers puros API → front em `src/services/mappers.js`, começando por campanha (`CampanhaResposta` → formato de `mocks/gestao.js`).
+**CORS no backend** — branch `fix/cors-frontend` no doasync-backend liberando `/api/v1/**` para `localhost:5173` (todos os métodos usados pelo front), com teste. Depois: **Passo 6**.
 
 ---
 
@@ -89,6 +89,7 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | Item | Repositório | Branch / PR | Status |
 |---|---|---|---|
 | CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | `fix/cors-frontend` | ⏳ não iniciado |
+| Expor `versao` na resposta de campanha (o `PATCH /campanhas/{id}` exige o campo, mas o `GET` não o devolve) | doasync-backend (Equipe 2) | — | ⏳ necessário na Fase 4 |
 
 ---
 
@@ -110,3 +111,4 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 
 | 2026-11-23 | `feat(frontend): ler erros no formato do backend em normalizeError` | Passo 3 |
 | 2026-11-23 | `feat(frontend): enviar token JWT nas requisições à API` | Passo 4 — `src/services/token.js` e interceptor |
+| 2026-11-23 | `feat(frontend): adicionar mappers de campanha da API para as telas` | Passo 5 — `src/services/mappers.js` |
