@@ -15,11 +15,19 @@ export function normalizeError(error) {
   }
   if (error.response) {
     const { status, data } = error.response
-    return {
+    // O backend responde { error: "..." } ou, em validação (422), { erros: { campo: "..." } }.
+    const campos = data?.erros && typeof data.erros === 'object' ? data.erros : null
+    const normalizado = {
       status,
-      message: data?.message ?? `Erro ${status} ao processar a requisição.`,
+      message:
+        data?.message ??
+        data?.error ??
+        (campos && Object.values(campos)[0]) ??
+        `Erro ${status} ao processar a requisição.`,
       data,
     }
+    if (campos) normalizado.campos = campos
+    return normalizado
   }
   if (error.code === 'ECONNABORTED') {
     return { status: null, message: 'Tempo de resposta esgotado.' }

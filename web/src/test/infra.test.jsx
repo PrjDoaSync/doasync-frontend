@@ -387,6 +387,19 @@ describe('cliente HTTP (services/api.js)', () => {
         data: { message: 'Campo inválido' },
       })
     })
+    it('usa o campo "error" do backend', () => {
+      const erro = { response: { status: 404, data: { error: 'Campanha não encontrada.' } } }
+      expect(normalizeError(erro)).toEqual({
+        status: 404,
+        message: 'Campanha não encontrada.',
+        data: { error: 'Campanha não encontrada.' },
+      })
+    })
+    it('expõe os erros por campo (422) e usa o primeiro como mensagem', () => {
+      const erros = { titulo: 'não deve estar em branco', metaValor: 'deve ser maior que 0' }
+      const normalizado = normalizeError({ response: { status: 422, data: { erros } } })
+      expect(normalizado).toMatchObject({ status: 422, message: 'não deve estar em branco', campos: erros })
+    })
     it('cria mensagem com o status quando a API não envia mensagem', () => {
       expect(normalizeError({ response: { status: 503, data: null } }).message).toBe(
         'Erro 503 ao processar a requisição.',
