@@ -41,12 +41,9 @@ cd web
 npm ci
 ```
 
-Para o `npm run dev` ler a API, crie **`web/.env.development.local`** (ignorado pelo git):
-```
-VITE_API_URL=http://localhost:8080/api/v1
-VITE_USE_API=true
-```
-Sem esse arquivo o front roda em modo demonstração. **Não use `.env` nem `.env.local`** (ver §6).
+O front usa `http://localhost:8080/api/v1` por padrão. Para apontar para outro backend, crie **`web/.env.development.local`** (ignorado pelo git) com `VITE_API_URL=...`. **Não use `.env` nem `.env.local`** (ver §6).
+
+> As telas já integradas (§4) **precisam do backend rodando**: sem ele mostram "Não foi possível conectar ao servidor.". As demais ainda usam dados de demonstração.
 
 ### Subir o backend (terminal 1)
 ```bash
@@ -65,20 +62,21 @@ cd backend
 cd doasync-frontend/web
 node scripts/popular-api.mjs
 ```
-Cria e aprova 2 entidades e 4 campanhas (3 ativas + 1 rascunho). Pode ser executado de novo sem duplicar. Contas criadas:
+Cria e aprova 2 entidades, 4 campanhas (3 ativas + 1 rascunho), uma doadora e 2 doações. Pode ser executado de novo sem duplicar. **Rode sempre que reiniciar o backend** (o banco é em memória). Contas criadas:
 
 | Conta | Senha | Tipo |
 |---|---|---|
 | `admin@doasync.local` | `admin12345` | ADMIN |
 | `apae@doasync.local` | `senha1234` | ENTIDADE (APAE Florianópolis) |
 | `amor@doasync.local` | `senha1234` | ENTIDADE (Associação Amor Inclusivo) |
+| `maria@doasync.local` | `senha1234` | PESSOA_FISICA (doadora) |
 
 ### Subir o frontend
 ```bash
 cd doasync-frontend/web
 npm run dev                      # http://localhost:5173
 ```
-O Vite só lê os arquivos `.env*` na inicialização: reinicie o `npm run dev` ao mudar a flag.
+
 
 ---
 
@@ -87,7 +85,6 @@ O Vite só lê os arquivos `.env*` na inicialização: reinicie o `npm run dev` 
 | Variável | Padrão | Uso |
 |---|---|---|
 | `VITE_API_URL` | `http://localhost:8080/api/v1` | Base do cliente Axios (`src/services/config.js`) |
-| `VITE_USE_API` | `false` | `true` liga a leitura da API nas telas já integradas; `false` mantém o modo demonstração |
 
 ---
 
@@ -104,13 +101,21 @@ O Vite só lê os arquivos `.env*` na inicialização: reinicie o `npm run dev` 
 | — | CORS no backend (`fix/cors-frontend`) | ✅ |
 | 6 | Home/Explorar via `GET /campanhas` (`useCampanhasPublicas`) + script de seed | ✅ |
 | 7 | Detalhe via `GET /campanhas/{id}` (`useCampanhaPublica`) + últimas doações | ✅ |
-| 8 | Remover os mocks e a flag das telas públicas integradas (Home, Explorar, Detalhe) | ⏳ |
+| 8 | Telas públicas leem sempre a API; flag `VITE_USE_API` removida; testes com fixtures da API | ✅ |
+| **Fase 2** | **Autenticação** | |
+| 9 | `authService` (`POST /auth/login`) + `AuthContext` (token, usuário, expiração, logout) | ⏳ |
+| 10 | Tela de login real + redirecionamento por tipo de usuário | ⏳ |
+| 11 | Proteção das rotas de gestão | ⏳ |
 
 ### Próximo passo
-**Passo 8** — as telas públicas (Home, Explorar, Detalhe) passam a ler **sempre** a API: remover o caminho de demonstração dos hooks, a flag `VITE_USE_API` desses pontos e os mocks que só elas usavam; os testes dessas telas passam a simular a API. PR da Fase 1: https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api
+**Passo 9** (início da Fase 2) — criar `src/services/authService.js` (`POST /auth/login` → salva o token com `salvarToken`) e um `AuthContext` com `usuario`, `entrar`, `sair` e expiração (`expiraEm`); 401 em rota autenticada limpa a sessão. Contas para testar em §2.
+
+**Antes de começar:** subir o backend (`fix/cors-frontend`) e rodar `node scripts/popular-api.mjs`.
+
+**Pendências com o responsável:** abrir o PR da Fase 1 (https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api) e o PR de CORS do backend (§5).
 
 ### Telas integradas até agora
-| Tela | Rota | Fonte com `VITE_USE_API=true` |
+| Tela | Rota | Fonte (sempre a API) |
 |---|---|---|
 | Home | `/` | `GET /campanhas?limit=50` |
 | Explorar | `/explorar` | `GET /campanhas?limit=50` (busca, filtros e paginação no front) |
@@ -132,7 +137,7 @@ O Vite só lê os arquivos `.env*` na inicialização: reinicie o `npm run dev` 
 Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio.
 
 ### Ambiente
-- **Variáveis do Vite:** o Vitest também lê `.env.local`. Com `VITE_USE_API=true` nesse arquivo, a suíte roda em modo API e 8 testes falham. Use `.env.development.local`, que só vale para o `npm run dev`. `.env` não está no `.gitignore` (só `*.local`), então não deve ser usado.
+- **Variáveis do Vite:** o Vitest também lê `.env.local` (isso já quebrou 8 testes quando havia uma flag lá). Use `.env.development.local`, que só vale para o `npm run dev`. `.env` não está no `.gitignore` (só `*.local`), então não deve ser usado.
 - **Acentos no `curl` do Git Bash (Windows):** JSON com acentos passado como argumento chega corrompido e o backend rejeita. Use o script Node (`scripts/popular-api.mjs`) ou o Swagger.
 - **Fim de linha:** os arquivos do front usam CRLF. Scripts com regex de `\n` falham silenciosamente.
 - **Upstream do git:** ao criar uma branch a partir de `origin/develop`, ela passa a rastrear a `develop`. Rode `git branch --unset-upstream` e faça o primeiro push com `git push -u origin <branch>`.
@@ -151,9 +156,13 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Mocks compartilhados:** `dados.campanhas`, `HOJE_DEMO` e `categorias` também alimentam gestão e doação; só podem ser apagados quando essas telas forem integradas. Nas telas públicas o caminho de demonstração já foi removido.
+- **Testes:** `src/test/setup.js` instala, antes de cada teste, um adaptador Axios que responde como o backend (`src/test/fixtures/apiCampanhas.js`). Testes que precisam de outra resposta trocam `api.defaults.adapter`.
+- **Explorar sem dados da API:** o filtro "Localização" só aparece quando houver cidades (a API não informa); as categorias vêm das campanhas recebidas; "Encerradas" fica sempre vazio na vitrine pública.
+- Sem backend, as telas integradas mostram "Não foi possível conectar ao servidor." com opção de tentar novamente (verificado manualmente).
 - Todas as telas leem de um único `DemoProvider` (`useDemo().dados`). A integração é feita tela a tela com hooks que escolhem entre API e demonstração (ex.: `useCampanhasPublicas`).
-- Os IDs da demonstração são números; os da API são UUIDs. A ordenação "recentes" usa `criadaEm` quando os IDs não são numéricos.
-- No modo API, a data de referência das telas é o dia real; na demonstração é o `HOJE_DEMO` fixo.
+- Os IDs da demonstração são números; os da API são UUIDs. A ordenação "recentes" usa `criadaEm`.
+- Nas telas integradas a data de referência é o dia real; nas de demonstração continua o `HOJE_DEMO` fixo.
 - Não existe tela de cadastro de doador, embora a API tenha `POST /doadores`.
 - **Detalhe:** `ultimasDoacoes` traz só doações `CONFIRMADA`, mais recentes primeiro; doação anônima já chega como `nomeDoador: "Doador anônimo"`. O botão "Doar itens" foi escondido no modo API (sem suporte no backend).
 - O script `scripts/popular-api.mjs` também cria a doadora `maria@doasync.local` / `senha1234` com 2 doações PIX (R$ 150 e R$ 80 anônima) em "Cadeiras de rodas para a APAE".
@@ -165,6 +174,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - 2026-11-23 — Trabalho na branch `feature/integracao-api`; PR para `develop` ao fim de cada fase.
 - 2026-11-23 — ~~O modo demonstração é preservado por flag (`VITE_USE_API`).~~ **Substituída:** cada tela integrada usa só a API e seus mocks são apagados (§1, regra 6).
 - 2026-11-23 — A correção de CORS vira PR no backend (`fix/cors-frontend`); revisão e merge com a Equipe 2.
+- 2026-11-23 — A flag `VITE_USE_API` foi removida no passo 8: com os mocks saindo tela a tela, ela deixou de ter função.
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
 ---
@@ -183,3 +193,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `docs(frontend): registrar correção de CORS no backend` | Estado do CORS |
 | 2026-11-23 | `feat(frontend): exibir campanhas da API na Home e no Explorar` | Passo 6 + `scripts/popular-api.mjs` + forma de trabalhar e descobertas |
 | 2026-11-23 | `feat(frontend): exibir detalhe da campanha a partir da API` | Passo 7 — fecha a Fase 1 |
+| 2026-11-23 | `refactor(frontend): telas públicas leem apenas a API` | Passo 8 — sem modo demonstração nas telas públicas; fixtures da API nos testes |

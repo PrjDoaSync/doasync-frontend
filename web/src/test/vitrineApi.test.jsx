@@ -5,8 +5,7 @@ import App from '../App'
 import api from '../services/api'
 import * as fonte from '../mocks/gestao'
 
-// Modo integrado: as telas públicas leem GET /campanhas em vez dos dados de demonstração.
-vi.mock('../services/config', () => ({ USE_API: true, API_URL: 'http://localhost:8080/api/v1' }))
+// As telas públicas leem GET /campanhas e GET /campanhas/{id} (sem dados de demonstração).
 
 const campanhaApi = {
   id: 'd070d076-f9e3-49b9-933c-4e5fce8e1765',
