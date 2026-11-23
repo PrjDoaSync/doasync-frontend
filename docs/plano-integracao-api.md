@@ -18,7 +18,7 @@ Todas as telas leem dados de um único `DemoProvider` (`useDemo().dados`), alime
 ## 2. Estratégia
 
 - **Mappers puros** convertem respostas da API para o formato consumido pelas telas, testados isoladamente.
-- **Flag `VITE_USE_API`**: quando `true`, os dados vêm da API; quando ausente/`false`, o modo demonstração continua igual. A suíte de testes existente segue usando os mocks.
+- **Mocks removidos tela a tela**: ao integrar uma tela, ela passa a ler só a API e os dados mockados que usava são apagados; os testes simulam a API com fixtures do contrato. (A flag `VITE_USE_API` foi só uma etapa de transição.)
 - **Entrega incremental**: cada commit é uma mudança pequena; antes de cada push rodam `npm run lint`, `npm test` e `npm run build` (mesmos passos da CI `frontend-qa.yml`).
 - **PR para `develop` ao final de cada fase.**
 

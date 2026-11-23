@@ -19,7 +19,7 @@ Combinado com o responsável (João Pedro Matias):
 3. **Aguardar a aprovação** antes de commitar.
 4. **Após aprovado**: atualizar este documento (estado, próximo passo, descobertas, histórico), commitar e dar push no GitHub.
 5. Antes de cada push rodam os mesmos checks da CI: `npm run lint && npm test && npm run build` (no backend: `./mvnw verify`).
-6. O **modo demonstração** nunca é quebrado: tudo o que lê a API fica atrás da flag `VITE_USE_API`.
+6. **Ao integrar uma tela com o backend, apagar os dados mockados que ela usava.** A tela passa a depender só da API (sem modo demonstração). Mocks ainda usados por telas não integradas continuam até a vez delas. Nos testes, a API é simulada com fixtures no formato do contrato.
 7. Tudo o que for descoberto durante o trabalho (comportamentos da API, armadilhas do ambiente, divergências de contrato) é anotado em **§6 Descobertas**.
 8. Commits seguem o padrão do repositório (`feat(frontend): …`, `docs(frontend): …`, `fix(cors): …`). PR para `develop` ao fim de cada fase.
 
@@ -103,16 +103,18 @@ O Vite só lê os arquivos `.env*` na inicialização: reinicie o `npm run dev` 
 | 5 | Mappers API → front (`src/services/mappers.js`) | ✅ |
 | — | CORS no backend (`fix/cors-frontend`) | ✅ |
 | 6 | Home/Explorar via `GET /campanhas` (`useCampanhasPublicas`) + script de seed | ✅ |
-| 7 | Detalhe via `GET /campanhas/{id}` | ⏳ |
+| 7 | Detalhe via `GET /campanhas/{id}` (`useCampanhaPublica`) + últimas doações | ✅ |
+| 8 | Remover os mocks e a flag das telas públicas integradas (Home, Explorar, Detalhe) | ⏳ |
 
 ### Próximo passo
-**Passo 7** — `DetalheCampanha` (`src/pages/Publico.jsx`) lê `GET /campanhas/{id}` quando `VITE_USE_API=true`, incluindo `ultimasDoacoes`; 404 vira "campanha não encontrada". Fecha a Fase 1 → abrir PR de `feature/integracao-api` para `develop`.
+**Passo 8** — as telas públicas (Home, Explorar, Detalhe) passam a ler **sempre** a API: remover o caminho de demonstração dos hooks, a flag `VITE_USE_API` desses pontos e os mocks que só elas usavam; os testes dessas telas passam a simular a API. PR da Fase 1: https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api
 
 ### Telas integradas até agora
 | Tela | Rota | Fonte com `VITE_USE_API=true` |
 |---|---|---|
 | Home | `/` | `GET /campanhas?limit=50` |
 | Explorar | `/explorar` | `GET /campanhas?limit=50` (busca, filtros e paginação no front) |
+| Detalhe | `/campanhas/:id` | `GET /campanhas/{id}` (404 → "Campanha não encontrada") |
 
 ---
 
@@ -153,13 +155,15 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - Os IDs da demonstração são números; os da API são UUIDs. A ordenação "recentes" usa `criadaEm` quando os IDs não são numéricos.
 - No modo API, a data de referência das telas é o dia real; na demonstração é o `HOJE_DEMO` fixo.
 - Não existe tela de cadastro de doador, embora a API tenha `POST /doadores`.
+- **Detalhe:** `ultimasDoacoes` traz só doações `CONFIRMADA`, mais recentes primeiro; doação anônima já chega como `nomeDoador: "Doador anônimo"`. O botão "Doar itens" foi escondido no modo API (sem suporte no backend).
+- O script `scripts/popular-api.mjs` também cria a doadora `maria@doasync.local` / `senha1234` com 2 doações PIX (R$ 150 e R$ 80 anônima) em "Cadeiras de rodas para a APAE".
 
 ---
 
 ## 7. Decisões
 
 - 2026-11-23 — Trabalho na branch `feature/integracao-api`; PR para `develop` ao fim de cada fase.
-- 2026-11-23 — O modo demonstração é preservado por flag (`VITE_USE_API`); a suíte existente continua usando mocks.
+- 2026-11-23 — ~~O modo demonstração é preservado por flag (`VITE_USE_API`).~~ **Substituída:** cada tela integrada usa só a API e seus mocks são apagados (§1, regra 6).
 - 2026-11-23 — A correção de CORS vira PR no backend (`fix/cors-frontend`); revisão e merge com a Equipe 2.
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
@@ -178,3 +182,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `fix(cors): liberar /api/v1/** para o frontend Web` | **Backend** `8986154` (`fix/cors-frontend`), 269 testes |
 | 2026-11-23 | `docs(frontend): registrar correção de CORS no backend` | Estado do CORS |
 | 2026-11-23 | `feat(frontend): exibir campanhas da API na Home e no Explorar` | Passo 6 + `scripts/popular-api.mjs` + forma de trabalhar e descobertas |
+| 2026-11-23 | `feat(frontend): exibir detalhe da campanha a partir da API` | Passo 7 — fecha a Fase 1 |

@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../hooks/useDemo'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
 import { categorias } from '../mocks/gestao'
-import { formatarData } from '../utils/format'
+import { formatarData, formatarMoeda } from '../utils/format'
 import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
-import { useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
+import { useCampanhaPublica, useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
 import RequestState from '../components/RequestState'
 import { USE_API } from '../services/config'
 
@@ -283,20 +282,25 @@ function ExplorarConteudo({ todas }) {
 }
 
 export function DetalheCampanha() {
-  const { id } = useParams(),
-    { dados } = useDemo(),
-    [params] = useSearchParams(),
-    [aba, setAba] = useState(
-      params.get('aba') === 'itens' ? 'Itens necessários' : 'Sobre a campanha',
-    )
-  const campanha = dados.campanhas.find(
-    (c) => String(c.id) === id && c.status !== 'Rascunho',
-  )
-  if (!campanha)
+  const { id } = useParams()
+  const request = useCampanhaPublica(id)
+  if (!request.loading && !request.error && !request.data)
     return (
       <Vazio principal titulo="Campanha não encontrada">
         <Link to="/explorar">Voltar para as campanhas</Link>
       </Vazio>
+    )
+  return (
+    <RequestState {...request}>
+      {(campanha) => <DetalheConteudo key={campanha.id} campanha={campanha} />}
+    </RequestState>
+  )
+}
+
+function DetalheConteudo({ campanha }) {
+  const [params] = useSearchParams(),
+    [aba, setAba] = useState(
+      params.get('aba') === 'itens' ? 'Itens necessários' : 'Sobre a campanha',
     )
   const abas = ['Sobre a campanha', 'Itens necessários', 'Atualizações']
   return (
@@ -310,8 +314,8 @@ export function DetalheCampanha() {
       <div className="public-page-title">
         <h1>{campanha.nome}</h1>
         <p>
-          Uma iniciativa de <strong>{campanha.entidade}</strong> ·{' '}
-          {campanha.cidade}
+          Uma iniciativa de <strong>{campanha.entidade}</strong>
+          {campanha.cidade && <> · {campanha.cidade}</>}
         </p>
       </div>
       <div className="detalhe-grid">
@@ -411,18 +415,32 @@ export function DetalheCampanha() {
             <Aviso>Esta campanha está encerrada.</Aviso>
           )}
           <small>Você escolhe como e quanto deseja contribuir.</small>
-          {campanha.status === 'Ativa' && (
+          {/* A API ainda não recebe doação de itens: o atalho só existe na demonstração. */}
+          {campanha.status === 'Ativa' && !USE_API && (
             <Botao secundario para={`/doar/${campanha.id}?tipo=itens`}>
               <Icon nome="itens" /> Doar itens necessários
             </Botao>
           )}
+          {campanha.ultimasDoacoes?.length > 0 && (
+            <>
+              <hr />
+              <h3>Últimas doações</h3>
+              {campanha.ultimasDoacoes.map((d, i) => (
+                <div className="lista-linha" key={`${d.data}-${i}`}>
+                  <span>{d.doador}</span>
+                  <strong>{formatarMoeda(d.valor)}</strong>
+                </div>
+              ))}
+            </>
+          )}
           <hr />
           <h3>Sobre a entidade</h3>
           <strong>{campanha.entidade}</strong>
-          <p>{campanha.cidade}</p>
+          {campanha.cidade && <p>{campanha.cidade}</p>}
           <Aviso>
-            Este é um protótipo funcional com dados de demonstração. Nenhum
-            pagamento é realizado.
+            {USE_API
+              ? 'Dados reais da campanha. O pagamento ainda não está integrado.'
+              : 'Este é um protótipo funcional com dados de demonstração. Nenhum pagamento é realizado.'}
           </Aviso>
         </aside>
       </div>

@@ -75,6 +75,26 @@ for (const e of entidades) {
   }
 }
 
+// Doador PF com duas doações PIX (uma anônima) na primeira campanha, se ela ainda não arrecadou.
+const doador = { email: 'maria@doasync.local', nome: 'Maria Souza' }
+const cadastroDoador = await chamar('POST', '/doadores', {
+  tipo: 'PESSOA_FISICA', nome: doador.nome, email: doador.email, senha: SENHA,
+  telefone: '48988887777', cpf: '529.982.247-25', dataNascimento: '1990-05-15',
+})
+if (cadastroDoador.status !== 201 && cadastroDoador.status !== 409) {
+  throw new Error(`cadastro doador: HTTP ${cadastroDoador.status} ${JSON.stringify(cadastroDoador.json)}`)
+}
+const sessaoDoador = await login(doador.email, SENHA)
+console.log(`✔ ${doador.nome} (${doador.email} / ${SENHA}) — doador`)
+const alvo = (await chamar('GET', '/campanhas?limit=50')).json.data.find((c) => c.titulo === entidades[0].campanhas[0].titulo)
+if (alvo && Number(alvo.valorArrecadado) === 0) {
+  for (const [valor, anonima] of [[150, false], [80, true]]) {
+    const r = await chamar('POST', '/doacoes', { campanhaId: alvo.id, valor, formaPagamento: 'PIX', anonima }, sessaoDoador.token)
+    if (r.status !== 201) throw new Error(`doação: HTTP ${r.status} ${JSON.stringify(r.json)}`)
+    console.log(`  + doação R$ ${valor}${anonima ? ' (anônima)' : ''} em "${alvo.titulo}"`)
+  }
+}
+
 const final = (await chamar('GET', '/campanhas?limit=50')).json.data
 console.log(`\nVitrine pública: ${final.length} campanha(s)`)
-for (const c of final) console.log(`  • ${c.titulo} — ${c.status}`)
+for (const c of final) console.log(`  • ${c.titulo} — ${c.status} — R$ ${c.valorArrecadado} (${c.percentualAtingido}%) — /campanhas/${c.id}`)
