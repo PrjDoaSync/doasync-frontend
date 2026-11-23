@@ -71,7 +71,7 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 |---|---|---|
 | 1 | Plano de integração | ✅ |
 | — | Este documento vivo | ✅ |
-| 2 | `.env.example` (`/api/v1`) e flag `VITE_USE_API` | ⏳ |
+| 2 | `.env.example` (`/api/v1`) e flag `VITE_USE_API` (`src/services/config.js`) | ✅ |
 | 3 | `normalizeError` lendo `error` / `erros` | ⏳ |
 | 4 | Interceptor `Authorization: Bearer` | ⏳ |
 | 5 | Mappers API → front (campanha) | ⏳ |
@@ -80,7 +80,7 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | 7 | Detalhe via `GET /campanhas/{id}` | ⏳ |
 
 ### Próximo passo
-**Passo 2** — atualizar `web/.env.example` para `/api/v1`, adicionar `VITE_USE_API` e o módulo de configuração.
+**Passo 3** — `normalizeError` em `src/services/api.js` deve ler `error` (erros gerais) e `erros` (erros por campo, HTTP 422) do backend, mantendo `message` como fallback.
 
 ---
 
@@ -106,3 +106,4 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 |---|---|---|
 | 2026-11-23 | `docs(frontend): adicionar plano de integração com a API` | Plano por fases |
 | 2026-11-23 | `docs(frontend): adicionar registro vivo da integração` | Este documento |
+| 2026-11-23 | `feat(frontend): configurar URL da API v1 e flag VITE_USE_API` | Passo 2 |
