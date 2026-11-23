@@ -70,6 +70,32 @@ describe('vitrine integrada à API (passo 6)', () => {
     expect(screen.getByRole('option', { name: 'Saúde' })).toBeTruthy()
   })
 
+  it('Detalhe lê GET /campanhas/{id} e mostra as últimas doações (passo 7)', async () => {
+    const detalhe = {
+      ...campanhaApi,
+      ultimasDoacoes: [
+        { valor: 250, dataDoacao: '2026-11-23T22:08:59Z', anonima: false, nomeDoador: 'João Silva' },
+        { valor: 50, dataDoacao: '2026-11-22T10:00:00Z', anonima: true, nomeDoador: 'Doador anônimo' },
+      ],
+    }
+    responder({ data: detalhe })
+    abrir(`/campanhas/${campanhaApi.id}`)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Campanha vinda da API' })).toBeTruthy()
+    expect(chamadas[0].url).toBe(`/campanhas/${campanhaApi.id}`)
+    expect(screen.getByText('Últimas doações')).toBeTruthy()
+    expect(screen.getByText('João Silva')).toBeTruthy()
+    expect(screen.getByText('Doador anônimo')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Quero doar/ })).toBeTruthy()
+    // Doação de itens não existe na API.
+    expect(screen.queryByRole('link', { name: /Doar itens/ })).toBeNull()
+  })
+
+  it('Detalhe mostra "Campanha não encontrada" quando a API responde 404', async () => {
+    responder({ error: 'Campanha não encontrada.' }, 404)
+    abrir('/campanhas/00000000-0000-0000-0000-000000000000')
+    expect(await screen.findByRole('heading', { name: 'Campanha não encontrada' })).toBeTruthy()
+  })
+
   it('mostra o erro da API quando a consulta falha', async () => {
     responder({ error: 'Erro interno.' }, 500)
     abrir('/explorar')

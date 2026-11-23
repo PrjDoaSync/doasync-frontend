@@ -12,4 +12,13 @@ export const campanhasService = {
     api
       .get('/campanhas', { params: { limit: LIMITE_VITRINE }, ...config })
       .then((r) => mapPaginado(r.data, mapCampanha).itens),
+  // Detalhe público; 404 (inexistente, rascunho ou sem acesso) vira null.
+  buscarPublica: (id, config) =>
+    api
+      .get(`/campanhas/${id}`, config)
+      .then((r) => mapCampanha(r.data.data))
+      .catch((erro) => {
+        if (erro?.status === 404) return null
+        throw erro
+      }),
 }
