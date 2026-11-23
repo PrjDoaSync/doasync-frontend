@@ -2,16 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { categorias } from '../mocks/gestao'
 import { formatarData, formatarMoeda } from '../utils/format'
-import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
 import { useCampanhaPublica, useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
 import RequestState from '../components/RequestState'
-import { USE_API } from '../services/config'
-
-// Na demonstração as datas são relativas a um "hoje" fixo; com a API, ao dia real.
-const HOJE = USE_API ? new Date().toISOString().slice(0, 10) : HOJE_DEMO
 import '../styles/cam-publico.css'
+
+const hojeISO = () => new Date().toISOString().slice(0, 10)
 
 export function Home() {
   const request = useCampanhasPublicas()
@@ -137,6 +133,8 @@ function ExplorarConteudo({ todas }) {
     setParams(nova)
     setPagina(1)
   }
+  const HOJE = hojeISO()
+  const cidades = [...new Set(todas.map((c) => c.cidade).filter(Boolean))]
   const campanhas = useMemo(
     () =>
       todas
@@ -157,7 +155,7 @@ function ExplorarConteudo({ todas }) {
             ? b.arrecadado / b.meta - a.arrecadado / a.meta
             : maisRecentePrimeiro(a, b),
         ),
-    [todas, busca, categoria, cidade, entidade, status, urgencia, ordem],
+    [todas, busca, categoria, cidade, entidade, status, urgencia, ordem, HOJE],
   )
   return (
     <section className="public-section cam-publico cam-explorar">
@@ -197,7 +195,7 @@ function ExplorarConteudo({ todas }) {
         <Campo rotulo="Prazo da campanha">
           <select value={urgencia} onChange={(e) => filtrar('urgencia', e.target.value)}>
             <option value="">Qualquer prazo</option>
-            <option value="14">Encerra em até 14 dias (amostra)</option>
+            <option value="14">Encerra em até 14 dias</option>
           </select>
         </Campo>
         <Campo rotulo="Categoria">
@@ -206,22 +204,25 @@ function ExplorarConteudo({ todas }) {
             onChange={(e) => filtrar('categoria', e.target.value)}
           >
             <option value="">Todas as categorias</option>
-            {(USE_API ? [...new Set(todas.map((c) => c.categoria).filter(Boolean))] : categorias).map((c) => (
+            {[...new Set(todas.map((c) => c.categoria).filter(Boolean))].sort().map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
         </Campo>
-        <Campo rotulo="Localização">
-          <select
-            value={cidade}
-            onChange={(e) => filtrar('cidade', e.target.value)}
-          >
-            <option value="">Todas as cidades</option>
-            {[...new Set(todas.map((c) => c.cidade).filter(Boolean))].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </Campo>
+        {/* A API ainda não informa a cidade da campanha: o filtro só aparece quando houver dados. */}
+        {cidades.length > 0 && (
+          <Campo rotulo="Localização">
+            <select
+              value={cidade}
+              onChange={(e) => filtrar('cidade', e.target.value)}
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </Campo>
+        )}
         <Botao
           secundario
           onClick={() => {
@@ -415,12 +416,7 @@ function DetalheConteudo({ campanha }) {
             <Aviso>Esta campanha está encerrada.</Aviso>
           )}
           <small>Você escolhe como e quanto deseja contribuir.</small>
-          {/* A API ainda não recebe doação de itens: o atalho só existe na demonstração. */}
-          {campanha.status === 'Ativa' && !USE_API && (
-            <Botao secundario para={`/doar/${campanha.id}?tipo=itens`}>
-              <Icon nome="itens" /> Doar itens necessários
-            </Botao>
-          )}
+          {/* Doação de itens não existe na API: sem o atalho "Doar itens necessários". */}
           {campanha.ultimasDoacoes?.length > 0 && (
             <>
               <hr />
@@ -438,9 +434,7 @@ function DetalheConteudo({ campanha }) {
           <strong>{campanha.entidade}</strong>
           {campanha.cidade && <p>{campanha.cidade}</p>}
           <Aviso>
-            {USE_API
-              ? 'Dados reais da campanha. O pagamento ainda não está integrado.'
-              : 'Este é um protótipo funcional com dados de demonstração. Nenhum pagamento é realizado.'}
+            Dados reais da campanha. O pagamento ainda não está integrado.
           </Aviso>
         </aside>
       </div>
