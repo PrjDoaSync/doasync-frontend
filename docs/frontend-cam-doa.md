@@ -1,5 +1,7 @@
 # Marco CAM/DOA — ajustes incrementais
 
+Atualização de 23/11/2026: filtros por entidade/status/prazo e capa/galeria locais implementados; histórico/confirmacão ligados ao fluxo de doação. Ver [frontend-ges-fechamento.md](frontend-ges-fechamento.md). A validação visual móvel e as fotos oficiais continuam pendentes por indisponibilidade do navegador. O texto abaixo preserva o registro do marco anterior.
+
 Inspeção em 19/11/2026 no Figma oficial, modo View via Chrome. Implementação validada no navegador interno após expiração do controle do Chrome. Este registro complementa a base visual anterior; não representa aprovação de fidelidade pixel a pixel.
 
 ## Matriz de frames inspecionados
