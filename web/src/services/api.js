@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { API_URL } from './config'
+import { obterToken } from './token'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -34,6 +35,13 @@ export function normalizeError(error) {
   }
   return { status: null, message: 'Não foi possível conectar ao servidor.' }
 }
+
+// Envia o token da sessão em todas as chamadas; rotas públicas o ignoram.
+api.interceptors.request.use((config) => {
+  const token = obterToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
 
 api.interceptors.response.use(
   (response) => response,
