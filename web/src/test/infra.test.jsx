@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import axios from 'axios'
 import api, { normalizeError } from '../services/api'
+import { API_URL, USE_API } from '../services/config'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
@@ -404,8 +405,12 @@ describe('cliente HTTP (services/api.js)', () => {
   })
 
   it('usa a URL base configurada, com fallback local, e timeout de 15 s', () => {
-    expect(api.defaults.baseURL).toBe(import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api')
+    expect(api.defaults.baseURL).toBe(import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1')
     expect(api.defaults.timeout).toBe(15000)
+  })
+  it('mantém o modo demonstração quando VITE_USE_API não é "true"', () => {
+    expect(USE_API).toBe(import.meta.env.VITE_USE_API === 'true')
+    expect(API_URL).toBe(api.defaults.baseURL)
   })
   it('o interceptor rejeita sempre com o erro normalizado', async () => {
     api.defaults.adapter = (config) =>
