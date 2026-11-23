@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import PageHeader from '../components/PageHeader'
 import DataTable from '../components/DataTable'
 import KpiCard from '../components/KpiCard'

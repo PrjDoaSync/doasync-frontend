@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { Aviso, Botao, Campo, Etapas, Secao } from '../components/Ui'
 import PageHeader from '../components/PageHeader'
+import CampaignImages from '../components/CampaignImages'
 import { categorias } from '../mocks/gestao'
 import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
 import { formatarData, formatarMoeda } from '../utils/format'
@@ -38,6 +39,8 @@ export default function CriarCampanha() {
     [novoItem, setNovoItem] = useState({ nome: '', quantidade: '' }),
     [erroItem, setErroItem] = useState(''),
     [imagem, setImagem] = useState(IMAGENS_CAMPANHA[0].arquivo),
+    [galeria, setGaleria] = useState([]),
+    [lendoImagens, setLendoImagens] = useState(false),
     [confirmado, setConfirmado] = useState(false),
     [erro, setErro] = useState(''),
     [salvando, setSalvando] = useState(false)
@@ -83,6 +86,7 @@ export default function CriarCampanha() {
     setErroItem('')
   }
   async function salvar(status) {
+    if (salvando || lendoImagens) return
     // Do primeiro passo o formulário ainda não foi guardado; nos demais, já está em `basicos`.
     const f = etapa === 0 ? validarEtapa1() : basicos
     if (!f) return
@@ -106,7 +110,7 @@ export default function CriarCampanha() {
         entidade: dados.entidade,
         status,
       })
-      atualizar('campanhas', [...dados.campanhas, nova])
+      atualizar('campanhas', [...dados.campanhas, { ...nova, galeria }])
       notificar(
         status === 'Ativa'
           ? 'Campanha publicada nesta sessão de demonstração.'
@@ -216,10 +220,10 @@ export default function CriarCampanha() {
                 <Botao para="/campanhas" secundario>
                   Cancelar
                 </Botao>
-                <Botao type="submit" secundario disabled={salvando}>
+                <Botao type="submit" secundario disabled={salvando || lendoImagens}>
                   {salvando ? 'Salvando…' : 'Salvar rascunho'}
                 </Botao>
-                <Botao onClick={continuar} disabled={salvando}>
+                <Botao onClick={continuar} disabled={salvando || lendoImagens}>
                   Continuar
                 </Botao>
               </div>
@@ -294,7 +298,7 @@ export default function CriarCampanha() {
               <Botao secundario onClick={() => { setErro(''); setEtapa(0) }}>
                 Voltar
               </Botao>
-              <Botao type="button" secundario onClick={() => salvar('Rascunho')} disabled={salvando}>
+              <Botao type="button" secundario onClick={() => salvar('Rascunho')} disabled={salvando || lendoImagens}>
                 {salvando ? 'Salvando…' : 'Salvar rascunho'}
               </Botao>
               <Botao onClick={continuar}>Continuar</Botao>
@@ -305,7 +309,7 @@ export default function CriarCampanha() {
             titulo="Revisão e publicação"
             descricao="Escolha a imagem de capa, confira os dados e publique."
           >
-            <fieldset className="imagens-campanha">
+            <fieldset className="imagens-campanha" disabled={salvando || lendoImagens}>
               <legend>Imagem de capa</legend>
               {IMAGENS_CAMPANHA.map((img) => (
                 <label key={img.arquivo} className={imagem === img.arquivo ? 'selecionada' : ''}>
@@ -321,7 +325,7 @@ export default function CriarCampanha() {
                 </label>
               ))}
             </fieldset>
-            <small>O envio de imagens próprias depende da integração; por enquanto, escolha uma imagem de exemplo.</small>
+            <CampaignImages imagem={imagem} onImagem={setImagem} galeria={galeria} onGaleria={setGaleria} disabled={salvando || lendoImagens} onBusy={setLendoImagens} />
             <dl className="revisao">
               <div><dt>Nome</dt><dd>{basicos.nome}</dd></div>
               <div><dt>Categoria</dt><dd>{basicos.categoria || 'Não informada'}</dd></div>
@@ -350,13 +354,13 @@ export default function CriarCampanha() {
             </label>
             {erro && <Aviso erro>{erro}</Aviso>}
             <div className="acoes">
-              <Botao secundario onClick={() => { setErro(''); setEtapa(1) }} disabled={salvando}>
+              <Botao secundario onClick={() => { setErro(''); setEtapa(1) }} disabled={salvando || lendoImagens}>
                 Voltar
               </Botao>
-              <Botao type="button" secundario onClick={() => salvar('Rascunho')} disabled={salvando}>
+              <Botao type="button" secundario onClick={() => salvar('Rascunho')} disabled={salvando || lendoImagens}>
                 {salvando ? 'Salvando…' : 'Salvar rascunho'}
               </Botao>
-              <Botao onClick={() => salvar('Ativa')} disabled={salvando}>
+              <Botao onClick={() => salvar('Ativa')} disabled={salvando || lendoImagens}>
                 {salvando ? 'Publicando…' : 'Publicar campanha'}
               </Botao>
             </div>

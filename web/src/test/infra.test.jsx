@@ -43,7 +43,8 @@ import {
   Vazio,
 } from '../components/Ui'
 import AppLayout, { PublicLayout } from '../components/layout/AppLayouts'
-import { DemoProvider, useDemo } from '../context/DemoContext'
+import { DemoProvider } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
 
 function adiado() {

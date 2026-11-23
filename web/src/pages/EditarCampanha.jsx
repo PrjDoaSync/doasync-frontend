@@ -3,8 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { Ico } from '../components/IconesCampanha'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
+import CampaignImages from '../components/CampaignImages'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { detalheCampanha } from '../mocks/campanhasDetalhe'
 import { categorias } from '../mocks/gestao'
 import { diasRestantes, validarEdicao } from '../utils/campanhas'
@@ -22,11 +23,13 @@ export default function EditarCampanha() {
   const [form, setForm] = useState(() =>
     campanha && {
       nome: campanha.nome, descricao: campanha.descricao, categoria: campanha.categoria,
+      imagem: campanha.imagem, galeria: campanha.galeria ?? [],
       encerraEm: campanha.encerraEm, meta: String(campanha.meta), itens: det.itens.map((i) => String(i.meta)),
     },
   )
   const [erros, setErros] = useState({})
   const [salvando, setSalvando] = useState(false)
+  const [lendoImagens, setLendoImagens] = useState(false)
   const [resultado, setResultado] = useState(null)
 
   if (!campanha)
@@ -51,7 +54,7 @@ export default function EditarCampanha() {
 
   async function salvar(e) {
     e.preventDefault()
-    if (salvando) return // evita submissão duplicada
+    if (salvando || lendoImagens) return // evita submissão duplicada
     const novos = validarEdicao(form, campanha)
     det.itens.forEach((i, k) => {
       const meta = Number(String(form.itens[k]).replace(',', '.'))
@@ -69,6 +72,7 @@ export default function EditarCampanha() {
           c.id === campanha.id
             ? {
                 ...c, nome: form.nome.trim(), descricao: form.descricao.trim(), categoria: form.categoria,
+                imagem: form.imagem, galeria: form.galeria,
                 encerraEm: form.encerraEm, meta: Number(String(form.meta).replace(',', '.')),
                 itens: det.itens.map((i, k) => ({ ...i, meta: Number(String(form.itens[k]).replace(',', '.')) })),
               }
@@ -129,7 +133,7 @@ export default function EditarCampanha() {
                     <div><strong>{i.nome}</strong><br /><small className="camp-sub">{i.especificacao}</small></div>
                     <input
                       inputMode="numeric" aria-label={`Meta de ${i.nome}`} aria-invalid={!!erros[`item${k}`]}
-                      value={form.itens[k]} disabled={!editavel || salvando}
+                      value={form.itens[k]} disabled={!editavel || salvando || lendoImagens}
                       onChange={(e) => setForm({ ...form, itens: form.itens.map((v, j) => (j === k ? e.target.value : v)) })}
                     />
                     <span className="camp-sub">{i.recebido} un.</span>
@@ -143,15 +147,13 @@ export default function EditarCampanha() {
           <hr className="camp-sep" />
           <div className="camp-cab">
             <h2>Imagem de capa</h2>
-            <button type="button" className="camp-botao" disabled aria-disabled="true"><Ico nome="imagem" /> Alterar imagem</button>
           </div>
-          {campanha.imagem ? <img className="camp-capa" src={campanha.imagem} alt="Capa atual da campanha" /> : <div className="camp-capa" />}
-          <small className="camp-sub">{campanha.imagem?.split('/').pop() ?? 'sem imagem'} · Capa atual da campanha</small>
+          <CampaignImages imagem={form.imagem} onImagem={(imagem) => setForm((atual) => ({ ...atual, imagem }))} galeria={form.galeria} onGaleria={(galeria) => setForm((atual) => ({ ...atual, galeria }))} disabled={!editavel || salvando || lendoImagens} onBusy={setLendoImagens} />
 
           {resultado && <Aviso erro={resultado.erro}>{resultado.texto}</Aviso>}
           <div className="camp-acoes">
             <Botao para="/campanhas" secundario>Cancelar</Botao>
-            <Botao type="submit" disabled={!editavel || salvando}>{salvando ? 'Salvando…' : <><Icon nome="check" size={16} /> Salvar alterações</>}</Botao>
+            <Botao type="submit" disabled={!editavel || salvando || lendoImagens}>{salvando ? 'Salvando…' : <><Icon nome="check" size={16} /> Salvar alterações</>}</Botao>
           </div>
         </form>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import PageHeader from '../components/PageHeader'
 import KpiCard from '../components/KpiCard'
 import DataTable from '../components/DataTable'
@@ -29,7 +29,7 @@ export default function Itens() {
     }
   }
   return (
-    <>
+    <div className="ges-itens pilha">
       <div className="breadcrumb">
         Doações <span>/</span> Controle de itens
       </div>
@@ -48,10 +48,11 @@ export default function Itens() {
         </Botao>
       </PageHeader>
       <section className="kpis">
-        <KpiCard rotulo="Total recebido" valor={`${recebido} unidades`} />
-        <KpiCard rotulo="Total destinado" valor={`${destinado} unidades`} />
+        <KpiCard icone="itens" rotulo="Total recebido" valor={`${recebido} unidades`} />
+        <KpiCard icone="enviar" rotulo="Total destinado" valor={`${destinado} unidades`} />
         <KpiCard
           rotulo="Saldo disponível"
+          icone="check"
           valor={`${recebido - destinado} unidades`}
         />
       </section>
@@ -134,6 +135,6 @@ export default function Itens() {
           </form>
         </Modal>
       )}
-    </>
+    </div>
   )
 }

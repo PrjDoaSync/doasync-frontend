@@ -4,7 +4,7 @@ import DataTable from '../components/DataTable'
 import KpiCard from '../components/KpiCard'
 import StatusBadge from '../components/StatusBadge'
 import { Botao, Icon, Secao, Vazio } from '../components/Ui'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
 import { filtrarDoacoes, mesesDisponiveis, nomeDoMes, primeiroNome, resumoDoador } from '../utils/doacoes'
 import { formatarData, formatarMoeda } from '../utils/format'
@@ -18,7 +18,7 @@ const selo = (status) =>
 
 // [DEV-DOA-09] Minhas doações (#103). Conta de demonstração (sem login ainda).
 // SEM CONTRATO na API: exportar histórico, cartão/boleto, "Aplicada" e a tela DOA-10
-// (o "Ver detalhe" leva à confirmação enquanto o detalhe não existe).
+// As operações oficiais continuam indisponíveis, mas o detalhe demonstrativo é navegável.
 export default function MinhasDoacoes() {
   const { dados } = useDemo()
   const [filtro, setFiltro] = useState(SEM_FILTRO)
@@ -41,7 +41,7 @@ export default function MinhasDoacoes() {
       <div className="breadcrumb"><Link to="/">Início</Link><span>/</span>Minha conta<span>/</span>Minhas doações</div>
       <div className="public-page-title">
         <h1>Minhas doações</h1>
-        <p>Olá, {primeiroNome(DOADOR.nome)}. Acompanhe suas contribuições, consulte documentos e veja como cada doação está ajudando.</p>
+        <p>Olá, {primeiroNome(DOADOR.nome)}. Explore o histórico fictício e as contribuições criadas nesta sessão de teste.</p>
       </div>
 
       {minhas.length === 0 ? (
@@ -70,6 +70,7 @@ export default function MinhasDoacoes() {
                 <option value="Recebida">Recebida</option>
                 <option value="Pendente">Pendente</option>
                 <option value="Aplicada">Aplicada</option>
+                <option value="Cancelada">Cancelada</option>
               </select>
               <select aria-label="Período" value={filtro.mes} onChange={mudar('mes')}>
                 <option value="">Todos os meses</option>

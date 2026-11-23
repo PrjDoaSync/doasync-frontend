@@ -3,14 +3,15 @@ export default function DataTable({
   colunas,
   linhas,
   vazio = 'Nenhum registro encontrado.',
+  nome,
 }) {
   if (linhas.length === 0) {
-    return <p className="tabela-vazia">{vazio}</p>
+    return <p className="tabela-vazia" role="status">{vazio}</p>
   }
 
   return (
-    <div className="tabela-wrapper">
-      <table className="tabela">
+    <div className="tabela-wrapper" role="region" aria-label={nome ?? `Tabela: ${colunas.map((c) => c.titulo).filter((t) => typeof t === 'string' && t).join(', ')}`} tabIndex={0}>
+      <table className="tabela" aria-label={nome ?? colunas.map((c) => c.titulo).filter((t) => typeof t === 'string' && t).join(', ')}>
         <thead>
           <tr>
             {colunas.map((coluna) => (

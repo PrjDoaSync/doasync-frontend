@@ -146,6 +146,7 @@ export function Secao({ titulo, descricao, children, acao, className = '' }) {
   )
 }
 export function Modal({ titulo, children, fechar }) {
+  const tituloId = useId()
   const ref = useRef(null)
   const aoFechar = useRef(fechar)
   useEffect(() => {
@@ -164,13 +165,14 @@ export function Modal({ titulo, children, fechar }) {
     <dialog
       ref={ref}
       className="modal"
+      aria-labelledby={tituloId}
       onCancel={(e) => {
         e.preventDefault()
         aoFechar.current()
       }}
     >
       <div className="secao__cabecalho">
-        <h2>{titulo}</h2>
+        <h2 id={tituloId}>{titulo}</h2>
         <button
           type="button"
           className="icone-botao"

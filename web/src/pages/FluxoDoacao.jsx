@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import {
   Aviso,
   Botao,
@@ -20,6 +20,8 @@ import '../styles/doacao.css'
 import { detalheCampanha, HOJE_DEMO } from '../mocks/campanhasDetalhe'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { valorDoacao } from '../utils/gestao'
+import { paraHistoricoDoador } from '../utils/doacoes'
+import { historicoDoadorDemo } from '../mocks/doador'
 import {
   itensEscolhidos,
   montarDoacao,
@@ -125,7 +127,9 @@ export default function FluxoDoacao() {
         agendamento: financeira ? null : extra,
         hoje: HOJE_DEMO,
       })
+      doacao.email = doador.email || ''
       atualizar('doacoes', [...dados.doacoes, doacao])
+      atualizar('historicoDoador', [paraHistoricoDoador(doacao, campanha), ...(dados.historicoDoador ?? historicoDoadorDemo)])
       setConcluida(doacao)
     } catch {
       setErro('Não foi possível registrar a doação. Tente novamente.')
@@ -183,6 +187,8 @@ export default function FluxoDoacao() {
             Registro de demonstração, válido apenas nesta sessão. Nenhum valor foi cobrado e a entidade não foi avisada.
           </Aviso>
           <div className="acoes">
+            <Botao para={`/doar/${campanha.id}/confirmacao/${concluida.id}`}>Ver confirmação e próximos passos</Botao>
+            <Botao secundario para="/minhas-doacoes">Consultar minhas doações</Botao>
             <Botao secundario para="/explorar">
               Explorar outras campanhas
             </Botao>

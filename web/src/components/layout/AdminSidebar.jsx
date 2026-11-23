@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { useDemo } from '../../context/DemoContext'
+import { useState } from 'react'
+import { useDemo } from '../../hooks/useDemo'
 import { Icon, Marca } from '../Ui'
 
 const menu = [
@@ -14,15 +15,19 @@ const menu = [
 
 export default function AdminSidebar() {
   const { dados } = useDemo()
+  const [aberto, setAberto] = useState(false)
 
   return (
-    <aside className="sidebar" aria-label="Menu lateral administrativo">
+    <aside className={`sidebar ${aberto ? 'sidebar--aberta' : ''}`} aria-label="Menu lateral administrativo">
       <Marca />
+      <button type="button" className="sidebar__alternar botao botao--secundario" aria-expanded={aberto} aria-controls="menu-administrativo" onClick={() => setAberto(!aberto)}>
+        {aberto ? 'Fechar menu' : 'Abrir menu'}
+      </button>
       <div className="sidebar__entidade">
         <small>ÁREA DA ENTIDADE</small>
         <strong>{dados.entidade.nome}</strong>
       </div>
-      <nav aria-label="Navegação administrativa">
+      <nav id="menu-administrativo" aria-label="Navegação administrativa" onClick={() => setAberto(false)}>
         {menu.map(([icone, nome, para]) => (
           <NavLink
             to={para}

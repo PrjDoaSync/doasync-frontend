@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Icon } from '../Ui'
+import { Icon, Modal } from '../Ui'
 
 const TITULOS_ROTAS = [
   { prefixo: '/dashboard/campanha', titulo: 'Dashboard analítico por campanha' },
@@ -23,6 +23,7 @@ const TITULOS_ROTAS = [
 export default function AdminHeader() {
   const { pathname } = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
+  const [notificacoes, setNotificacoes] = useState(false)
   const menuRef = useRef(null)
   const botaoRef = useRef(null)
 
@@ -33,6 +34,24 @@ export default function AdminHeader() {
     return false
   })
   const titulo = correspondente ? correspondente.titulo : 'Gestão da entidade'
+
+  useEffect(() => {
+    if (menuAberto) menuRef.current?.querySelector('[role="menuitem"]')?.focus()
+  }, [menuAberto])
+
+  function navegarMenu(event) {
+    const opcoes = [...menuRef.current.querySelectorAll('[role="menuitem"]')]
+    const atual = opcoes.indexOf(document.activeElement)
+    const indices = { ArrowDown: (atual + 1) % opcoes.length, ArrowUp: (atual - 1 + opcoes.length) % opcoes.length, Home: 0, End: opcoes.length - 1 }
+    if (event.key in indices) {
+      event.preventDefault()
+      opcoes[indices[event.key]]?.focus()
+    }
+    if (event.key === 'Tab') {
+      setMenuAberto(false)
+      botaoRef.current?.focus()
+    }
+  }
 
   // Fechar menu ao pressionar Escape ou clicar fora
   useEffect(() => {
@@ -70,9 +89,9 @@ export default function AdminHeader() {
           className="topo__notificacao"
           aria-label="Notificações da entidade"
           title="Notificações"
+          onClick={() => setNotificacoes(true)}
         >
           <Icon nome="sino" size={18} />
-          <span className="topo__notificacao-badge" aria-hidden="true" />
         </button>
 
         <div className="topo__perfil-container">
@@ -83,6 +102,13 @@ export default function AdminHeader() {
             onClick={() => setMenuAberto((prev) => !prev)}
             aria-expanded={menuAberto}
             aria-haspopup="menu"
+            aria-controls="menu-perfil"
+            onKeyDown={(event) => {
+              if (event.key === 'ArrowDown') {
+                event.preventDefault()
+                setMenuAberto(true)
+              }
+            }}
             aria-label="Perfil do usuário e ações comuns"
           >
             <span className="topo__avatar" aria-hidden="true">
@@ -104,6 +130,8 @@ export default function AdminHeader() {
               ref={menuRef}
               className="topo__menu-dropdown"
               role="menu"
+              id="menu-perfil"
+              onKeyDown={navegarMenu}
               aria-label="Opções do perfil"
             >
               <div className="topo__menu-cabecalho">
@@ -114,6 +142,7 @@ export default function AdminHeader() {
               <Link
                 to="/configuracoes"
                 role="menuitem"
+                tabIndex={-1}
                 className="topo__menu-item"
                 onClick={() => setMenuAberto(false)}
               >
@@ -123,6 +152,7 @@ export default function AdminHeader() {
               <Link
                 to="/configuracoes/usuarios"
                 role="menuitem"
+                tabIndex={-1}
                 className="topo__menu-item"
                 onClick={() => setMenuAberto(false)}
               >
@@ -133,6 +163,7 @@ export default function AdminHeader() {
               <Link
                 to="/login"
                 role="menuitem"
+                tabIndex={-1}
                 className="topo__menu-item topo__menu-item--sair"
                 onClick={() => setMenuAberto(false)}
               >
@@ -143,6 +174,12 @@ export default function AdminHeader() {
           )}
         </div>
       </div>
+      {notificacoes && (
+        <Modal titulo="Notificações da entidade" fechar={() => setNotificacoes(false)}>
+          <p role="status">Nenhuma notificação nesta demonstração.</p>
+          <p>As alterações ficam nesta sessão. Não são enviados avisos ou mensagens reais.</p>
+        </Modal>
+      )}
     </header>
   )
 }

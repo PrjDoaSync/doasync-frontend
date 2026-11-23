@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { Aviso, Botao, Campo, Etapas, Icon, Secao } from '../components/Ui'
 import PageHeader from '../components/PageHeader'
 import { validarCnpj } from '../utils/gestao'
+import EntityPreferences from '../components/EntityPreferences'
 
 export default function CadastroEntidade({ perfil = false }) {
   const { dados, atualizar, notificar } = useDemo(),
@@ -94,7 +95,7 @@ export default function CadastroEntidade({ perfil = false }) {
           itens={['Informações da entidade', 'Documentos', 'Verificação']}
         />
       )}
-      <form onSubmit={salvar}>
+      <form onSubmit={salvar} className="pilha">
         <div className="dashboard-grid">
           <div className="pilha">
             <Secao
@@ -188,6 +189,7 @@ export default function CadastroEntidade({ perfil = false }) {
                 )}
               </div>
             </Secao>
+            {perfil && <EntityPreferences form={form} setForm={setForm} />}
             <Secao
               titulo="Documentos para verificação"
               descricao="PDF, JPG ou PNG · até 10 MB por arquivo. A seleção não realiza envio."

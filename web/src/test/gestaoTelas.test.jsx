@@ -154,6 +154,22 @@ describe('Doadores e histórico (GES-06)', () => {
   })
 })
 
+describe('Preferências da entidade', () => {
+  it('salva preferências locais e permite descartar alterações', async () => {
+    const user = await abrir('/configuracoes')
+    const local = screen.getByLabelText('Local de recebimento')
+    await user.type(local, 'Sede de teste')
+    await user.click(screen.getByRole('switch', { name: 'Resumo semanal' }))
+    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
+    expect(await screen.findByText(/Informações salvas na demonstração/)).toBeTruthy()
+    await user.clear(local)
+    await user.type(local, 'Descartar')
+    await user.click(screen.getByRole('button', { name: 'Descartar alterações' }))
+    expect(local.value).toBe('Sede de teste')
+    expect(screen.getByRole('switch', { name: 'Resumo semanal' }).checked).toBe(true)
+  })
+})
+
 describe('Usuários e permissões (GES-09)', () => {
   const abrirConvite = async (user) => {
     await user.click(screen.getByRole('button', { name: /Convidar pessoa/ }))

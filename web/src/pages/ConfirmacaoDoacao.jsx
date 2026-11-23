@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { Botao, Etapas, Icon, Secao, Vazio } from '../components/Ui'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
 import { mensagemConfirmacao } from '../utils/doacoes'
 import { formatarData, formatarMoeda } from '../utils/format'
@@ -22,7 +22,7 @@ export default function ConfirmacaoDoacao() {
       </>
     )
 
-  const { titulo, texto, faixa } = mensagemConfirmacao(d, DOADOR.nome)
+  const { titulo, texto, faixa } = mensagemConfirmacao(d, d.doador ?? DOADOR.nome)
   const pendente = d.status === 'Pendente'
   const financeira = d.tipo === 'Financeira'
   const numero = d.id.replace('DS-', '')
@@ -60,13 +60,13 @@ export default function ConfirmacaoDoacao() {
             <p className="linhas-resumo__campanha">{d.campanha}</p>
             <dl className="linhas-resumo">
               <div><dt>Entidade beneficiária</dt><dd><strong>{d.entidade}</strong></dd></div>
-              <div><dt>Doadora</dt><dd><strong>{DOADOR.nome}</strong></dd></div>
+              <div><dt>Doador</dt><dd><strong>{d.doador ?? DOADOR.nome}</strong></dd></div>
               <div><dt>Pagamento</dt><dd><strong>{financeira ? d.meioDetalhe : 'Não se aplica'}</strong></dd></div>
-              <div><dt>Data de recebimento</dt><dd><strong>{formatarData(d.data)} · {d.hora}</strong></dd></div>
+              <div><dt>{pendente || d.status === 'Cancelada' ? 'Data do registro' : 'Data de recebimento'}</dt><dd><strong>{formatarData(d.data)} · {d.hora}</strong></dd></div>
             </dl>
             </div>
             <div className="total-linha">
-              <span>{financeira ? 'Total recebido' : 'Itens'}</span>
+              <span>{financeira ? pendente || d.status === 'Cancelada' ? 'Contribuição registrada' : 'Total recebido' : 'Itens'}</span>
               <strong className="numero-destaque">{financeira ? formatarMoeda(d.valor) : d.titulo}</strong>
             </div>
             <div className="form-grid">
@@ -97,9 +97,9 @@ export default function ConfirmacaoDoacao() {
           <div className="cartao">
             <Icon nome="email" size={20} />
             <h2>Uma cópia para você</h2>
-            <p>Neste cenário, comprovante e recibo são enviados para:</p>
-            <strong>{DOADOR.email}</strong>
-            <p>O link seguro também dá acesso ao histórico, sem precisar criar uma senha.</p>
+            <p>Endereço informado na amostra:</p>
+            <strong>{d.doador ? d.email || 'Sem e-mail informado' : DOADOR.email}</strong>
+            <p>Nenhum documento, e-mail ou link de acesso é enviado nesta demonstração. Consulte o histórico diretamente nesta sessão.</p>
             <Botao secundario disabled><Icon nome="enviar" /> Reenviar documentos</Botao>
           </div>
         </aside>

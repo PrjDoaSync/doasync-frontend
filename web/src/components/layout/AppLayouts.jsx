@@ -1,4 +1,4 @@
-import { useDemo } from '../../context/DemoContext'
+import { useDemo } from '../../hooks/useDemo'
 import { Icon } from '../Ui'
 import AdminLayout from './AdminLayout'
 import PublicLayout from './PublicLayout'

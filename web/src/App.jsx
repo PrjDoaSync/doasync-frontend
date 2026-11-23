@@ -21,6 +21,7 @@ import Login from './pages/Login'
 import Doadores from './pages/Doadores'
 import Itens from './pages/Itens'
 import Usuarios from './pages/Usuarios'
+import Informacoes from './pages/Informacoes'
 import { Vazio } from './components/Ui'
 
 function RotaAcessivel() {
@@ -51,6 +52,9 @@ export default function App() {
           <Route path="minhas-doacoes" element={<MinhasDoacoes />} />
           <Route path="minhas-doacoes/:doacaoId" element={<DetalheDoacao />} />
           <Route path="login" element={<Login />} />
+          <Route path="ajuda" element={<Informacoes pagina="ajuda" />} />
+          <Route path="privacidade" element={<Informacoes pagina="privacidade" />} />
+          <Route path="termos" element={<Informacoes pagina="termos" />} />
           <Route
             path="*"
             element={
