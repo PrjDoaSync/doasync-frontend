@@ -75,12 +75,12 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | 3 | `normalizeError` lendo `error` / `erros` | ✅ |
 | 4 | Interceptor `Authorization: Bearer` | ✅ |
 | 5 | Mappers API → front (campanha) | ✅ |
-| — | CORS no backend (`fix/cors-frontend`) | ⏳ |
+| — | CORS no backend (`fix/cors-frontend`) | ✅ |
 | 6 | Home/Explorar via `GET /campanhas` | ⏳ |
 | 7 | Detalhe via `GET /campanhas/{id}` | ⏳ |
 
 ### Próximo passo
-**CORS no backend** — branch `fix/cors-frontend` no doasync-backend liberando `/api/v1/**` para `localhost:5173` (todos os métodos usados pelo front), com teste. Depois: **Passo 6**.
+**Passo 6** — Home e Explorar leem `GET /campanhas` quando `VITE_USE_API=true` (service + mapper; modo demonstração intacto com a flag desligada). Abrir o PR do backend: https://github.com/PrjDoaSync/doasync-backend/pull/new/fix/cors-frontend (base `develop`).
 
 ---
 
@@ -88,7 +88,7 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 
 | Item | Repositório | Branch / PR | Status |
 |---|---|---|---|
-| CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | `fix/cors-frontend` | ⏳ não iniciado |
+| CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | `fix/cors-frontend` (commit `8986154`) | 🔄 branch no GitHub, PR para `develop` a abrir; revisão/merge com a Equipe 2 |
 | Expor `versao` na resposta de campanha (o `PATCH /campanhas/{id}` exige o campo, mas o `GET` não o devolve) | doasync-backend (Equipe 2) | — | ⏳ necessário na Fase 4 |
 
 ---
@@ -112,3 +112,4 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | 2026-11-23 | `feat(frontend): ler erros no formato do backend em normalizeError` | Passo 3 |
 | 2026-11-23 | `feat(frontend): enviar token JWT nas requisições à API` | Passo 4 — `src/services/token.js` e interceptor |
 | 2026-11-23 | `feat(frontend): adicionar mappers de campanha da API para as telas` | Passo 5 — `src/services/mappers.js` |
+| 2026-11-23 | `fix(cors): liberar /api/v1/** para o frontend Web` | **Backend** `8986154` na branch `fix/cors-frontend` — 269 testes passando |
