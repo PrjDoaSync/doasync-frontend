@@ -68,13 +68,4 @@ Doação de itens, cartão/boleto, agendamento de entrega, controle de itens/est
 
 ## 6. Acompanhamento
 
-| Passo | Status | Commit |
-|---|---|---|
-| 1 — Plano | ✅ | — |
-| 2 — `.env.example` | ⏳ | |
-| 3 — `normalizeError` | ⏳ | |
-| 4 — Interceptor de token | ⏳ | |
-| 5 — Mappers | ⏳ | |
-| 6 — Home/Explorar | ⏳ | |
-| 7 — Detalhe | ⏳ | |
-| CORS backend | ⏳ | |
+O estado de cada passo, o próximo passo e o histórico de commits ficam em [integracao-api.md](integracao-api.md).
