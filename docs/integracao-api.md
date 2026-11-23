@@ -73,14 +73,14 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | — | Este documento vivo | ✅ |
 | 2 | `.env.example` (`/api/v1`) e flag `VITE_USE_API` (`src/services/config.js`) | ✅ |
 | 3 | `normalizeError` lendo `error` / `erros` | ✅ |
-| 4 | Interceptor `Authorization: Bearer` | ⏳ |
+| 4 | Interceptor `Authorization: Bearer` | ✅ |
 | 5 | Mappers API → front (campanha) | ⏳ |
 | — | CORS no backend (`fix/cors-frontend`) | ⏳ |
 | 6 | Home/Explorar via `GET /campanhas` | ⏳ |
 | 7 | Detalhe via `GET /campanhas/{id}` | ⏳ |
 
 ### Próximo passo
-**Passo 4** — interceptor de requisição em `src/services/api.js` que envia `Authorization: Bearer <token>` quando houver token salvo (`src/services/token.js`).
+**Passo 5** — mappers puros API → front em `src/services/mappers.js`, começando por campanha (`CampanhaResposta` → formato de `mocks/gestao.js`).
 
 ---
 
@@ -109,3 +109,4 @@ O banco começa vazio (sem campanhas). Fluxo mínimo, via Swagger ou curl:
 | 2026-11-23 | `feat(frontend): configurar URL da API v1 e flag VITE_USE_API` | Passo 2 |
 
 | 2026-11-23 | `feat(frontend): ler erros no formato do backend em normalizeError` | Passo 3 |
+| 2026-11-23 | `feat(frontend): enviar token JWT nas requisições à API` | Passo 4 — `src/services/token.js` e interceptor |

@@ -16,6 +16,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import axios from 'axios'
 import api, { normalizeError } from '../services/api'
 import { API_URL, USE_API } from '../services/config'
+import { limparToken, obterToken, salvarToken } from '../services/token'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
@@ -420,6 +421,22 @@ describe('cliente HTTP (services/api.js)', () => {
   it('usa a URL base configurada, com fallback local, e timeout de 15 s', () => {
     expect(api.defaults.baseURL).toBe(import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1')
     expect(api.defaults.timeout).toBe(15000)
+  })
+  it('envia Authorization: Bearer somente quando há token salvo', async () => {
+    const chamadas = []
+    api.defaults.adapter = (config) => {
+      chamadas.push(config)
+      return Promise.resolve({ data: {}, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    limparToken()
+    await api.get('/campanhas')
+    expect(chamadas[0].headers.Authorization).toBeUndefined()
+    salvarToken('abc.def.ghi')
+    await api.get('/usuarios/me')
+    expect(chamadas[1].headers.Authorization).toBe('Bearer abc.def.ghi')
+    expect(obterToken()).toBe('abc.def.ghi')
+    limparToken()
+    expect(obterToken()).toBeNull()
   })
   it('mantém o modo demonstração quando VITE_USE_API não é "true"', () => {
     expect(USE_API).toBe(import.meta.env.VITE_USE_API === 'true')
