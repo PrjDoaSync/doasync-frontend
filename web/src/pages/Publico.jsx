@@ -6,13 +6,23 @@ import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
 import { categorias } from '../mocks/gestao'
 import { formatarData } from '../utils/format'
 import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
+import { useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
+import RequestState from '../components/RequestState'
+import { USE_API } from '../services/config'
+
+// Na demonstração as datas são relativas a um "hoje" fixo; com a API, ao dia real.
+const HOJE = USE_API ? new Date().toISOString().slice(0, 10) : HOJE_DEMO
 import '../styles/cam-publico.css'
 
 export function Home() {
+  const request = useCampanhasPublicas()
+  return <RequestState {...request}>{(campanhas) => <HomeConteudo campanhas={campanhas} />}</RequestState>
+}
+
+function HomeConteudo({ campanhas }) {
   const navigate = useNavigate()
   const [busca, setBusca] = useState('')
-  const { dados } = useDemo()
-  const destaques = dados.campanhas
+  const destaques = campanhas
     .filter((c) => c.status === 'Ativa')
     .slice(0, 3)
   return (
@@ -101,8 +111,18 @@ export function Home() {
 }
 
 export function Explorar() {
-  const { dados } = useDemo(),
-    [params, setParams] = useSearchParams(),
+  const request = useCampanhasPublicas()
+  return <RequestState {...request}>{(campanhas) => <ExplorarConteudo todas={campanhas} />}</RequestState>
+}
+
+// Ordem "recentes": ids numéricos na demonstração; UUIDs da API ordenam pela data de criação.
+function maisRecentePrimeiro(a, b) {
+  if (typeof a.id === 'number' && typeof b.id === 'number') return b.id - a.id
+  return (b.criadaEm ?? '').localeCompare(a.criadaEm ?? '')
+}
+
+function ExplorarConteudo({ todas }) {
+  const [params, setParams] = useSearchParams(),
     [pagina, setPagina] = useState(1)
   const busca = params.get('busca') ?? '',
     categoria = params.get('categoria') ?? '',
@@ -120,13 +140,13 @@ export function Explorar() {
   }
   const campanhas = useMemo(
     () =>
-      dados.campanhas
+      todas
         .filter(
           (c) =>
             ['Ativa', 'Encerrada'].includes(c.status) &&
             (!status || c.status === status) &&
             (!entidade || c.entidade === entidade) &&
-            (!urgencia || (c.status === 'Ativa' && c.encerraEm >= HOJE_DEMO && (Date.parse(c.encerraEm) - Date.parse(HOJE_DEMO)) / 86400000 <= 14)) &&
+            (!urgencia || (c.status === 'Ativa' && c.encerraEm >= HOJE && (Date.parse(c.encerraEm) - Date.parse(HOJE)) / 86400000 <= 14)) &&
             (!categoria || c.categoria === categoria) &&
             (!cidade || c.cidade === cidade) &&
             `${c.nome} ${c.entidade}`
@@ -136,9 +156,9 @@ export function Explorar() {
         .sort((a, b) =>
           ordem === 'meta'
             ? b.arrecadado / b.meta - a.arrecadado / a.meta
-            : b.id - a.id,
+            : maisRecentePrimeiro(a, b),
         ),
-    [dados.campanhas, busca, categoria, cidade, entidade, status, urgencia, ordem],
+    [todas, busca, categoria, cidade, entidade, status, urgencia, ordem],
   )
   return (
     <section className="public-section cam-publico cam-explorar">
@@ -166,7 +186,7 @@ export function Explorar() {
         <Campo rotulo="Entidade">
           <select value={entidade} onChange={(e) => filtrar('entidade', e.target.value)}>
             <option value="">Todas as entidades</option>
-            {[...new Set(dados.campanhas.filter((c) => c.status !== 'Rascunho').map((c) => c.entidade))].map((nome) => <option key={nome}>{nome}</option>)}
+            {[...new Set(todas.filter((c) => c.status !== 'Rascunho').map((c) => c.entidade))].map((nome) => <option key={nome}>{nome}</option>)}
           </select>
         </Campo>
         <Campo rotulo="Status da campanha">
@@ -187,7 +207,7 @@ export function Explorar() {
             onChange={(e) => filtrar('categoria', e.target.value)}
           >
             <option value="">Todas as categorias</option>
-            {categorias.map((c) => (
+            {(USE_API ? [...new Set(todas.map((c) => c.categoria).filter(Boolean))] : categorias).map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
@@ -198,7 +218,7 @@ export function Explorar() {
             onChange={(e) => filtrar('cidade', e.target.value)}
           >
             <option value="">Todas as cidades</option>
-            {[...new Set(dados.campanhas.map((c) => c.cidade))].map((c) => (
+            {[...new Set(todas.map((c) => c.cidade).filter(Boolean))].map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
