@@ -27,6 +27,16 @@ async function abrir(rota) {
 }
 
 describe('campanhas públicas e navegação', () => {
+  it('filtra por entidade e por campanhas encerradas sem publicar rascunhos', async () => {
+    const user = await abrir('/explorar')
+    await user.selectOptions(screen.getByLabelText('Entidade'), 'Rede Esperança')
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+    await user.selectOptions(screen.getByLabelText('Status da campanha'), 'Encerrada')
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+    expect(screen.getByRole('article').textContent).toContain('Inverno com acolhimento')
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(screen.getAllByRole('article')).toHaveLength(4)
+  })
   it('leva a busca da home para a listagem sem perder o filtro', async () => {
     const user = await abrir('/')
     await user.type(screen.getByRole('searchbox', { name: 'Buscar uma campanha ou entidade' }), 'kits escolares')

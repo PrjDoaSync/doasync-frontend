@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
 import { categorias } from '../mocks/gestao'
 import { formatarData } from '../utils/format'
+import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
 import '../styles/cam-publico.css'
 
 export function Home() {
@@ -106,6 +107,9 @@ export function Explorar() {
   const busca = params.get('busca') ?? '',
     categoria = params.get('categoria') ?? '',
     cidade = params.get('cidade') ?? '',
+    entidade = params.get('entidade') ?? '',
+    status = params.get('status') ?? 'Ativa',
+    urgencia = params.get('urgencia') ?? '',
     ordem = params.get('ordem') ?? 'recentes'
   function filtrar(chave, valor) {
     const nova = new URLSearchParams(params)
@@ -119,7 +123,10 @@ export function Explorar() {
       dados.campanhas
         .filter(
           (c) =>
-            c.status === 'Ativa' &&
+            ['Ativa', 'Encerrada'].includes(c.status) &&
+            (!status || c.status === status) &&
+            (!entidade || c.entidade === entidade) &&
+            (!urgencia || (c.status === 'Ativa' && c.encerraEm >= HOJE_DEMO && (Date.parse(c.encerraEm) - Date.parse(HOJE_DEMO)) / 86400000 <= 14)) &&
             (!categoria || c.categoria === categoria) &&
             (!cidade || c.cidade === cidade) &&
             `${c.nome} ${c.entidade}`
@@ -131,7 +138,7 @@ export function Explorar() {
             ? b.arrecadado / b.meta - a.arrecadado / a.meta
             : b.id - a.id,
         ),
-    [dados.campanhas, busca, categoria, cidade, ordem],
+    [dados.campanhas, busca, categoria, cidade, entidade, status, urgencia, ordem],
   )
   return (
     <section className="public-section cam-publico cam-explorar">
@@ -155,6 +162,24 @@ export function Explorar() {
               aria-label="Buscar campanha"
             />
           </div>
+        </Campo>
+        <Campo rotulo="Entidade">
+          <select value={entidade} onChange={(e) => filtrar('entidade', e.target.value)}>
+            <option value="">Todas as entidades</option>
+            {[...new Set(dados.campanhas.filter((c) => c.status !== 'Rascunho').map((c) => c.entidade))].map((nome) => <option key={nome}>{nome}</option>)}
+          </select>
+        </Campo>
+        <Campo rotulo="Status da campanha">
+          <select value={status} onChange={(e) => filtrar('status', e.target.value)}>
+            <option value="Ativa">Ativas</option>
+            <option value="Encerrada">Encerradas</option>
+          </select>
+        </Campo>
+        <Campo rotulo="Prazo da campanha">
+          <select value={urgencia} onChange={(e) => filtrar('urgencia', e.target.value)}>
+            <option value="">Qualquer prazo</option>
+            <option value="14">Encerra em até 14 dias (amostra)</option>
+          </select>
         </Campo>
         <Campo rotulo="Categoria">
           <select
@@ -276,6 +301,7 @@ export function DetalheCampanha() {
             src={campanha.imagem}
             alt="Doações que apoiam a comunidade"
           />
+          {campanha.galeria?.length > 0 && <div className="galeria-campanha">{campanha.galeria.map((foto, indice) => <figure key={`${foto.nome}-${indice}`}><img src={foto.url} alt={foto.nome} /><figcaption>{foto.nome}</figcaption></figure>)}</div>}
           <div
             className="abas"
             role="tablist"
@@ -306,6 +332,7 @@ export function DetalheCampanha() {
           <div
             className="detalhe-texto"
             role="tabpanel"
+            tabIndex={0}
             id="painel-campanha"
             aria-labelledby={`aba-${abas.indexOf(aba)}`}
           >

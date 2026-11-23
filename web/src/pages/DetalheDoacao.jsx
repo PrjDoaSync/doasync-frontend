@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import StatusBadge from '../components/StatusBadge'
 import { Botao, Icon, Vazio } from '../components/Ui'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
 import { eventosDoacao } from '../utils/doacoes'
 import { formatarData, formatarMoeda } from '../utils/format'
@@ -94,7 +94,7 @@ export default function DetalheDoacao() {
               <strong className="det-valor">{financeira ? formatarMoeda(d.valor) : d.titulo}</strong>
               <dl className="det-linhas">
                 <div><dt>Modalidade</dt><dd>{d.subtitulo}</dd></div>
-                <div><dt>Doadora</dt><dd>{DOADOR.nome}</dd></div>
+                <div><dt>Doador</dt><dd>{d.doador ?? DOADOR.nome}</dd></div>
                 <div><dt>Referência</dt><dd>{d.id}</dd></div>
               </dl>
               <hr />

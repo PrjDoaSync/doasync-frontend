@@ -6,7 +6,7 @@ import KpiCard from '../components/KpiCard'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import { HOJE_DEMO, HORA_DEMO, detalheCampanha } from '../mocks/campanhasDetalhe'
 import { diasRestantes } from '../utils/campanhas'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
@@ -91,8 +91,9 @@ export default function AcompanhamentoCampanha() {
                 <option value="">Todas as modalidades</option>
                 <option>Pix</option><option>Cartão</option><option>Itens</option>
               </select>
-              <select aria-label="Período" disabled><option>Todo o período</option></select>
+              <select aria-label="Período" aria-describedby="periodo-amostra" disabled><option>Todo o período</option></select>
             </div>
+            <small id="periodo-amostra">Esta amostra mostra o histórico completo. Para filtrar datas, use o Dashboard analítico.</small>
             <DataTable colunas={colunas} linhas={linhas} vazio="Nenhuma doação confirmada ainda." />
             <div className="camp-tabela-rodape">
               <span>{linhas.length} de {det.doacoes.total} doações · Página 1</span>

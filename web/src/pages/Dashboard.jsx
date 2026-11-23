@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import PageHeader from '../components/PageHeader'
 import KpiCard from '../components/KpiCard'
 import DataTable from '../components/DataTable'
@@ -65,6 +65,12 @@ export default function Dashboard({ analitico = false }) {
           </Botao>
         )}
       </PageHeader>
+      {analitico && campanha && (
+        <div className="cartao ges-campanha">
+          <img src={campanha.imagem} alt="" />
+          <div><small>Campanha selecionada</small><strong>{campanha.nome}</strong><br /><StatusBadge valor={campanha.status} /></div>
+        </div>
+      )}
       <div className="filtros-dashboard">
         {analitico && (
           <Campo rotulo="Campanha">
@@ -112,11 +118,13 @@ export default function Dashboard({ analitico = false }) {
       <section className="kpis">
         <KpiCard
           rotulo="Arrecadação financeira"
+          icone="carteira"
           valor={formatarMoeda(indicadores.arrecadado)}
           detalhe="Somente pagamentos confirmados"
         />
         <KpiCard
           rotulo="Doadores"
+          icone="doadores"
           valor={indicadores.doadores}
           detalhe="Pessoas e organizações com doações confirmadas"
         />
@@ -124,11 +132,13 @@ export default function Dashboard({ analitico = false }) {
           <>
             <KpiCard
               rotulo="Itens recebidos"
+              icone="itens"
               valor={`${indicadores.itens} unidades`}
               detalhe="Doações de itens confirmadas"
             />
             <KpiCard
               rotulo="Situação da campanha"
+              icone="campanhas"
               valor={campanha?.status ?? '—'}
               detalhe={campanha?.categoria}
             />
@@ -137,11 +147,13 @@ export default function Dashboard({ analitico = false }) {
           <>
             <KpiCard
               rotulo="Campanhas ativas"
+              icone="campanhas"
               valor={indicadores.ativas}
               detalhe={`${campanhas.length} campanhas cadastradas`}
             />
             <KpiCard
               rotulo="Taxa de conclusão"
+              icone="check"
               valor={`${indicadores.concluidas}%`}
               detalhe="Campanhas encerradas / total cadastrado"
             />
@@ -191,6 +203,7 @@ export default function Dashboard({ analitico = false }) {
                         }
                       </h3>
                       <p>Acompanhe as metas e as contribuições recebidas.</p>
+                      <Progresso atual={campanhasEntidade.find((c) => c.status === 'Ativa').arrecadado} meta={campanhasEntidade.find((c) => c.status === 'Ativa').meta} />
                       <Botao
                         para={`/dashboard/campanha?campanha=${campanhasEntidade.find((c) => c.status === 'Ativa').id}`}
                       >

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useDemo } from '../context/DemoContext'
+import { useDemo } from '../hooks/useDemo'
 import PageHeader from '../components/PageHeader'
 import DataTable from '../components/DataTable'
 import Filtros from '../components/Filtros'
+import KpiCard from '../components/KpiCard'
 import { Botao, Secao, Vazio } from '../components/Ui'
 import { formatarData, formatarMoeda } from '../utils/format'
 
@@ -33,7 +34,7 @@ export default function Doadores() {
     })
   const historico = doacoesEntidade.filter((d) => d.doador === selecionado)
   return (
-    <>
+    <div className="ges-doadores pilha">
       <div className="breadcrumb">
         Doadores <span>/</span> Relacionamento
       </div>
@@ -41,6 +42,11 @@ export default function Doadores() {
         titulo="Doadores e histórico"
         descricao="Conheça as pessoas e organizações que fazem parte dessa transformação."
       />
+      <section className="kpis" aria-label="Resumo do relacionamento">
+        <KpiCard icone="doadores" rotulo="Doadores na amostra" valor={nomes.length} detalhe="Nomes identificados nos registros demonstrativos" />
+        <KpiCard icone="doacoes" rotulo="Contribuições registradas" valor={doacoesEntidade.length} detalhe="Inclui registros pendentes e confirmados" />
+        <KpiCard icone="carteira" rotulo="Financeiro confirmado" valor={formatarMoeda(doacoesEntidade.filter((d) => d.status === 'Confirmada').reduce((s, d) => s + (d.valor || 0), 0))} detalhe="Pagamentos confirmados na amostra" />
+      </section>
       <div className={selecionado ? 'dashboard-grid' : ''}>
         <Secao titulo="Doadores da entidade">
           <Filtros
@@ -51,7 +57,7 @@ export default function Doadores() {
           <DataTable
             linhas={doadores}
             colunas={[
-              { chave: 'nome', titulo: 'Doador' },
+              { chave: 'nome', titulo: 'Doador', render: (d) => <><span className="ges-avatar" aria-hidden="true" data-iniciais={d.nome.split(' ').slice(0, 2).map((parte) => parte[0]).join('')} /><strong>{d.nome}</strong></> },
               { chave: 'quantidade', titulo: 'Contribuições' },
               {
                 chave: 'total',
@@ -105,6 +111,6 @@ export default function Doadores() {
           </Secao>
         )}
       </div>
-    </>
+    </div>
   )
 }

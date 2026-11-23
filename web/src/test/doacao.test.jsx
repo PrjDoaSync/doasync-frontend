@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
@@ -169,6 +169,17 @@ describe('doação de itens e agendamento (#100, #101)', () => {
     expect(await screen.findByRole('heading', { name: 'Doação registrada na demonstração', level: 1 })).toBeTruthy()
     expect(screen.getByText('Aguardando recebimento dos itens')).toBeTruthy()
     expect(screen.getByText('5 Cesta básica')).toBeTruthy()
+    await user.click(screen.getByRole('link', { name: 'Entrar' }))
+    await user.click(screen.getByRole('link', { name: 'Acessar demonstração' }))
+    await user.click(within(await screen.findByRole('navigation', { name: 'Navegação administrativa' })).getByRole('link', { name: 'Doações' }))
+    await user.click(await screen.findByRole('button', { name: /Ver doação demo-/ }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar recebimento na demonstração' }))
+    await user.click(screen.getByRole('link', { name: 'Ver vitrine pública' }))
+    await user.click(screen.getByRole('link', { name: 'Meu histórico' }))
+    const nova = (await screen.findByText(/demo-/)).closest('tr')
+    expect(within(nova).getByText('Recebida')).toBeTruthy()
+    await user.click(within(nova).getByRole('link', { name: /Ver detalhe/ }))
+    expect(await screen.findByText(/Entrega conferida\. 5 Cesta básica/)).toBeTruthy()
   })
   it('retirada exige o endereço', async () => {
     const user = await abrir('/doar/1')

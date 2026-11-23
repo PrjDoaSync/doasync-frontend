@@ -46,6 +46,9 @@ export default function PublicHeader() {
           >
             Entidades
           </NavLink>
+          <NavLink to="/minhas-doacoes" className={({ isActive }) => `public-header__link ${isActive ? 'active' : ''}`}>
+            Meu histórico
+          </NavLink>
         </nav>
 
         <div className="public-header__actions">

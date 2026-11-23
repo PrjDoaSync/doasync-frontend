@@ -1,13 +1,37 @@
 import { formatarData } from './format'
 // Regras das telas do doador (#102 e #103).
 export const primeiroNome = (nome) => nome.split(' ')[0]
+
+// Projection of a local contribution for the donor screens; no API request.
+export function paraHistoricoDoador(doacao, campanha) {
+  const financeira = doacao.tipo === 'Financeira'
+  const quantidade = (doacao.itens ?? []).reduce((total, item) => total + item.quantidade, 0)
+  return {
+    ...doacao,
+    campanhaId: campanha.id,
+    campanha: campanha.nome,
+    entidade: campanha.entidade,
+    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    titulo: doacao.detalhe,
+    subtitulo: financeira ? 'Financeira · única' : `Itens · ${quantidade} unidades`,
+    quantidade,
+    meio: financeira ? doacao.metodo : 'Não se aplica',
+    meioDetalhe: financeira ? `${doacao.metodo} · demonstração` : 'Sem pagamento',
+    pagamento: financeira ? `${doacao.metodo} · pendente` : 'Não se aplica',
+    pagamentoResumo: financeira ? `Pendente · ${doacao.metodo}` : 'Sem pagamento · doação de itens',
+    pagamentoSub: financeira ? 'Nenhum valor foi cobrado' : 'Aguardando entrega',
+    pagamentoStatus: financeira ? 'Pendente' : 'Não se aplica',
+    status: 'Pendente',
+    statusSub: financeira ? 'Aguardando pagamento' : 'Aguardando conferência',
+  }
+}
 const soma = (lista, campo) => lista.reduce((total, d) => total + (d[campo] ?? 0), 0)
 
 export function resumoDoador(lista) {
   const fin = lista.filter((d) => d.tipo === 'Financeira')
   const itens = lista.filter((d) => d.tipo === 'Itens')
   const finOk = fin.filter((d) => d.pagamentoStatus === 'Confirmado')
-  const itensOk = itens.filter((d) => d.status !== 'Pendente')
+  const itensOk = itens.filter((d) => ['Recebida', 'Aplicada'].includes(d.status))
   const itensAgendados = itens.filter((d) => d.status === 'Pendente')
   return {
     financeiroConfirmado: soma(finOk, 'valor'),
@@ -41,6 +65,7 @@ export const nomeDoMes = (ym) => {
 // Título, texto e faixa da confirmação conforme o estado real da doação.
 export function mensagemConfirmacao(d, nome) {
   const quem = primeiroNome(nome)
+  if (d.status === 'Cancelada') return { titulo: 'Doação cancelada', texto: `${quem}, este registro foi cancelado na demonstração. Nenhum valor foi cobrado.`, faixa: 'Registro cancelado' }
   if (d.status === 'Pendente')
     return d.tipo === 'Itens'
       ? { titulo: 'Doação aguardando conferência', texto: `${quem}, a entidade confirmará o recebimento após conferir a entrega.`, faixa: 'Entrega agendada · aguardando conferência' }
@@ -57,11 +82,12 @@ export function mensagemConfirmacao(d, nome) {
 export function eventosDoacao(d) {
   if (d.eventos) return d.eventos
   const quando = `${formatarData(d.data)} · ${d.hora}`
+  if (d.status === 'Cancelada') return [{ chave: 'pendente', titulo: 'Cancelada', quando, estado: 'final', texto: 'Registro cancelado na demonstração. Nenhum recurso foi recebido ou destinado.' }]
   const itens = d.tipo === 'Itens'
   const pendente = d.status === 'Pendente'
   return [
     { chave: 'pendente', titulo: 'Pendente', quando, estado: 'feito',
-      texto: itens ? 'Doação registrada. Aguardando a entrega e a conferência da entidade.' : `Doação registrada. Aguardando ${d.meio === 'boleto bancário' ? 'o pagamento do boleto' : 'a autorização do pagamento no cartão'}.` },
+      texto: itens ? 'Doação registrada. Aguardando a entrega e a conferência da entidade.' : `Doação registrada. Aguardando ${d.meio === 'boleto bancário' || d.meio === 'Boleto' ? 'o pagamento do boleto' : d.meio === 'PIX' ? 'a confirmação do PIX' : 'a autorização do pagamento no cartão'}.` },
     { chave: 'recebida', titulo: 'Recebida', quando: pendente ? '' : quando, estado: pendente ? 'futuro' : 'feito',
       texto: pendente ? 'Será registrada quando a entidade confirmar o recebimento.' : itens ? `Entrega conferida. ${d.titulo} recebidos pela ${d.entidade}.` : `Pagamento confirmado. ${d.titulo} recebidos pela ${d.entidade} para a campanha.` },
     { chave: 'aplicada', titulo: 'Aplicada', quando: '', estado: 'futuro',

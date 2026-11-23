@@ -125,4 +125,28 @@ describe('Layout e componentes compartilhados', () => {
     expect(skipLink).toBeTruthy()
     expect(skipLink.getAttribute('href')).toBe('#conteudo')
   })
+
+  it('abre as páginas institucionais e o histórico pela navegação', async () => {
+    const user = await abrir('/')
+    for (const nome of ['Ajuda', 'Privacidade', 'Termos de uso']) {
+      await user.click(screen.getByRole('link', { name: nome, exact: true }))
+      expect(await screen.findByRole('heading', { level: 1, name: nome })).toBeTruthy()
+    }
+    await user.click(screen.getByRole('link', { name: 'Meu histórico' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Minhas doações' })).toBeTruthy()
+  })
+
+  it('navega pelo menu de perfil com teclado e nomeia o diálogo de notificações', async () => {
+    const user = await abrir('/dashboard')
+    await user.click(screen.getByRole('button', { name: 'Perfil do usuário e ações comuns' }))
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Perfil da entidade' }))
+    await user.keyboard('{End}')
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Sair da conta' }))
+    await user.keyboard('{ArrowUp}')
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Gerenciar equipe' }))
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Notificações da entidade' }))
+    expect(screen.getByRole('dialog', { name: 'Notificações da entidade' })).toBeTruthy()
+    expect(screen.getByText('Nenhuma notificação nesta demonstração.')).toBeTruthy()
+  })
 })
