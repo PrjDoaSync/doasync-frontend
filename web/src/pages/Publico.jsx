@@ -1,18 +1,23 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../hooks/useDemo'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { categorias } from '../mocks/gestao'
-import { formatarData } from '../utils/format'
-import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
+import { formatarData, formatarMoeda } from '../utils/format'
+import { useCampanhaPublica, useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
+import RequestState from '../components/RequestState'
 import '../styles/cam-publico.css'
 
+const hojeISO = () => new Date().toISOString().slice(0, 10)
+
 export function Home() {
+  const request = useCampanhasPublicas()
+  return <RequestState {...request}>{(campanhas) => <HomeConteudo campanhas={campanhas} />}</RequestState>
+}
+
+function HomeConteudo({ campanhas }) {
   const navigate = useNavigate()
   const [busca, setBusca] = useState('')
-  const { dados } = useDemo()
-  const destaques = dados.campanhas
+  const destaques = campanhas
     .filter((c) => c.status === 'Ativa')
     .slice(0, 3)
   return (
@@ -101,8 +106,18 @@ export function Home() {
 }
 
 export function Explorar() {
-  const { dados } = useDemo(),
-    [params, setParams] = useSearchParams(),
+  const request = useCampanhasPublicas()
+  return <RequestState {...request}>{(campanhas) => <ExplorarConteudo todas={campanhas} />}</RequestState>
+}
+
+// Ordem "recentes": ids numéricos na demonstração; UUIDs da API ordenam pela data de criação.
+function maisRecentePrimeiro(a, b) {
+  if (typeof a.id === 'number' && typeof b.id === 'number') return b.id - a.id
+  return (b.criadaEm ?? '').localeCompare(a.criadaEm ?? '')
+}
+
+function ExplorarConteudo({ todas }) {
+  const [params, setParams] = useSearchParams(),
     [pagina, setPagina] = useState(1)
   const busca = params.get('busca') ?? '',
     categoria = params.get('categoria') ?? '',
@@ -118,15 +133,17 @@ export function Explorar() {
     setParams(nova)
     setPagina(1)
   }
+  const HOJE = hojeISO()
+  const cidades = [...new Set(todas.map((c) => c.cidade).filter(Boolean))]
   const campanhas = useMemo(
     () =>
-      dados.campanhas
+      todas
         .filter(
           (c) =>
             ['Ativa', 'Encerrada'].includes(c.status) &&
             (!status || c.status === status) &&
             (!entidade || c.entidade === entidade) &&
-            (!urgencia || (c.status === 'Ativa' && c.encerraEm >= HOJE_DEMO && (Date.parse(c.encerraEm) - Date.parse(HOJE_DEMO)) / 86400000 <= 14)) &&
+            (!urgencia || (c.status === 'Ativa' && c.encerraEm >= HOJE && (Date.parse(c.encerraEm) - Date.parse(HOJE)) / 86400000 <= 14)) &&
             (!categoria || c.categoria === categoria) &&
             (!cidade || c.cidade === cidade) &&
             `${c.nome} ${c.entidade}`
@@ -136,9 +153,9 @@ export function Explorar() {
         .sort((a, b) =>
           ordem === 'meta'
             ? b.arrecadado / b.meta - a.arrecadado / a.meta
-            : b.id - a.id,
+            : maisRecentePrimeiro(a, b),
         ),
-    [dados.campanhas, busca, categoria, cidade, entidade, status, urgencia, ordem],
+    [todas, busca, categoria, cidade, entidade, status, urgencia, ordem, HOJE],
   )
   return (
     <section className="public-section cam-publico cam-explorar">
@@ -166,7 +183,7 @@ export function Explorar() {
         <Campo rotulo="Entidade">
           <select value={entidade} onChange={(e) => filtrar('entidade', e.target.value)}>
             <option value="">Todas as entidades</option>
-            {[...new Set(dados.campanhas.filter((c) => c.status !== 'Rascunho').map((c) => c.entidade))].map((nome) => <option key={nome}>{nome}</option>)}
+            {[...new Set(todas.filter((c) => c.status !== 'Rascunho').map((c) => c.entidade))].map((nome) => <option key={nome}>{nome}</option>)}
           </select>
         </Campo>
         <Campo rotulo="Status da campanha">
@@ -178,7 +195,7 @@ export function Explorar() {
         <Campo rotulo="Prazo da campanha">
           <select value={urgencia} onChange={(e) => filtrar('urgencia', e.target.value)}>
             <option value="">Qualquer prazo</option>
-            <option value="14">Encerra em até 14 dias (amostra)</option>
+            <option value="14">Encerra em até 14 dias</option>
           </select>
         </Campo>
         <Campo rotulo="Categoria">
@@ -187,22 +204,25 @@ export function Explorar() {
             onChange={(e) => filtrar('categoria', e.target.value)}
           >
             <option value="">Todas as categorias</option>
-            {categorias.map((c) => (
+            {[...new Set(todas.map((c) => c.categoria).filter(Boolean))].sort().map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
         </Campo>
-        <Campo rotulo="Localização">
-          <select
-            value={cidade}
-            onChange={(e) => filtrar('cidade', e.target.value)}
-          >
-            <option value="">Todas as cidades</option>
-            {[...new Set(dados.campanhas.map((c) => c.cidade))].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </Campo>
+        {/* A API ainda não informa a cidade da campanha: o filtro só aparece quando houver dados. */}
+        {cidades.length > 0 && (
+          <Campo rotulo="Localização">
+            <select
+              value={cidade}
+              onChange={(e) => filtrar('cidade', e.target.value)}
+            >
+              <option value="">Todas as cidades</option>
+              {cidades.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </Campo>
+        )}
         <Botao
           secundario
           onClick={() => {
@@ -263,20 +283,25 @@ export function Explorar() {
 }
 
 export function DetalheCampanha() {
-  const { id } = useParams(),
-    { dados } = useDemo(),
-    [params] = useSearchParams(),
-    [aba, setAba] = useState(
-      params.get('aba') === 'itens' ? 'Itens necessários' : 'Sobre a campanha',
-    )
-  const campanha = dados.campanhas.find(
-    (c) => String(c.id) === id && c.status !== 'Rascunho',
-  )
-  if (!campanha)
+  const { id } = useParams()
+  const request = useCampanhaPublica(id)
+  if (!request.loading && !request.error && !request.data)
     return (
       <Vazio principal titulo="Campanha não encontrada">
         <Link to="/explorar">Voltar para as campanhas</Link>
       </Vazio>
+    )
+  return (
+    <RequestState {...request}>
+      {(campanha) => <DetalheConteudo key={campanha.id} campanha={campanha} />}
+    </RequestState>
+  )
+}
+
+function DetalheConteudo({ campanha }) {
+  const [params] = useSearchParams(),
+    [aba, setAba] = useState(
+      params.get('aba') === 'itens' ? 'Itens necessários' : 'Sobre a campanha',
     )
   const abas = ['Sobre a campanha', 'Itens necessários', 'Atualizações']
   return (
@@ -290,8 +315,8 @@ export function DetalheCampanha() {
       <div className="public-page-title">
         <h1>{campanha.nome}</h1>
         <p>
-          Uma iniciativa de <strong>{campanha.entidade}</strong> ·{' '}
-          {campanha.cidade}
+          Uma iniciativa de <strong>{campanha.entidade}</strong>
+          {campanha.cidade && <> · {campanha.cidade}</>}
         </p>
       </div>
       <div className="detalhe-grid">
@@ -391,18 +416,25 @@ export function DetalheCampanha() {
             <Aviso>Esta campanha está encerrada.</Aviso>
           )}
           <small>Você escolhe como e quanto deseja contribuir.</small>
-          {campanha.status === 'Ativa' && (
-            <Botao secundario para={`/doar/${campanha.id}?tipo=itens`}>
-              <Icon nome="itens" /> Doar itens necessários
-            </Botao>
+          {/* Doação de itens não existe na API: sem o atalho "Doar itens necessários". */}
+          {campanha.ultimasDoacoes?.length > 0 && (
+            <>
+              <hr />
+              <h3>Últimas doações</h3>
+              {campanha.ultimasDoacoes.map((d, i) => (
+                <div className="lista-linha" key={`${d.data}-${i}`}>
+                  <span>{d.doador}</span>
+                  <strong>{formatarMoeda(d.valor)}</strong>
+                </div>
+              ))}
+            </>
           )}
           <hr />
           <h3>Sobre a entidade</h3>
           <strong>{campanha.entidade}</strong>
-          <p>{campanha.cidade}</p>
+          {campanha.cidade && <p>{campanha.cidade}</p>}
           <Aviso>
-            Este é um protótipo funcional com dados de demonstração. Nenhum
-            pagamento é realizado.
+            Dados reais da campanha. O pagamento ainda não está integrado.
           </Aviso>
         </aside>
       </div>
