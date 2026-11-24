@@ -104,11 +104,11 @@ npm run dev                      # http://localhost:5173
 | 8 | Telas públicas leem sempre a API; flag `VITE_USE_API` removida; testes com fixtures da API | ✅ |
 | **Fase 2** | **Autenticação** | |
 | 9 | `authService` (`POST /auth/login`) + `AuthProvider`/`useAuth` (sessão, expiração, 401, logout) | ✅ |
-| 10 | Tela de login real + redirecionamento por tipo de usuário | ⏳ |
+| 10 | Tela de login real + redirecionamento por tipo + cabeçalhos com sessão | ✅ |
 | 11 | Proteção das rotas de gestão | ⏳ |
 
 ### Próximo passo
-**Passo 10** — tela de login real (`src/pages/Login.jsx`) usando `useAuth().entrar`: erros da API na tela, redirecionamento por tipo (`ENTIDADE` → `/dashboard`, `ADMIN` → `/dashboard`, doador → `/`), cabeçalhos com "Entrar"/"Sair" conforme a sessão.
+**Passo 11** — proteger as rotas de gestão (`/dashboard`, `/campanhas`, `/doacoes`, …): sem sessão de `ENTIDADE`/`ADMIN` → redireciona para `/login` guardando a rota de origem (`state.de`, já lida pelo login). Remove o botão "Acessar demonstração" do login. Testes de gestão passam a abrir com sessão.
 
 **Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
 
@@ -118,6 +118,7 @@ npm run dev                      # http://localhost:5173
 | Home | `/` | `GET /campanhas?limit=50` |
 | Explorar | `/explorar` | `GET /campanhas?limit=50` (busca, filtros e paginação no front) |
 | Detalhe | `/campanhas/:id` | `GET /campanhas/{id}` (404 → "Campanha não encontrada") |
+| Login | `/login` | `POST /auth/login` (recuperação de senha segue sem backend) |
 
 ---
 
@@ -156,7 +157,9 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 
 ### Frontend
 - **Sessão (passo 9):** guardada em `localStorage` na chave `doasync.sessao` como `{ token, expiraEm, usuario }`; sessão expirada é descartada ao ler. Um 401 em requisição **com token** (exceto o próprio login) limpa a sessão e dispara o evento `doasync:sessao-encerrada`, que o `AuthProvider` escuta. O logout automático na expiração limita o `setTimeout` a 2^31−1 ms (acima disso ele dispara na hora).
-- **Testes:** `setup.js` também limpa a sessão depois de cada teste.
+- **Testes:** `setup.js` também limpa a sessão depois de cada teste. Testes que renderizam cabeçalhos fora do `App` precisam envolver com `<AuthProvider>`.
+- **Login (passo 10):** destino pós-login em `src/utils/auth.js` (`ENTIDADE`/`ADMIN` → `/dashboard`, doador → `/`), ou a rota em `location.state.de`. O cabeçalho público mostra "Olá, {primeiro nome}" e "Sair"; "Área de gestão" só para `ENTIDADE`/`ADMIN`. Não há endpoint de recuperação de senha no backend.
+- **Fast refresh do Vite:** não exportar funções utilitárias de arquivos de componente (`pages/*.jsx`); colocá-las em `src/utils/`.
 - **Mocks compartilhados:** `dados.campanhas`, `HOJE_DEMO` e `categorias` também alimentam gestão e doação; só podem ser apagados quando essas telas forem integradas. Nas telas públicas o caminho de demonstração já foi removido.
 - **Testes:** `src/test/setup.js` instala, antes de cada teste, um adaptador Axios que responde como o backend (`src/test/fixtures/apiCampanhas.js`). Testes que precisam de outra resposta trocam `api.defaults.adapter`.
 - **Explorar sem dados da API:** o filtro "Localização" só aparece quando houver cidades (a API não informa); as categorias vêm das campanhas recebidas; "Encerradas" fica sempre vazio na vitrine pública.
@@ -197,3 +200,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): exibir detalhe da campanha a partir da API` | Passo 7 — fecha a Fase 1 |
 | 2026-11-23 | `refactor(frontend): telas públicas leem apenas a API` | Passo 8 — sem modo demonstração nas telas públicas; fixtures da API nos testes |
 | 2026-11-23 | `feat(frontend): adicionar sessão autenticada com POST /auth/login` | Passo 9 — `authService`, `AuthProvider`, `useAuth` |
+| 2026-11-23 | `feat(frontend): login real com a API e sessão nos cabeçalhos` | Passo 10 |
