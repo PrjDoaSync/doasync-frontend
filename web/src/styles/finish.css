@@ -49,7 +49,6 @@
   .topo__titulo { min-width: 0; }
   .topo__usuario-info { display: none; }
   .dashboard-grid, .ges-doadores .dashboard-grid, .confirmacao .detalhe-grid, .doacao-fluxo .detalhe-grid { grid-template-columns: minmax(0, 1fr); }
-  .lateral-confirmacao { position: static; }
   .public-header { height: auto; }
   .public-header__inner { flex-wrap: wrap; gap: 16px; padding: 16px; }
   .public-header__nav { order: 3; width: 100%; flex-wrap: wrap; justify-content: flex-start; margin: 0; gap: 8px 20px; }

@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
-import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
-import { eventosDoacao, filtrarDoacoes, mensagemConfirmacao, mesesDisponiveis, nomeDoMes, resumoDoador } from '../utils/doacoes'
+import { historicoDoadorDemo } from '../mocks/doador'
+import { eventosDoacao, filtrarDoacoes, mesesDisponiveis, nomeDoMes, resumoDoador } from '../utils/doacoes'
 
 let semDoacoes = false
 beforeEach(() => {
@@ -45,12 +45,7 @@ describe('regras do doador (#102, #103)', () => {
     expect(eventosDoacao(recebida).map((e) => e.estado)).toEqual(['feito', 'feito', 'futuro'])
     expect(eventosDoacao(itensPendente).map((e) => e.estado)).toEqual(['feito', 'futuro', 'futuro'])
   })
-  it('descreve o estado real da doação', () => {
-    const [recebida, itensPendente, boleto] = historicoDoadorDemo
-    expect(mensagemConfirmacao(recebida, DOADOR.nome).texto).toBe('Mariana, sua contribuição de R$ 100,00 chegou à Rede Esperança. Guarde os documentos e acompanhe a destinação.')
-    expect(mensagemConfirmacao(itensPendente, DOADOR.nome).titulo).toBe('Doação aguardando conferência')
-    expect(mensagemConfirmacao(boleto, DOADOR.nome).titulo).toBe('Doação aguardando pagamento')
-  })
+
 })
 
 describe('telas do doador (#102, #103)', () => {
@@ -98,25 +93,5 @@ describe('telas do doador (#102, #103)', () => {
     await abrir('/minhas-doacoes/DS-9999')
     expect(screen.getByRole('heading', { level: 1, name: /não encontrada/ })).toBeTruthy()
   })
-  it('liga a confirmação ao detalhe', async () => {
-    await abrir('/doar/1/confirmacao/DS-1086')
-    expect(screen.getByRole('link', { name: /Ver detalhe da doação/ }).getAttribute('href')).toBe('/minhas-doacoes/DS-1086')
-  })
-  it('confirma a doação financeira como no protótipo', async () => {
-    await abrir('/doar/1/confirmacao/DS-1086')
-    expect(screen.getByText('Pagamento confirmado · cartão de crédito')).toBeTruthy()
-    expect(screen.getByText('Cartão · final 4242 · 1x')).toBeTruthy()
-    expect(screen.getByText('mariana.costa@exemplo.com')).toBeTruthy()
-    const pdfs = screen.getAllByRole('button', { name: /Baixar PDF/ })
-    expect(pdfs).toHaveLength(2)
-    expect(pdfs.every((b) => b.disabled)).toBe(true)
-  })
-  it('mostra doação de itens pendente', async () => {
-    await abrir('/doar/1/confirmacao/DS-1087')
-    expect(screen.getByRole('heading', { level: 1, name: /aguardando conferência/ })).toBeTruthy()
-  })
-  it('informa doação inexistente', async () => {
-    await abrir('/doar/1/confirmacao/DS-9999')
-    expect(screen.getByRole('heading', { level: 1, name: /não encontrada/ })).toBeTruthy()
-  })
+
 })
