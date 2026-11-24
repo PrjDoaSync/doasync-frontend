@@ -7,7 +7,7 @@ import App from '../App'
 import * as fonte from '../mocks/gestao'
 import api from '../services/api'
 import { limparSessao, salvarSessao } from '../services/token'
-import { adaptadorApiPadrao, campanhasApi } from './fixtures/apiCampanhas'
+import { DOACAO_EXISTENTE_ID, adaptadorApiPadrao, campanhasApi } from './fixtures/apiCampanhas'
 import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 const CAMPANHA = campanhasApi[0]
@@ -61,10 +61,12 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Confira e confirme sua doação' })).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Doação registrada' })).toBeTruthy()
-    expect(screen.getByText('DS-2E95E189B340')).toBeTruthy()
-    expect(screen.getAllByText('Doação anônima').length).toBeGreaterThan(0)
-    expect(screen.getByText('Confirmada')).toBeTruthy()
+    // Ao confirmar, vai para o comprovante, que lê GET /doacoes/{id}.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
+    expect(screen.getAllByText(/DS-2E95E189B340/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Maria Souza · doação anônima')).toBeTruthy()
+    expect(screen.getByText('Força!')).toBeTruthy()
+    expect(chamadas.some((c) => c.method === 'get' && c.url === '/doacoes/d0000000-0000-4000-8000-000000000001')).toBe(true)
 
     const post = chamadas.find((c) => c.method === 'post' && c.url === '/doacoes')
     expect(JSON.parse(post.data)).toEqual({
@@ -104,7 +106,7 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
     expect((await screen.findByRole('alert')).textContent).toContain('Campanha não está recebendo doações.')
     await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Doação registrada' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
     const posts = chamadas.filter((c) => c.url === '/doacoes')
     expect(posts).toHaveLength(2)
     expect(posts[1].headers['Idempotency-Key']).toBe(posts[0].headers['Idempotency-Key'])
@@ -136,5 +138,31 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
     const user = await abrir(`/campanhas/${CAMPANHA.id}`)
     await user.click(screen.getByRole('link', { name: /Quero doar/ }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
+  })
+})
+
+describe('comprovante da doação (GET /doacoes/{id})', () => {
+  const rota = `/doar/${CAMPANHA.id}/confirmacao/${DOACAO_EXISTENTE_ID}`
+
+  it('a doadora abre o comprovante pela URL', async () => {
+    salvarSessao(DOADORA)
+    await abrir(rota)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
+    expect(screen.getAllByText(/DS-0000EXISTE/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Maria Souza')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Voltar à campanha/ }).getAttribute('href')).toBe(`/campanhas/${CAMPANHA.id}`)
+    expect(screen.getByRole('link', { name: /Minhas doações/ }).getAttribute('href')).toBe('/minhas-doacoes')
+  })
+
+  it('visitante é convidado a entrar', async () => {
+    limparSessao()
+    await abrir(rota)
+    expect(screen.getByRole('heading', { level: 1, name: 'Entre para ver o comprovante' })).toBeTruthy()
+  })
+
+  it('doação inexistente ou de outra pessoa (404) informa que não foi encontrada', async () => {
+    salvarSessao(DOADORA)
+    await abrir(`/doar/${CAMPANHA.id}/confirmacao/00000000-0000-0000-0000-000000000000`)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Doação não encontrada' })).toBeTruthy()
   })
 })

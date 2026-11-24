@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Aviso, Botao, Campo, Etapas, Icon, Secao, Vazio } from '../components/Ui'
 import { Progresso } from '../components/CampanhaCard'
 import RequestState from '../components/RequestState'
@@ -39,7 +39,7 @@ function Fluxo({ campanha }) {
     [erro, setErro] = useState(''),
     [enviando, setEnviando] = useState(false),
     [chave] = useState(novaChaveIdempotencia),
-    [concluida, setConcluida] = useState(null)
+    navigate = useNavigate()
   const quantia = valorDoacao(valor)
 
   function continuarValor(e) {
@@ -60,45 +60,17 @@ function Fluxo({ campanha }) {
         { campanhaId: campanha.id, valor: quantia, anonima, observacao: observacao.trim() },
         chave,
       )
-      setConcluida(doacao)
+      // O comprovante tem endereço próprio (GET /doacoes/{id}): pode ser recarregado e revisitado.
+      navigate(`/doar/${campanha.id}/confirmacao/${doacao.id}`, { replace: true })
     } catch (e) {
       setErro(
         e?.status === 401
           ? 'Sua sessão expirou. Entre novamente para concluir a doação.'
           : (e?.message ?? 'Não foi possível registrar a doação. Tente novamente.'),
       )
-    } finally {
       setEnviando(false)
     }
   }
-
-  if (concluida)
-    return (
-      <section className="public-section doacao-fluxo">
-        <div className="breadcrumb">
-          <Link to={`/campanhas/${campanha.id}`}>Campanha</Link>
-          <span>/</span>Doar
-        </div>
-        <div className="public-page-title">
-          <h1>Doação registrada</h1>
-          <p>Obrigado! Sua contribuição já conta no progresso da campanha.</p>
-        </div>
-        <Secao titulo="Comprovante da doação">
-          <ul className="resumo-final">
-            <li><span>Comprovante</span><strong>{concluida.comprovante}</strong></li>
-            <li><span>Campanha</span><strong>{campanha.nome}</strong></li>
-            <li><span>Valor</span><strong>{formatarMoeda(concluida.valor)}</strong></li>
-            <li><span>Forma de pagamento</span><strong>{concluida.formaPagamento}</strong></li>
-            <li><span>Identificação</span><strong>{concluida.anonima ? 'Doação anônima' : concluida.doador}</strong></li>
-            <li><span>Situação</span><strong>{concluida.status}</strong></li>
-          </ul>
-          <div className="acoes">
-            <Botao para={`/campanhas/${campanha.id}`}>Voltar à campanha</Botao>
-            <Botao secundario para="/explorar">Explorar outras campanhas</Botao>
-          </div>
-        </Secao>
-      </section>
-    )
 
   return (
     <section className="public-section doacao-fluxo">

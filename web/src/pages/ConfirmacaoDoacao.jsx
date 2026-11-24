@@ -1,112 +1,90 @@
-import { Link, useParams } from 'react-router-dom'
-import { Botao, Etapas, Icon, Secao, Vazio } from '../components/Ui'
-import { useDemo } from '../hooks/useDemo'
-import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
-import { mensagemConfirmacao } from '../utils/doacoes'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { Aviso, Botao, Icon, Secao, Vazio } from '../components/Ui'
+import RequestState from '../components/RequestState'
+import { useAuth } from '../hooks/useAuth'
+import { useDoacao } from '../hooks/useDoacao'
 import { formatarData, formatarMoeda } from '../utils/format'
 import '../styles/detalhe-doacao.css'
 
-// [DEV-DOA-08] Confirmação da doação (#102). Mostra o estado REAL da doação
-// (recebida, aplicada ou pendente). SEM CONTRATO na API: PDFs de comprovante e recibo,
-// reenvio de documentos, cartão/boleto (só PIX) e a tela DOA-10 ("Ver detalhe da doação").
+const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+// Comprovante da doação (GET /doacoes/{id}). Exige login: o backend só mostra a doação ao
+// próprio doador, à entidade destino ou a um ADMIN (para os demais responde 404, RN71).
+// Sem endpoint na API: PDF de comprovante/recibo, reenvio por e-mail e destinação do recurso.
 export default function ConfirmacaoDoacao() {
-  const { id, doacaoId } = useParams()
-  const { dados } = useDemo()
-  const d = (dados.historicoDoador ?? historicoDoadorDemo).find((item) => item.id === doacaoId && item.campanhaId === Number(id))
-
-  if (!d)
+  const { usuario } = useAuth()
+  const { pathname } = useLocation()
+  if (!usuario)
     return (
-      <>
-        <Vazio titulo="Doação não encontrada" principal>Verifique o endereço ou consulte suas doações.</Vazio>
-        <Botao para="/minhas-doacoes">Minhas doações</Botao>
-      </>
+      <Vazio principal titulo="Entre para ver o comprovante">
+        O comprovante só aparece para quem fez a doação.{' '}
+        <Link to="/login" state={{ de: pathname }}>Entrar</Link>
+      </Vazio>
     )
+  return <Comprovante />
+}
 
-  const { titulo, texto, faixa } = mensagemConfirmacao(d, d.doador ?? DOADOR.nome)
-  const pendente = d.status === 'Pendente'
-  const financeira = d.tipo === 'Financeira'
-  const numero = d.id.replace('DS-', '')
-  const docs = [
-    ['Comprovante de pagamento', 'Registro do pagamento confirmado, com valor, data e referência da doação.', `COMP-${numero}`],
-    ['Recibo de doação', `Declaração de recebimento pela ${d.entidade} para a campanha.`, `REC-${numero}`],
-  ]
+function Comprovante() {
+  const { doacaoId } = useParams()
+  const request = useDoacao(doacaoId)
+  if (!request.loading && !request.error && !request.data)
+    return (
+      <Vazio principal titulo="Doação não encontrada">
+        Verifique o endereço ou consulte suas doações. <Link to="/minhas-doacoes">Minhas doações</Link>
+      </Vazio>
+    )
+  return <RequestState {...request}>{(d) => <ComprovanteConteudo d={d} />}</RequestState>
+}
 
+function ComprovanteConteudo({ d }) {
+  const confirmada = d.status === 'Confirmada'
   return (
     <section className="public-section doacao-fluxo confirmacao">
       <div className="breadcrumb">
-        <Link to="/explorar">Campanhas</Link><span>/</span>
-        <Link to={`/campanhas/${d.campanhaId}`}>{d.campanha.split(':')[0]}</Link><span>/</span>Doar
+        <Link to="/explorar">Campanhas</Link>
+        <span>/</span>
+        {d.campanhaId ? <Link to={`/campanhas/${d.campanhaId}`}>{d.campanha}</Link> : d.entidade}
+        <span>/</span>Comprovante
       </div>
       <div className="public-page-title">
-        <h1>{titulo}</h1>
-        <p>{texto}</p>
+        <h1>{confirmada ? 'Sua doação foi registrada. Obrigado!' : `Doação ${d.status.toLowerCase()}`}</h1>
+        <p>
+          {confirmada
+            ? `Sua contribuição de ${formatarMoeda(d.valor)} já conta para ${d.campanha || d.entidade}.`
+            : 'Acompanhe a situação desta doação em Minhas doações.'}
+        </p>
       </div>
-      <Etapas atual={pendente ? 3 : 4} itens={['Tipo de doação', 'Sua contribuição', 'Identificação', financeira ? 'Pagamento' : 'Agendamento']} />
 
-      <div className={`banner-status${pendente ? ' banner-status--pendente' : ''}`} role="status">
-        <span className="banner-status__icone"><Icon nome={pendente ? 'relogio' : 'check'} size={20} /></span>
+      <div className={`banner-status${confirmada ? '' : ' banner-status--pendente'}`} role="status">
+        <span className="banner-status__icone"><Icon nome={confirmada ? 'check' : 'relogio'} size={20} /></span>
         <div>
-          <strong>{faixa}</strong>
-          <small>{formatarData(d.data)} às {d.hora} · Doação {d.id}{financeira ? ' · contribuição única' : ''}</small>
+          <strong>{confirmada ? `Pagamento confirmado · ${d.formaPagamento}` : `Situação: ${d.status}`}</strong>
+          <small>{formatarData(d.data.slice(0, 10))} às {hora(d.data)} · Comprovante {d.comprovante}</small>
         </div>
         <span className="banner-status__selo">{d.status}</span>
       </div>
 
-      <div className="detalhe-grid">
-        <div className="fluxo-conteudo">
-          <Secao className="comprovante" titulo="Comprovante e recibo" acao={<span className="badge badge--neutro">DEMONSTRAÇÃO</span>}>
-            <div className="comprovante-linhas">
-            <dl className="linhas-resumo"><div><dt>Doação</dt><dd><strong>{d.id}</strong></dd></div></dl>
-            <p className="linhas-resumo__campanha">{d.campanha}</p>
-            <dl className="linhas-resumo">
-              <div><dt>Entidade beneficiária</dt><dd><strong>{d.entidade}</strong></dd></div>
-              <div><dt>Doador</dt><dd><strong>{d.doador ?? DOADOR.nome}</strong></dd></div>
-              <div><dt>Pagamento</dt><dd><strong>{financeira ? d.meioDetalhe : 'Não se aplica'}</strong></dd></div>
-              <div><dt>{pendente || d.status === 'Cancelada' ? 'Data do registro' : 'Data de recebimento'}</dt><dd><strong>{formatarData(d.data)} · {d.hora}</strong></dd></div>
-            </dl>
-            </div>
-            <div className="total-linha">
-              <span>{financeira ? pendente || d.status === 'Cancelada' ? 'Contribuição registrada' : 'Total recebido' : 'Itens'}</span>
-              <strong className="numero-destaque">{financeira ? formatarMoeda(d.valor) : d.titulo}</strong>
-            </div>
-            <div className="form-grid">
-              {docs.map(([nome, descricao, codigo]) => (
-                <div className="doc-card" key={nome}>
-                  <Icon nome="arquivo" size={22} />
-                  <h3>{nome}</h3>
-                  <p>{descricao}</p>
-                  <small>{codigo} · PDF demonstrativo</small>
-                  <Botao secundario disabled><Icon nome="download" /> Baixar PDF</Botao>
-                </div>
-              ))}
-            </div>
-            <small>Documentos demonstrativos, sem validade fiscal ou bancária. {pendente ? 'Ficam disponíveis após a confirmação. ' : ''}Os PDFs dependem da integração com o backend.</small>
-          </Secao>
+      <Secao className="comprovante" titulo="Comprovante">
+        <dl className="linhas-resumo">
+          <div><dt>Comprovante</dt><dd><strong>{d.comprovante}</strong></dd></div>
+          {d.campanhaId && <div><dt>Campanha</dt><dd><strong>{d.campanha}</strong></dd></div>}
+          <div><dt>Entidade beneficiária</dt><dd><strong>{d.entidade}</strong></dd></div>
+          <div><dt>Doador</dt><dd><strong>{d.anonima ? `${d.doador} · doação anônima` : d.doador}</strong></dd></div>
+          <div><dt>Pagamento</dt><dd><strong>{d.formaPagamento} · contribuição única</strong></dd></div>
+          <div><dt>Data</dt><dd><strong>{formatarData(d.data.slice(0, 10))} · {hora(d.data)}</strong></dd></div>
+          {d.observacao && <div><dt>Mensagem</dt><dd><strong>{d.observacao}</strong></dd></div>}
+        </dl>
+        <div className="total-linha">
+          <span>Valor</span>
+          <strong className="numero-destaque">{formatarMoeda(d.valor)}</strong>
         </div>
-
-        <aside className="lateral-confirmacao">
-          <div className="cartao">
-            <h2>Acompanhe o impacto</h2>
-            <dl className="linhas-resumo">
-              <div><dt>Pagamento</dt><dd><strong>{d.pagamentoStatus}</strong></dd></div>
-              <div><dt>Destinação</dt><dd><strong>{d.status}</strong></dd></div>
-            </dl>
-            <p className="nota-caixa"><Icon nome="info" size={16} /> Recebida não significa aplicada. A {d.entidade} atualizará o status quando o recurso for usado na campanha.</p>
-            <Botao para={`/minhas-doacoes/${d.id}`}><Icon nome="seta" /> Ver detalhe da doação</Botao>
-          </div>
-          <div className="cartao">
-            <Icon nome="email" size={20} />
-            <h2>Uma cópia para você</h2>
-            <p>Endereço informado na amostra:</p>
-            <strong>{d.doador ? d.email || 'Sem e-mail informado' : DOADOR.email}</strong>
-            <p>Nenhum documento, e-mail ou link de acesso é enviado nesta demonstração. Consulte o histórico diretamente nesta sessão.</p>
-            <Botao secundario disabled><Icon nome="enviar" /> Reenviar documentos</Botao>
-          </div>
-        </aside>
-      </div>
+        <Aviso>O comprovante em PDF e o envio por e-mail ainda não existem na API.</Aviso>
+      </Secao>
 
       <div className="acoes acoes--entre">
-        <Botao para={`/campanhas/${d.campanhaId}`} secundario><Icon nome="voltar" /> Voltar à campanha</Botao>
+        {d.campanhaId && (
+          <Botao para={`/campanhas/${d.campanhaId}`} secundario><Icon nome="voltar" /> Voltar à campanha</Botao>
+        )}
         <Botao para="/minhas-doacoes"><Icon nome="doacoes" /> Minhas doações</Botao>
       </div>
     </section>

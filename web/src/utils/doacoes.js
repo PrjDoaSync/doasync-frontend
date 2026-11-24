@@ -39,21 +39,6 @@ export const nomeDoMes = (ym) => {
   return `${nome.charAt(0).toUpperCase()}${nome.slice(1)} de ${ano}`
 }
 
-// Título, texto e faixa da confirmação conforme o estado real da doação.
-export function mensagemConfirmacao(d, nome) {
-  const quem = primeiroNome(nome)
-  if (d.status === 'Cancelada') return { titulo: 'Doação cancelada', texto: `${quem}, este registro foi cancelado na demonstração. Nenhum valor foi cobrado.`, faixa: 'Registro cancelado' }
-  if (d.status === 'Pendente')
-    return d.tipo === 'Itens'
-      ? { titulo: 'Doação aguardando conferência', texto: `${quem}, a entidade confirmará o recebimento após conferir a entrega.`, faixa: 'Entrega agendada · aguardando conferência' }
-      : { titulo: 'Doação aguardando pagamento', texto: `${quem}, sua contribuição será confirmada após o pagamento.`, faixa: `Aguardando pagamento · ${d.meio}` }
-  return {
-    titulo: 'Sua doação foi recebida. Obrigado!',
-    texto: `${quem}, sua contribuição de ${d.titulo} chegou à ${d.entidade}. Guarde os documentos e acompanhe a destinação.`,
-    faixa: d.tipo === 'Itens' ? 'Entrega conferida pela entidade' : `Pagamento confirmado · ${d.meio}`,
-  }
-}
-
 // Linha do tempo da doação (Pendente → Recebida → Aplicada). Usa os eventos
 // registrados, se houver; senão deriva do estado atual da doação.
 export function eventosDoacao(d) {

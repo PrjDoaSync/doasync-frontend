@@ -41,5 +41,4 @@
 .det-linhas dd { margin: 0; font-weight: 700; text-align: right; }
 .det-baixar button, .det-baixar a { width: 100%; justify-content: center; }
 .det-rodape { display: flex; justify-content: space-between; margin-top: 24px; }
-.lateral-confirmacao .cartao a { width: 100%; justify-content: center; }
 @media (max-width: 1000px) { .det-doacao .detalhe-grid { grid-template-columns: 1fr; } .det-doacao .det-resumo { flex-wrap: wrap; gap: 20px; } }
