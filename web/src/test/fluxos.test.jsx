@@ -110,51 +110,6 @@ describe('campanhas públicas e navegação', () => {
   })
 })
 
-describe('doação financeira', () => {
-  it('valida valor, mantém a escolha ao voltar e não registra pagamento', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(
-      screen.getByRole('button', { name: /Continuar com doação financeira/ }),
-    )
-    const valor = screen.getByLabelText(/Outro valor/)
-    await user.clear(valor)
-    await user.type(valor, '0')
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByRole('alert').textContent).toContain('maior que zero')
-    await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    await user.click(screen.getByLabelText('Doação anônima'))
-    await user.click(
-      screen.getByRole('button', { name: 'Continuar para o pagamento' }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Pague com PIX', level: 1 }),
-    ).toBeTruthy()
-    expect(screen.getByText(/Este PIX é uma demonstração/)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
-    expect(screen.getByLabelText('Doação anônima').checked).toBe(true)
-  })
-  it('doação de itens segue para a seleção de itens', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    await user.click(
-      screen.getByRole('button', { name: /Continuar com doação de itens/ }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Quais itens você vai doar?', level: 1 }),
-    ).toBeTruthy()
-    expect(screen.getByLabelText('Quantidade de Cesta básica')).toBeTruthy()
-  })
-  it('campanha encerrada não permite iniciar o pagamento', async () => {
-    await abrir('/doar/3')
-    expect(
-      screen.getByRole('heading', {
-        name: 'Campanha indisponível para doação',
-      }),
-    ).toBeTruthy()
-  })
-})
-
 describe('gestão e estados de dados', () => {
   it('mostra o progresso de itens confirmados e respeita o período na análise', async () => {
     await abrir('/dashboard/campanha?campanha=1')

@@ -45,6 +45,24 @@ export const detalheCampanhaApi = (id) => {
   }
 }
 
+// DoacaoResponse de POST /doacoes (a API registra direto como CONFIRMADA).
+export function doacaoCriadaApi({ campanhaId, valor, anonima, observacao }) {
+  const c = campanhasApi.find((item) => item.id === campanhaId)
+  return {
+    id: 'd0000000-0000-4000-8000-000000000001',
+    codigoComprovante: 'DS-2E95E189B340',
+    valor,
+    formaPagamento: 'PIX',
+    status: 'CONFIRMADA',
+    anonima: Boolean(anonima),
+    ...(observacao && { observacao }),
+    dataDoacao: '2026-11-23T22:08:59Z',
+    campanha: { id: c.id, titulo: c.titulo },
+    entidade: c.entidade,
+    doador: { id: 'u0000000-0000-4000-8000-000000000002', nome: 'Maria Souza' },
+  }
+}
+
 const resposta = (config, status, data) =>
   status >= 400
     ? Promise.reject({ response: { status, data }, config, isAxiosError: true })
@@ -57,6 +75,9 @@ export function adaptadorApiPadrao(config) {
       data: campanhasApi,
       meta: { total: campanhasApi.length, page: 1, limit: 50, totalPages: 1 },
     })
+  }
+  if (config.method === 'post' && config.url === '/doacoes') {
+    return resposta(config, 201, { message: 'Doação registrada com sucesso.', data: doacaoCriadaApi(JSON.parse(config.data)) })
   }
   const detalhe = config.method === 'get' && /^\/campanhas\/([^/]+)$/.exec(config.url)
   if (detalhe) {
