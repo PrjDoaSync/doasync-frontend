@@ -105,10 +105,18 @@ npm run dev                      # http://localhost:5173
 | **Fase 2** | **Autenticação** | |
 | 9 | `authService` (`POST /auth/login`) + `AuthProvider`/`useAuth` (sessão, expiração, 401, logout) | ✅ |
 | 10 | Tela de login real + redirecionamento por tipo + cabeçalhos com sessão | ✅ |
-| 11 | Proteção das rotas de gestão | ⏳ |
+| 11 | Proteção das rotas de gestão (`RotaProtegida`) + "Acesso restrito" para doador | ✅ |
+| **Fase 3** | **Doação (PIX)** | |
+| 12 | `POST /doacoes` com `Idempotency-Key` no fluxo de doação financeira | ⏳ |
+| 13 | Confirmação/comprovante via `GET /doacoes/{id}` | ⏳ |
+| 14 | Minhas doações via `GET /usuarios/me/doacoes` | ⏳ |
 
 ### Próximo passo
-**Passo 11** — proteger as rotas de gestão (`/dashboard`, `/campanhas`, `/doacoes`, …): sem sessão de `ENTIDADE`/`ADMIN` → redireciona para `/login` guardando a rota de origem (`state.de`, já lida pelo login). Remove o botão "Acessar demonstração" do login. Testes de gestão passam a abrir com sessão.
+**Passo 12** (início da Fase 3) — no fluxo `/doar/:id` (`src/pages/FluxoDoacao.jsx`), a doação **financeira via PIX** chama `POST /doacoes` (`campanhaId`, `valor`, `formaPagamento: "PIX"`, `anonima`) com header `Idempotency-Key`; exige login de doador (PF/PJ). A campanha vem de `GET /campanhas/{id}`. Itens, cartão/boleto e agendamento não existem na API (ver §6).
+
+**Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
+
+**PR da Fase 2 (responsável):** https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api
 
 **Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
 
@@ -119,6 +127,7 @@ npm run dev                      # http://localhost:5173
 | Explorar | `/explorar` | `GET /campanhas?limit=50` (busca, filtros e paginação no front) |
 | Detalhe | `/campanhas/:id` | `GET /campanhas/{id}` (404 → "Campanha não encontrada") |
 | Login | `/login` | `POST /auth/login` (recuperação de senha segue sem backend) |
+| Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
 ---
 
@@ -159,6 +168,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - **Sessão (passo 9):** guardada em `localStorage` na chave `doasync.sessao` como `{ token, expiraEm, usuario }`; sessão expirada é descartada ao ler. Um 401 em requisição **com token** (exceto o próprio login) limpa a sessão e dispara o evento `doasync:sessao-encerrada`, que o `AuthProvider` escuta. O logout automático na expiração limita o `setTimeout` a 2^31−1 ms (acima disso ele dispara na hora).
 - **Testes:** `setup.js` também limpa a sessão depois de cada teste. Testes que renderizam cabeçalhos fora do `App` precisam envolver com `<AuthProvider>`.
 - **Login (passo 10):** destino pós-login em `src/utils/auth.js` (`ENTIDADE`/`ADMIN` → `/dashboard`, doador → `/`), ou a rota em `location.state.de`. O cabeçalho público mostra "Olá, {primeiro nome}" e "Sair"; "Área de gestão" só para `ENTIDADE`/`ADMIN`. Não há endpoint de recuperação de senha no backend.
+- **Rotas protegidas (passo 11):** `src/components/RotaProtegida.jsx` envolve as rotas de gestão em `App.jsx`. Sem sessão → `/login` com `state.de`; doador → `/acesso-restrito`. `/cadastro-entidade` usa o layout de gestão, mas é **pública** (fica fora do guarda).
+- **Testes com login:** `setup.js` salva por padrão a sessão `SESSAO_ENTIDADE_TESTE` (`src/test/fixtures/sessao.js`) antes de cada teste. Testes de visitante chamam `limparSessao()` antes de renderizar. Não importar `setup.js` dentro de um teste (registraria os hooks duas vezes).
 - **Fast refresh do Vite:** não exportar funções utilitárias de arquivos de componente (`pages/*.jsx`); colocá-las em `src/utils/`.
 - **Mocks compartilhados:** `dados.campanhas`, `HOJE_DEMO` e `categorias` também alimentam gestão e doação; só podem ser apagados quando essas telas forem integradas. Nas telas públicas o caminho de demonstração já foi removido.
 - **Testes:** `src/test/setup.js` instala, antes de cada teste, um adaptador Axios que responde como o backend (`src/test/fixtures/apiCampanhas.js`). Testes que precisam de outra resposta trocam `api.defaults.adapter`.
@@ -180,6 +191,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - 2026-11-23 — A correção de CORS vira PR no backend (`fix/cors-frontend`); revisão e merge com a Equipe 2.
 - 2026-11-23 — A flag `VITE_USE_API` foi removida no passo 8: com os mocks saindo tela a tela, ela deixou de ter função.
 - 2026-11-23 — PRs da Fase 1 aprovados: front #143 em `develop`; CORS do backend #70 em `main`. `feature/integracao-api` continua sendo a branch de trabalho (atualizada com a `develop`).
+- 2026-11-23 — O atalho "Acessar demonstração" saiu do login (passo 11): a gestão só abre com login, mesmo ainda exibindo dados de demonstração.
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
 ---
@@ -201,3 +213,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `refactor(frontend): telas públicas leem apenas a API` | Passo 8 — sem modo demonstração nas telas públicas; fixtures da API nos testes |
 | 2026-11-23 | `feat(frontend): adicionar sessão autenticada com POST /auth/login` | Passo 9 — `authService`, `AuthProvider`, `useAuth` |
 | 2026-11-23 | `feat(frontend): login real com a API e sessão nos cabeçalhos` | Passo 10 |
+| 2026-11-23 | `feat(frontend): proteger rotas de gestão com login` | Passo 11 — fecha a Fase 2 |

@@ -101,11 +101,6 @@ export default function Login() {
             </button>
           </form>
           <hr />
-          {/* A área de gestão ainda usa dados de demonstração (Fase 4); este atalho sai quando ela for integrada. */}
-          <Botao para="/dashboard" secundario>
-            Acessar demonstração
-          </Botao>
-          <small>Gestão com dados fictícios · sem login.</small>
           <p>
             Ainda não tem uma conta?{' '}
             <Link to="/cadastro-entidade">Cadastrar entidade</Link>
