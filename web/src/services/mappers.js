@@ -53,6 +53,27 @@ export function mapCampanha(api) {
   }
 }
 
+const STATUS_DOACAO = { CONFIRMADA: 'Confirmada', PENDENTE: 'Pendente', CANCELADA: 'Cancelada' }
+
+// DoacaoResponse → doação usada nas telas. `doador.id` pode vir omitido (LGPD, RN73).
+export function mapDoacao(api) {
+  return {
+    id: api.id,
+    comprovante: api.codigoComprovante ?? '',
+    valor: numero(api.valor),
+    formaPagamento: api.formaPagamento ?? 'PIX',
+    status: STATUS_DOACAO[api.status] ?? api.status ?? '',
+    anonima: Boolean(api.anonima),
+    observacao: api.observacao ?? '',
+    data: api.dataDoacao ?? '',
+    campanhaId: api.campanha?.id ?? null,
+    campanha: api.campanha?.titulo ?? '',
+    entidadeId: api.entidade?.id ?? null,
+    entidade: api.entidade?.nomeFantasia || api.entidade?.razaoSocial || '',
+    doador: api.doador?.nome ?? 'Doador anônimo',
+  }
+}
+
 // Envelope paginado { data, meta } → { itens, total, pagina, limite, totalPaginas }.
 export function mapPaginado(resposta, mapItem) {
   const meta = resposta?.meta ?? {}

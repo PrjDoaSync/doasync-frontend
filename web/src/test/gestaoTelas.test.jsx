@@ -13,6 +13,10 @@ import * as fonte from '../mocks/gestao'
 import { movimentarEstoque } from '../utils/estoque'
 import { formatarMoeda } from '../utils/format'
 import { calcularIndicadores } from '../utils/gestao'
+import api from '../services/api'
+import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
+import { limparSessao, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() =>
   vi
@@ -49,18 +53,69 @@ describe('Login e recuperação de senha (GES-01)', () => {
     expect(email.type).toBe('email')
     expect(email.required).toBe(true)
     expect(screen.getByLabelText(/Senha/).type).toBe('password')
-    expect(screen.getByRole('link', { name: 'Acessar demonstração' }).getAttribute('href')).toBe('/dashboard')
+    expect(screen.queryByRole('link', { name: 'Acessar demonstração' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Cadastrar entidade' }).getAttribute('href')).toBe('/cadastro-entidade')
-    expect(screen.getByText('Dados fictícios · nenhum acesso autenticado.')).toBeTruthy()
   })
-  it('não envia com campos vazios e informa que a autenticação não está integrada', async () => {
+  it('não envia com campos vazios e mostra o erro de credenciais da API', async () => {
+    const chamadas = []
+    api.defaults.adapter = (config) => {
+      chamadas.push(config)
+      return Promise.reject({ response: { status: 401, data: { error: 'E-mail ou senha inválidos.' } }, config })
+    }
     const user = await abrir('/login')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(screen.queryByText(/autenticação ainda não está integrada/)).toBe(null)
+    expect(chamadas).toHaveLength(0)
     await user.type(screen.getByLabelText(/E-mail/), 'ana@redeesperanca.org.br')
     await user.type(screen.getByLabelText(/Senha/), 'segredo')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(screen.getByRole('status').textContent).toContain('A autenticação ainda não está integrada')
+    expect((await screen.findByRole('alert')).textContent).toContain('E-mail ou senha inválidos.')
+    expect(chamadas[0]).toMatchObject({ url: '/auth/login', method: 'post' })
+  })
+  it.each([
+    ['ENTIDADE', 'Visão geral da Rede Esperança'],
+    ['PESSOA_FISICA', 'Encontre uma causa. Faça a diferença.'],
+  ])('login de %s entra e redireciona; o cabeçalho público mostra o usuário e "Sair"', async (tipo, titulo) => {
+    api.defaults.adapter = (config) => {
+      if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
+      const usuario = { id: 'u1', nome: 'Ana Silva', email: 'ana@x.org', tipo, entidadeId: null, statusEntidade: null }
+      const data = { data: { token: 't', tipoToken: 'Bearer', expiraEm: '2999-01-01T00:00:00Z', usuario } }
+      return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    const user = await abrir('/login')
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@x.org')
+    await user.type(screen.getByLabelText(/Senha/), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: titulo })).toBeTruthy()
+    if (tipo === 'PESSOA_FISICA') {
+      expect(screen.getByText('Olá, Ana')).toBeTruthy()
+      await user.click(screen.getByRole('button', { name: 'Sair' }))
+      expect(screen.getByRole('link', { name: 'Entrar' })).toBeTruthy()
+    }
+  })
+  it('visitante em rota de gestão vai para o login e volta à rota de origem depois de entrar', async () => {
+    limparSessao()
+    api.defaults.adapter = (config) => {
+      if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
+      const data = { data: { ...SESSAO_ENTIDADE_TESTE, tipoToken: 'Bearer' } }
+      return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    const user = await abrir('/doadores')
+    expect(screen.getByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeTruthy()
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@redeesperanca.org.br')
+    await user.type(screen.getByLabelText(/Senha/), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /Doadores/ })).toBeTruthy()
+  })
+  it('doador autenticado não acessa a gestão', async () => {
+    salvarSessao({ ...SESSAO_ENTIDADE_TESTE, usuario: { ...SESSAO_ENTIDADE_TESTE.usuario, tipo: 'PESSOA_FISICA' } })
+    await abrir('/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeTruthy()
+  })
+  it('o cadastro de entidade continua público', async () => {
+    limparSessao()
+    await abrir('/cadastro-entidade')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeNull()
   })
   it('alterna para a recuperação, avisa que nenhum e-mail foi enviado e volta ao acesso', async () => {
     const user = await abrir('/login')

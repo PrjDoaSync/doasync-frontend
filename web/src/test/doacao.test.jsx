@@ -1,82 +1,24 @@
+// Fluxo de doação financeira via PIX integrado a POST /doacoes (passo 12).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
-import {
-  gerarBoleto,
-  gerarCodigoPix,
-  itensEscolhidos,
-  luhn,
-  montarDoacao,
-  validarAgendamento,
-  validarCartao,
-  validarItens,
-} from '../utils/doacao'
+import api from '../services/api'
+import { limparSessao, salvarSessao } from '../services/token'
+import { DOACAO_EXISTENTE_ID, adaptadorApiPadrao, campanhasApi } from './fixtures/apiCampanhas'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
-const HOJE = '2026-10-06'
+const CAMPANHA = campanhasApi[0]
+const DOADORA = {
+  ...SESSAO_ENTIDADE_TESTE,
+  usuario: { id: 'u2', nome: 'Maria Souza', email: 'maria@doasync.local', tipo: 'PESSOA_FISICA', entidadeId: null, statusEntidade: null },
+}
 
 beforeEach(() =>
-  vi
-    .spyOn(fonte, 'carregarDemo')
-    .mockImplementation(() => Promise.resolve(fonte.criarDadosDemo())),
+  vi.spyOn(fonte, 'carregarDemo').mockImplementation(() => Promise.resolve(fonte.criarDadosDemo())),
 )
-
-describe('regras da doação (#98 a #101)', () => {
-  it('valida o número do cartão pelo algoritmo de Luhn', () => {
-    expect(luhn('4242 4242 4242 4242')).toBe(true)
-    expect(luhn('4242 4242 4242 4241')).toBe(false)
-    expect(luhn('123')).toBe(false)
-  })
-  it('recusa cartão vencido, validade fora do formato e CVV inválido', () => {
-    const ok = { nome: 'Ana Silva', numero: '4242424242424242', validade: '12/30', cvv: '123' }
-    expect(validarCartao(ok, HOJE)).toEqual({})
-    expect(validarCartao({ ...ok, validade: '09/26' }, HOJE).validade).toMatch(/vencido/)
-    expect(validarCartao({ ...ok, validade: '13/30' }, HOJE).validade).toMatch(/MM\/AA/)
-    expect(validarCartao({ ...ok, cvv: '12' }, HOJE).cvv).toBeTruthy()
-    expect(validarCartao({ ...ok, nome: ' ' }, HOJE).nome).toBeTruthy()
-  })
-  it('aceita o cartão que vence no mês corrente', () => {
-    const cartao = { nome: 'Ana Silva', numero: '4242424242424242', validade: '10/26', cvv: '123' }
-    expect(validarCartao(cartao, HOJE)).toEqual({})
-  })
-  it('gera PIX e boleto de demonstração com vencimento em 3 dias', () => {
-    expect(gerarCodigoPix(100, 1)).toContain('DEMO')
-    expect(gerarBoleto(100, 1, HOJE).vencimento).toBe('2026-10-09')
-    expect(gerarBoleto(100, 1, '2026-10-30').vencimento).toBe('2026-11-02')
-  })
-  it('valida quantidade de itens contra o que a campanha ainda precisa', () => {
-    const limites = { 'Cesta básica': 80 }
-    expect(validarItens({}, limites)).toMatch(/ao menos um item/)
-    expect(validarItens({ 'Cesta básica': '0' }, limites)).toMatch(/ao menos um item/)
-    expect(validarItens({ 'Cesta básica': '81' }, limites)).toMatch(/no máximo 80/)
-    expect(validarItens({ 'Cesta básica': '1.5' }, limites)).toMatch(/inteiro/)
-    expect(validarItens({ 'Cesta básica': '5' }, limites)).toBe('')
-    expect(itensEscolhidos({ 'Cesta básica': '5', 'Kit de higiene': '0' })).toEqual([
-      { nome: 'Cesta básica', quantidade: 5 },
-    ])
-  })
-  it('valida data, período e endereço do agendamento', () => {
-    const ctx = { hoje: HOJE, limite: '2026-11-15' }
-    const ok = { modo: 'entrega', data: '2026-10-20', janela: 'Manhã (9h às 12h)', endereco: '' }
-    expect(validarAgendamento(ok, ctx)).toEqual({})
-    expect(validarAgendamento({ ...ok, data: '' }, ctx).data).toBeTruthy()
-    expect(validarAgendamento({ ...ok, data: '2026-10-01' }, ctx).data).toMatch(/a partir de hoje/)
-    expect(validarAgendamento({ ...ok, data: '2026-12-01' }, ctx).data).toMatch(/encerramento/)
-    expect(validarAgendamento({ ...ok, janela: '' }, ctx).janela).toBeTruthy()
-    expect(validarAgendamento({ ...ok, modo: 'retirada' }, ctx).endereco).toBeTruthy()
-    expect(validarAgendamento({ ...ok, modo: 'retirada', endereco: 'Rua A, 100' }, ctx)).toEqual({})
-  })
-  it('monta o registro sem dados de cartão e sem tratar pendência como receita', () => {
-    const campanha = { id: 1, nome: 'Mesa', entidadeId: 1 }
-    const fin = montarDoacao({ id: 'x', campanha, doador: 'Ana', tipo: 'Financeira', valor: 50, metodo: 'Cartão', itens: [], agendamento: null, hoje: HOJE })
-    expect(fin).toMatchObject({ valor: 50, pagamento: 'Pendente', status: 'Pendente', metodo: 'Cartão', itens: [] })
-    expect(JSON.stringify(fin)).not.toMatch(/4242|cvv/i)
-    const itens = montarDoacao({ id: 'y', campanha, doador: 'Ana', tipo: 'Itens', valor: null, metodo: 'PIX', itens: [{ nome: 'Cesta básica', quantidade: 5 }], agendamento: { modo: 'entrega' }, hoje: HOJE })
-    expect(itens).toMatchObject({ valor: 0, quantidade: 5, pagamento: 'Não se aplica', metodo: null, detalhe: '5 Cesta básica' })
-  })
-})
 
 async function abrir(rota) {
   render(
@@ -88,106 +30,139 @@ async function abrir(rota) {
   return userEvent.setup()
 }
 
-// Avança de "Tipo de doação" até a identificação anônima.
-async function ate_identificacao(user, { itens = false, metodo } = {}) {
-  if (itens) {
-    await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    await user.click(screen.getByRole('button', { name: /Continuar com doação de itens/ }))
-    await user.type(screen.getByLabelText('Quantidade de Cesta básica'), '5')
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-  } else {
-    await user.click(screen.getByRole('button', { name: /Continuar com doação financeira/ }))
-    if (metodo) await user.click(screen.getByRole('radio', { name: new RegExp(metodo) }))
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+// Registra as chamadas e permite forçar uma resposta para POST /doacoes.
+function espionarApi(respostaDoacao) {
+  const chamadas = []
+  api.defaults.adapter = (config) => {
+    chamadas.push(config)
+    if (respostaDoacao && config.url === '/doacoes') return respostaDoacao(config)
+    return adaptadorApiPadrao(config)
   }
-  await user.click(screen.getByLabelText('Doação anônima'))
-  await user.click(screen.getByRole('button', { name: /Continuar para o/ }))
+  return chamadas
 }
 
-describe('pagamento via PIX (#98)', () => {
-  it('mostra o código de demonstração e registra a doação como pendente', async () => {
-    const user = await abrir('/doar/1')
-    await ate_identificacao(user)
-    expect(screen.getByRole('heading', { name: 'Pague com PIX', level: 1 })).toBeTruthy()
-    expect(screen.getByLabelText(/Código PIX/).value).toContain('DEMO')
-    await user.click(screen.getByRole('button', { name: /Já fiz o pagamento/ }))
-    expect(await screen.findByRole('heading', { name: 'Doação registrada na demonstração', level: 1 })).toBeTruthy()
-    expect(screen.getByText('Aguardando confirmação do pagamento')).toBeTruthy()
+// formatarMoeda usa espaço não separável: "R$ 50,00".
+async function ateIdentificacao(user) {
+  await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
+  await user.click(screen.getByRole('button', { name: /Continuar/ }))
+}
+
+describe('doação financeira via PIX (POST /doacoes)', () => {
+  it('doadora registra a doação anônima com mensagem e vê o comprovante', async () => {
+    salvarSessao(DOADORA)
+    const chamadas = espionarApi()
+    const user = await abrir(`/doar/${CAMPANHA.id}`)
+    expect(screen.getByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
+    await ateIdentificacao(user)
+    expect(screen.getByText('Maria Souza')).toBeTruthy()
+    await user.click(screen.getByRole('checkbox', { name: /Doação anônima/ }))
+    await user.type(screen.getByLabelText(/Mensagem para a entidade/), 'Força!')
+    await user.click(screen.getByRole('button', { name: /Revisar doação/ }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Confira e confirme sua doação' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
+
+    // Ao confirmar, vai para o comprovante, que lê GET /doacoes/{id}.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
+    expect(screen.getAllByText(/DS-2E95E189B340/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Maria Souza · doação anônima')).toBeTruthy()
+    expect(screen.getByText('Força!')).toBeTruthy()
+    expect(chamadas.some((c) => c.method === 'get' && c.url === '/doacoes/d0000000-0000-4000-8000-000000000001')).toBe(true)
+
+    const post = chamadas.find((c) => c.method === 'post' && c.url === '/doacoes')
+    expect(JSON.parse(post.data)).toEqual({
+      campanhaId: CAMPANHA.id,
+      valor: 50,
+      formaPagamento: 'PIX',
+      anonima: true,
+      observacao: 'Força!',
+    })
+    expect(post.headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/)
+    expect(post.headers.Authorization).toBe('Bearer token-de-teste')
+  })
+
+  it('não avança com valor inválido', async () => {
+    salvarSessao(DOADORA)
+    const user = await abrir(`/doar/${CAMPANHA.id}`)
+    const valor = screen.getByLabelText(/Outro valor/)
+    await user.clear(valor)
+    await user.type(valor, '0')
+    await user.click(screen.getByRole('button', { name: /Continuar/ }))
+    expect(screen.getByRole('alert').textContent).toContain('maior que zero')
+  })
+
+  it('erro da API aparece na confirmação e a nova tentativa reaproveita a mesma Idempotency-Key', async () => {
+    salvarSessao(DOADORA)
+    let falhar = true
+    const chamadas = espionarApi((config) => {
+      if (falhar) {
+        falhar = false
+        return Promise.reject({ response: { status: 409, data: { error: 'Campanha não está recebendo doações.' } }, config })
+      }
+      return adaptadorApiPadrao(config)
+    })
+    const user = await abrir(`/doar/${CAMPANHA.id}`)
+    await ateIdentificacao(user)
+    await user.click(screen.getByRole('button', { name: /Revisar doação/ }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('Campanha não está recebendo doações.')
+    await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
+    const posts = chamadas.filter((c) => c.url === '/doacoes')
+    expect(posts).toHaveLength(2)
+    expect(posts[1].headers['Idempotency-Key']).toBe(posts[0].headers['Idempotency-Key'])
+  })
+
+  it('visitante é convidado a entrar e não envia a doação', async () => {
+    limparSessao()
+    const chamadas = espionarApi()
+    const user = await abrir(`/doar/${CAMPANHA.id}`)
+    await ateIdentificacao(user)
+    expect(screen.getByRole('link', { name: /Entrar para doar/ }).getAttribute('href')).toBe('/login')
+    expect(chamadas.some((c) => c.url === '/doacoes')).toBe(false)
+  })
+
+  it('conta de entidade não pode doar', async () => {
+    const user = await abrir(`/doar/${CAMPANHA.id}`) // sessão padrão: ENTIDADE
+    await ateIdentificacao(user)
+    expect(screen.getByRole('alert').textContent).toContain('contas de doador')
+    expect(screen.queryByRole('button', { name: /Revisar doação/ })).toBeNull()
+  })
+
+  it('campanha inexistente ou fora da vitrine informa indisponibilidade', async () => {
+    await abrir('/doar/00000000-0000-0000-0000-000000000000')
+    expect(screen.getByRole('heading', { level: 1, name: 'Campanha indisponível para doação' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Explorar campanhas ativas' }).getAttribute('href')).toBe('/explorar')
+  })
+
+  it('o detalhe da campanha leva ao fluxo de doação', async () => {
+    const user = await abrir(`/campanhas/${CAMPANHA.id}`)
+    await user.click(screen.getByRole('link', { name: /Quero doar/ }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
   })
 })
 
-describe('pagamento com cartão ou boleto (#99)', () => {
-  it('cartão: valida os campos antes de concluir', async () => {
-    const user = await abrir('/doar/1')
-    await ate_identificacao(user, { metodo: 'Cartão' })
-    expect(screen.getByRole('heading', { name: 'Pague com cartão', level: 1 })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /Pagar/ }))
-    expect(screen.getByText('Número de cartão inválido.')).toBeTruthy()
-    await user.type(screen.getByLabelText(/Nome no cartão/), 'Ana Silva')
-    await user.type(screen.getByLabelText(/Número do cartão/), '4242424242424242')
-    await user.type(screen.getByLabelText(/Validade/), '12/30')
-    await user.type(screen.getByLabelText(/CVV/), '123')
-    await user.click(screen.getByRole('button', { name: /Pagar/ }))
-    expect(await screen.findByRole('heading', { name: 'Doação registrada na demonstração', level: 1 })).toBeTruthy()
-    expect(screen.queryByText(/4242/)).toBe(null)
-  })
-  it('boleto: mostra vencimento em 3 dias e conclui', async () => {
-    const user = await abrir('/doar/1')
-    await ate_identificacao(user, { metodo: 'Boleto' })
-    expect(screen.getByRole('heading', { name: 'Pague com boleto', level: 1 })).toBeTruthy()
-    expect(screen.getByText('09/10/2026')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /Concluir doação/ }))
-    expect(await screen.findByRole('heading', { name: 'Doação registrada na demonstração', level: 1 })).toBeTruthy()
-  })
-})
+describe('comprovante da doação (GET /doacoes/{id})', () => {
+  const rota = `/doar/${CAMPANHA.id}/confirmacao/${DOACAO_EXISTENTE_ID}`
 
-describe('doação de itens e agendamento (#100, #101)', () => {
-  it('recusa quantidade acima da necessidade da campanha', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    await user.click(screen.getByRole('button', { name: /Continuar com doação de itens/ }))
-    await user.type(screen.getByLabelText('Quantidade de Cesta básica'), '999')
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByRole('alert').textContent).toContain('no máximo 80')
+  it('a doadora abre o comprovante pela URL', async () => {
+    salvarSessao(DOADORA)
+    await abrir(rota)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sua doação foi registrada. Obrigado!' })).toBeTruthy()
+    expect(screen.getAllByText(/DS-0000EXISTE/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Maria Souza')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Voltar à campanha/ }).getAttribute('href')).toBe(`/campanhas/${CAMPANHA.id}`)
+    expect(screen.getByRole('link', { name: /Minhas doações/ }).getAttribute('href')).toBe('/minhas-doacoes')
   })
-  it('exige ao menos um item', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    await user.click(screen.getByRole('button', { name: /Continuar com doação de itens/ }))
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByRole('alert').textContent).toContain('ao menos um item')
+
+  it('visitante é convidado a entrar', async () => {
+    limparSessao()
+    await abrir(rota)
+    expect(screen.getByRole('heading', { level: 1, name: 'Entre para ver o comprovante' })).toBeTruthy()
   })
-  it('agenda a entrega e registra a doação de itens', async () => {
-    const user = await abrir('/doar/1')
-    await ate_identificacao(user, { itens: true })
-    expect(screen.getByRole('heading', { name: 'Agende a entrega ou a retirada', level: 1 })).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Confirmar agendamento' }))
-    expect(screen.getByText('Escolha uma data.')).toBeTruthy()
-    fireEvent.change(screen.getByLabelText(/Data/), { target: { value: '2026-10-20' } })
-    await user.selectOptions(screen.getByLabelText(/Período/), 'Manhã (9h às 12h)')
-    await user.click(screen.getByRole('button', { name: 'Confirmar agendamento' }))
-    expect(await screen.findByRole('heading', { name: 'Doação registrada na demonstração', level: 1 })).toBeTruthy()
-    expect(screen.getByText('Aguardando recebimento dos itens')).toBeTruthy()
-    expect(screen.getByText('5 Cesta básica')).toBeTruthy()
-    await user.click(screen.getByRole('link', { name: 'Entrar' }))
-    await user.click(screen.getByRole('link', { name: 'Acessar demonstração' }))
-    await user.click(within(await screen.findByRole('navigation', { name: 'Navegação administrativa' })).getByRole('link', { name: 'Doações' }))
-    await user.click(await screen.findByRole('button', { name: /Ver doação demo-/ }))
-    await user.click(screen.getByRole('button', { name: 'Confirmar recebimento na demonstração' }))
-    await user.click(screen.getByRole('link', { name: 'Ver vitrine pública' }))
-    await user.click(screen.getByRole('link', { name: 'Meu histórico' }))
-    const nova = (await screen.findByText(/demo-/)).closest('tr')
-    expect(within(nova).getByText('Recebida')).toBeTruthy()
-    await user.click(within(nova).getByRole('link', { name: /Ver detalhe/ }))
-    expect(await screen.findByText(/Entrega conferida\. 5 Cesta básica/)).toBeTruthy()
-  })
-  it('retirada exige o endereço', async () => {
-    const user = await abrir('/doar/1')
-    await ate_identificacao(user, { itens: true })
-    await user.click(screen.getByRole('radio', { name: /Quero que retirem comigo/ }))
-    fireEvent.change(screen.getByLabelText(/Data/), { target: { value: '2026-10-20' } })
-    await user.selectOptions(screen.getByLabelText(/Período/), 'Tarde (13h às 17h)')
-    await user.click(screen.getByRole('button', { name: 'Confirmar agendamento' }))
-    expect(screen.getByText('Informe o endereço para a retirada.')).toBeTruthy()
+
+  it('doação inexistente ou de outra pessoa (404) informa que não foi encontrada', async () => {
+    salvarSessao(DOADORA)
+    await abrir(`/doar/${CAMPANHA.id}/confirmacao/00000000-0000-0000-0000-000000000000`)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Doação não encontrada' })).toBeTruthy()
   })
 })

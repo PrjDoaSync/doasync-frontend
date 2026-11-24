@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGEM_PADRAO, mapCampanha, mapPaginado, mapStatusCampanha } from '../services/mappers'
+import { IMAGEM_PADRAO, mapCampanha, mapDoacao, mapPaginado, mapStatusCampanha } from '../services/mappers'
 
 // Exemplo real devolvido por GET /api/v1/campanhas/{id} (doasync-backend, perfil dev).
 const campanhaApi = {
@@ -78,6 +78,21 @@ describe('mapStatusCampanha', () => {
     ['DESATIVADA', 'Desativada'],
   ])('%s → %s', (api, tela) => {
     expect(mapStatusCampanha(api)).toBe(tela)
+  })
+})
+
+describe('mapDoacao', () => {
+  it('converte DoacaoResponse e trata doador omitido (LGPD)', () => {
+    const api = {
+      id: 'd1', codigoComprovante: 'DS-ABC', valor: 50.0, formaPagamento: 'PIX', status: 'CONFIRMADA',
+      anonima: true, dataDoacao: '2026-11-23T22:08:59Z', campanha: { id: 'c1', titulo: 'Campanha' },
+      entidade: { id: 'e1', razaoSocial: 'APAE Teste', nomeFantasia: null }, doador: { nome: 'Doador anônimo' },
+    }
+    expect(mapDoacao(api)).toEqual({
+      id: 'd1', comprovante: 'DS-ABC', valor: 50, formaPagamento: 'PIX', status: 'Confirmada', anonima: true,
+      observacao: '', data: '2026-11-23T22:08:59Z', campanhaId: 'c1', campanha: 'Campanha',
+      entidadeId: 'e1', entidade: 'APAE Teste', doador: 'Doador anônimo',
+    })
   })
 })
 
