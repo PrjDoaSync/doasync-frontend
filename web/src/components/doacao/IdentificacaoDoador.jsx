@@ -11,9 +11,12 @@ export default function IdentificacaoDoador({ anonima, onAnonima, observacao, on
   if (!usuario)
     return (
       <div className="pilha">
-        <Aviso>Para doar, entre com a sua conta de doador. Depois você volta direto para esta doação.</Aviso>
+        <Aviso>Para doar, entre com a sua conta de doador ou crie uma. Depois você volta direto para esta doação.</Aviso>
         <div className="acoes">
           <Botao secundario onClick={onVoltar}>Voltar à contribuição</Botao>
+          <Botao secundario para="/cadastro-doador" state={{ de: pathname }}>
+            Criar conta de doador
+          </Botao>
           <Botao para="/login" state={{ de: pathname }}>
             Entrar para doar <Icon nome="seta" />
           </Botao>

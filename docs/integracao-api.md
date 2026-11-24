@@ -108,12 +108,12 @@ npm run dev                      # http://localhost:5173
 | 11 | Proteção das rotas de gestão (`RotaProtegida`) + "Acesso restrito" para doador | ✅ |
 | **Fase 3** | **Doação (PIX)** | |
 | 12 | Fluxo `/doar/:id` → `POST /doacoes` (PIX, doador logado, anônima, `Idempotency-Key`); itens/cartão/boleto/agendamento removidos | ✅ |
-| 13 | Tela de cadastro de doador (`POST /doadores`) ligada ao "Entrar para doar" | ⏳ |
+| 13 | Tela `/cadastro-doador` (`POST /doadores`, PF/PJ) com login automático e volta à doação | ✅ |
 | 14 | Confirmação/comprovante via `GET /doacoes/{id}` | ⏳ |
 | 15 | Minhas doações via `GET /usuarios/me/doacoes` | ⏳ |
 
 ### Próximo passo
-**Passo 13** — tela pública de cadastro de doador (`/cadastro-doador`, `POST /doadores`): PF (CPF, data de nascimento ≥ 18 anos) ou PJ (CNPJ, razão social), nome, e-mail, senha (≥ 8), telefone; erros por campo (422) e e-mail duplicado (409). Ao concluir, entra automaticamente e volta para a doação (`state.de`). Links: "Criar conta" na identificação da doação e no login.
+**Passo 14** — comprovante da doação via `GET /doacoes/{id}`: a tela de sucesso do fluxo passa a linkar para a confirmação (`/doar/:id/confirmacao/:doacaoId`, hoje demonstração), que lê a API; 404 → "Doação não encontrada". Remove os mocks que só essa tela usava.
 
 **Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`. **Reinicie o backend se as doações começarem a dar 500** (ver §6).
 
@@ -127,6 +127,7 @@ npm run dev                      # http://localhost:5173
 | Detalhe | `/campanhas/:id` | `GET /campanhas/{id}` (404 → "Campanha não encontrada") |
 | Login | `/login` | `POST /auth/login` (recuperação de senha segue sem backend) |
 | Doação | `/doar/:id` | `GET /campanhas/{id}` + `POST /doacoes` |
+| Cadastro de doador | `/cadastro-doador` | `POST /doadores` + `POST /auth/login` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
 ---
@@ -154,6 +155,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 
 ### API (doasync-backend)
 - **⚠️ Bug do H2 no perfil `dev`:** depois de ~30–40 min com o backend no ar, **todo** `POST /doacoes` responde 500. No log: `Check constraint invalid: "CONSTRAINT_97AA"` com causa `The database has been closed` em `SessionLocal.getCompareMode`. O H2 2.4.240 avalia a CHECK com uma sessão já fechada (provavelmente reciclada pelo pool Hikari, `maxLifetime` padrão de 30 min). Reiniciar o backend resolve; PostgreSQL não deve ter o problema. GETs e login continuam funcionando.
+- **⚠️ CPF/CNPJ com máscara:** as colunas têm `CHECK (LENGTH(cpf) = 14)` e `CHECK (LENGTH(cnpj) = 18)` e o backend não valida nem normaliza o formato: CPF só com dígitos vira **500** ("Check constraint violation") em vez de 422. O front sempre envia `000.000.000-00` / `00.000.000/0000-00` (`formatarCpf`/`formatarCnpj` em `utils/cadastroDoador.js`). O backend também não confere os dígitos verificadores; o front confere.
+- **Cadastro de doador:** `POST /doadores` → 201 `{ id, nome, email, tipo, dataCadastro }` **sem token** (é preciso fazer login depois). Erros: 422 `{ erros: {...} }` com todos os campos inválidos; 409 `{ erros: { email | cpf | cnpj: "... já cadastrado." } }`; idade < 18 → 422 em `dataNascimento`.
 - **Doação:** `POST /doacoes` aceita `{ campanhaId, valor, formaPagamento: "PIX", anonima, observacao? }` e responde 201 com `DoacaoResponse` já `CONFIRMADA` (não há provedor de pagamento). Mesmo `Idempotency-Key` → 200 "Doação recuperada com sucesso." com o mesmo id (verificado no backend real). Só `PESSOA_FISICA`/`PESSOA_JURIDICA` podem doar.
 - **Login:** `POST /auth/login` devolve `{ token, tipoToken: "Bearer", expiraEm, usuario: { id, nome, email, tipo, entidadeId, statusEntidade } }`; o token expira em 8 h. O backend ignora o header `Authorization` no login.
 - **Base `/api/v1`**; o front apontava para `/api`, que só existe como alias legado somente leitura (cliente antigo da Equipe 4).
@@ -168,6 +171,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Erros por campo (passo 13):** o `ajuda` do `Campo` mostra a mensagem e `aria-invalid` deixa borda e texto vermelhos (`index.css`, `.campo [aria-invalid]`). `normalizeError` já entrega `campos` para 409 e 422.
+- **CPF de teste válido:** `111.444.777-35` (a doadora do seed usa `529.982.247-25`).
 - **Fluxo de doação (passo 12):** 3 etapas (valor → identificação → confirmação). A `Idempotency-Key` é criada uma vez por tentativa (`useState(novaChaveIdempotencia)`), então reenviar após erro não duplica. Visitante vê "Entrar para doar" (volta via `state.de`); entidade/admin veem aviso de que só doadores doam. Saíram: `SelecaoItens`, `Agendamento`, `PagamentoCartaoBoleto`, `PagamentoPix`, `utils/doacao.js`, `paraHistoricoDoador` e o CSS correspondente.
 - **Teste instável conhecido:** `criarCampanha.test.jsx` às vezes falha com a máquina carregada, porque `CriarCampanha` (ainda demonstração) tem `pausa(300)` e o `findByRole` espera só 1 s. Passa ao rodar de novo; some quando a tela for integrada (Fase 4).
 - **Sessão (passo 9):** guardada em `localStorage` na chave `doasync.sessao` como `{ token, expiraEm, usuario }`; sessão expirada é descartada ao ler. Um 401 em requisição **com token** (exceto o próprio login) limpa a sessão e dispara o evento `doasync:sessao-encerrada`, que o `AuthProvider` escuta. O logout automático na expiração limita o `setTimeout` a 2^31−1 ms (acima disso ele dispara na hora).
@@ -221,3 +226,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): login real com a API e sessão nos cabeçalhos` | Passo 10 |
 | 2026-11-23 | `feat(frontend): proteger rotas de gestão com login` | Passo 11 — fecha a Fase 2 |
 | 2026-11-23 | `feat(frontend): registrar doação PIX real com POST /doacoes` | Passo 12 |
+| 2026-11-23 | `feat(frontend): cadastro de doador com POST /doadores` | Passo 13 |

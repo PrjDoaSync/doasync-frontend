@@ -103,6 +103,8 @@ export default function Login() {
           <hr />
           <p>
             Ainda não tem uma conta?{' '}
+            <Link to="/cadastro-doador" state={location.state}>Criar conta de doador</Link>
+            {' · '}
             <Link to="/cadastro-entidade">Cadastrar entidade</Link>
           </p>
         </Secao>
