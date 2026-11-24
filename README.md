@@ -20,13 +20,13 @@ O inventário considera 10 frames de Campanhas, 10 de Doações e 10 de Gestão/
 
 ## Referências do projeto
 
-- **Protótipo no Figma:** [DoaSync — arquivo de design](https://www.figma.com/design/JaIKR7tTkfIJ3fSk4weadC/Doasync?node-id=0-1&m=dev)
+- **Protótipo no Figma:** [DoaSync — arquivo de design](https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync?node-id=0-1&m=dev)
 - **GitHub Project #8:** [Planejamento e acompanhamento das entregas](https://github.com/orgs/PrjDoaSync/projects/8)
-- **Repositório:** [PrjDoaSync/equipe-4-gestao-dashboard](https://github.com/PrjDoaSync/equipe-4-gestao-dashboard)
+- **Repositório:** [PrjDoaSync/doasync-frontend](https://github.com/PrjDoaSync/doasync-frontend)
 
-## Tecnologias
+## Tecnologias observadas
 
-As issues do projeto mencionam **React** para Web, **Expo** para Mobile, **Axios** para comunicação HTTP e **Spring Boot** para as APIs. Essas referências descrevem a stack prevista nas tarefas; a configuração efetiva de cada tecnologia deve ser confirmada nos arquivos e nas entregas correspondentes antes de documentar comandos de instalação ou execução.
+O frontend Web está em `web/` e usa React 19, Vite 8, JavaScript/JSX, React Router 7 e Axios. Vitest 5 e React Testing Library estão declarados para testes; a execução local e seus resultados estão registrados em [docs/frontend-testes-unitarios.md](docs/frontend-testes-unitarios.md). A stack Mobile e as APIs Spring Boot pertencem a outras frentes e não são descritas aqui como implementações presentes neste repositório.
 
 ## Organização e qualidade
 
@@ -42,6 +42,8 @@ As issues do projeto mencionam **React** para Web, **Expo** para Mobile, **Axios
 
 - [Documentação técnica do Front-end Web](docs/frontend-web.md)
 - [Checklist de conformidade visual — Figma × Front-end Web](docs/frontend-validacao.md)
+- [Registro de testes unitários e evidências](docs/frontend-testes-unitarios.md)
+- [Pipeline de testes automatizados de QA (GitHub Actions)](docs/frontend-pipeline-qa.md)
 
 ## Integrantes do grupo
 
