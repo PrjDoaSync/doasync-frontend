@@ -1,0 +1,77 @@
+/* Shared finish rules follow the page styles so mobile layouts cannot be undone. */
+.layout__principal, .conteudo, .public-main, .cartao, .dashboard-grid > *, .detalhe-grid > *, .fluxo-conteudo { min-width: 0; }
+.conteudo { max-width: none; }
+.cartao, .page-header, .campo, .modal, .toast, .det-card { overflow-wrap: anywhere; }
+.tabela-wrapper { max-width: 100%; min-width: 0; overflow-x: auto; }
+.tabela-wrapper:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
+.breadcrumb, .rodape-gestao, .vazio, input::placeholder, textarea::placeholder { color: var(--texto-suave); }
+.campo input, .campo select, .campo textarea { min-width: 0; max-width: 100%; }
+.sidebar__alternar { display: none; }
+.ges-campanha { display: flex; gap: 16px; align-items: center; padding: 16px; }
+.ges-campanha img { width: 72px; height: 48px; object-fit: cover; border-radius: 6px; }
+.ges-campanha > div { min-width: 0; }
+.ges-campanha .badge { margin-top: 6px; }
+.ges-doadores .kpis, .ges-itens .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ges-avatar { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--azul-claro); color: var(--azul); border-radius: 50%; margin-right: 10px; font-weight: 600; }
+.ges-avatar::before { content: attr(data-iniciais); }
+.ges-doadores .dashboard-grid { grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr); align-items: start; }
+.preferencia { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; border-bottom: 1px solid var(--borda); font-size: 14px; }
+.preferencia input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--azul); }
+.info-publica { max-width: 840px; margin-inline: auto; }
+.info-publica .cartao { margin-block: 24px; }
+.info-publica details { padding-block: 16px; border-bottom: 1px solid var(--borda); }
+.info-publica summary { cursor: pointer; font-weight: 600; }
+.info-publica details p { margin-top: 12px; }
+.modal { width: min(560px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+.toast { max-width: calc(100vw - 32px); }
+.cam-busca input { min-width: 0; flex: 1; }
+.itens-doacao .item-escolha input { height: 17px; padding: 0; }
+.imagem-previa { display: block; width: 100%; max-height: 260px; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 6px; }
+.galeria-campanha { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 16px; margin-block: 16px; }
+.galeria-campanha figure { margin: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.galeria-campanha img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.galeria-campanha figcaption { font-size: 12px; overflow-wrap: anywhere; }
+.det-tl li > div { min-width: 0; }
+@media (max-width: 1024px) {
+  .public-header__nav { margin-left: 0; gap: 16px; }
+  .public-header__actions { gap: 12px; }
+  .confirmacao .detalhe-grid { grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); }
+  .historico__filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .historico__busca { grid-column: 1 / -1; }
+}
+@media (max-width: 800px) {
+  .sidebar { width: 100%; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .sidebar > .marca { margin: 0; }
+  .sidebar__alternar { display: inline-flex; margin-left: auto; }
+  .sidebar:not(.sidebar--aberta) nav, .sidebar:not(.sidebar--aberta) .sidebar__rodape { display: none; }
+  .sidebar nav, .sidebar__rodape { width: 100%; }
+  .sidebar__link { min-height: 44px; font-size: 13px; }
+  .topo { height: auto; min-height: 56px; padding: 12px 16px; gap: 12px; }
+  .topo__titulo { min-width: 0; }
+  .topo__usuario-info { display: none; }
+  .dashboard-grid, .ges-doadores .dashboard-grid, .confirmacao .detalhe-grid, .doacao-fluxo .detalhe-grid { grid-template-columns: minmax(0, 1fr); }
+  .lateral-confirmacao { position: static; }
+  .public-header { height: auto; }
+  .public-header__inner { flex-wrap: wrap; gap: 16px; padding: 16px; }
+  .public-header__nav { order: 3; width: 100%; flex-wrap: wrap; justify-content: flex-start; margin: 0; gap: 8px 20px; }
+  .public-header__actions { margin-left: auto; }
+  .public-header__link { min-height: 44px; display: inline-flex; align-items: center; }
+  .public-footer__inner { flex-wrap: wrap; gap: 16px; padding: 20px 16px; }
+}
+@media (max-width: 540px) {
+  .kpis, .kpis--3, .ges-doadores .kpis, .ges-itens .kpis { grid-template-columns: minmax(0, 1fr); }
+  .historico__filtros { grid-template-columns: minmax(0, 1fr); padding-inline: 16px; }
+  .historico__busca { grid-column: auto; }
+  .filtros-dashboard, .filtros, .secao__cabecalho, .historico__rodape, .banner-status, .det-rodape { flex-wrap: wrap; }
+  .filtros-dashboard .campo, .filtros > .campo { width: 100%; }
+  .form-grid, .form-filtros, .filtros-publicos { grid-template-columns: minmax(0, 1fr); }
+  .public-page-title h1, .cam-publico .public-page-title h1, .cam-home .public-intro h1, .doacao-fluxo .public-page-title h1 { font-size: 24px; }
+  .acoes { flex-wrap: wrap; gap: 12px; }
+  .acoes .botao { max-width: 100%; }
+  .etapas { flex-wrap: wrap; gap: 12px; }
+  .etapas li { min-width: 110px; }
+  .itens-doacao li, .resumo-final li, .linhas-resumo > div, .det-linhas > div { flex-wrap: wrap; }
+  .det-tl li { grid-template-columns: 34px minmax(0, 1fr); }
+  .det-tl__quando { grid-column: 2; white-space: normal; }
+  .topo__menu-dropdown { width: min(280px, calc(100vw - 32px)); }
+}
