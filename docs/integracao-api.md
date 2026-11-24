@@ -107,16 +107,15 @@ npm run dev                      # http://localhost:5173
 | 10 | Tela de login real + redirecionamento por tipo + cabeçalhos com sessão | ✅ |
 | 11 | Proteção das rotas de gestão (`RotaProtegida`) + "Acesso restrito" para doador | ✅ |
 | **Fase 3** | **Doação (PIX)** | |
-| 12 | `POST /doacoes` com `Idempotency-Key` no fluxo de doação financeira | ⏳ |
-| 13 | Confirmação/comprovante via `GET /doacoes/{id}` | ⏳ |
-| 14 | Minhas doações via `GET /usuarios/me/doacoes` | ⏳ |
+| 12 | Fluxo `/doar/:id` → `POST /doacoes` (PIX, doador logado, anônima, `Idempotency-Key`); itens/cartão/boleto/agendamento removidos | ✅ |
+| 13 | Tela de cadastro de doador (`POST /doadores`) ligada ao "Entrar para doar" | ⏳ |
+| 14 | Confirmação/comprovante via `GET /doacoes/{id}` | ⏳ |
+| 15 | Minhas doações via `GET /usuarios/me/doacoes` | ⏳ |
 
 ### Próximo passo
-**Passo 12** (início da Fase 3) — no fluxo `/doar/:id` (`src/pages/FluxoDoacao.jsx`), a doação **financeira via PIX** chama `POST /doacoes` (`campanhaId`, `valor`, `formaPagamento: "PIX"`, `anonima`) com header `Idempotency-Key`; exige login de doador (PF/PJ). A campanha vem de `GET /campanhas/{id}`. Itens, cartão/boleto e agendamento não existem na API (ver §6).
+**Passo 13** — tela pública de cadastro de doador (`/cadastro-doador`, `POST /doadores`): PF (CPF, data de nascimento ≥ 18 anos) ou PJ (CNPJ, razão social), nome, e-mail, senha (≥ 8), telefone; erros por campo (422) e e-mail duplicado (409). Ao concluir, entra automaticamente e volta para a doação (`state.de`). Links: "Criar conta" na identificação da doação e no login.
 
-**Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
-
-**PR da Fase 2 (responsável):** https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api
+**Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`. **Reinicie o backend se as doações começarem a dar 500** (ver §6).
 
 **Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
 
@@ -127,6 +126,7 @@ npm run dev                      # http://localhost:5173
 | Explorar | `/explorar` | `GET /campanhas?limit=50` (busca, filtros e paginação no front) |
 | Detalhe | `/campanhas/:id` | `GET /campanhas/{id}` (404 → "Campanha não encontrada") |
 | Login | `/login` | `POST /auth/login` (recuperação de senha segue sem backend) |
+| Doação | `/doar/:id` | `GET /campanhas/{id}` + `POST /doacoes` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
 ---
@@ -137,6 +137,7 @@ npm run dev                      # http://localhost:5173
 |---|---|---|---|
 | CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | PR #70 (`fix/cors-frontend`) | ✅ mesclado na **`main`** (não na `develop`) |
 | Expor `versao` na resposta de campanha | doasync-backend (Equipe 2) | — | ⏳ necessário na Fase 4 |
+| H2 (perfil `dev`) quebra o `INSERT` em `doacoes` após ~30–40 min de execução (ver §6) | doasync-backend (Equipe 2) | — | ⏳ reportar; contorno: reiniciar o backend |
 
 ---
 
@@ -152,6 +153,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `gh` (GitHub CLI) não está instalado na máquina de origem: PRs são abertos pelo link impresso no `git push`.
 
 ### API (doasync-backend)
+- **⚠️ Bug do H2 no perfil `dev`:** depois de ~30–40 min com o backend no ar, **todo** `POST /doacoes` responde 500. No log: `Check constraint invalid: "CONSTRAINT_97AA"` com causa `The database has been closed` em `SessionLocal.getCompareMode`. O H2 2.4.240 avalia a CHECK com uma sessão já fechada (provavelmente reciclada pelo pool Hikari, `maxLifetime` padrão de 30 min). Reiniciar o backend resolve; PostgreSQL não deve ter o problema. GETs e login continuam funcionando.
+- **Doação:** `POST /doacoes` aceita `{ campanhaId, valor, formaPagamento: "PIX", anonima, observacao? }` e responde 201 com `DoacaoResponse` já `CONFIRMADA` (não há provedor de pagamento). Mesmo `Idempotency-Key` → 200 "Doação recuperada com sucesso." com o mesmo id (verificado no backend real). Só `PESSOA_FISICA`/`PESSOA_JURIDICA` podem doar.
 - **Login:** `POST /auth/login` devolve `{ token, tipoToken: "Bearer", expiraEm, usuario: { id, nome, email, tipo, entidadeId, statusEntidade } }`; o token expira em 8 h. O backend ignora o header `Authorization` no login.
 - **Base `/api/v1`**; o front apontava para `/api`, que só existe como alias legado somente leitura (cliente antigo da Equipe 4).
 - **Erros:** `{ "error": "..." }` em geral e `{ "erros": { "campo": "..." } }` em validação (422). `normalizeError` expõe `message` e `campos`.
@@ -165,6 +168,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Fluxo de doação (passo 12):** 3 etapas (valor → identificação → confirmação). A `Idempotency-Key` é criada uma vez por tentativa (`useState(novaChaveIdempotencia)`), então reenviar após erro não duplica. Visitante vê "Entrar para doar" (volta via `state.de`); entidade/admin veem aviso de que só doadores doam. Saíram: `SelecaoItens`, `Agendamento`, `PagamentoCartaoBoleto`, `PagamentoPix`, `utils/doacao.js`, `paraHistoricoDoador` e o CSS correspondente.
+- **Teste instável conhecido:** `criarCampanha.test.jsx` às vezes falha com a máquina carregada, porque `CriarCampanha` (ainda demonstração) tem `pausa(300)` e o `findByRole` espera só 1 s. Passa ao rodar de novo; some quando a tela for integrada (Fase 4).
 - **Sessão (passo 9):** guardada em `localStorage` na chave `doasync.sessao` como `{ token, expiraEm, usuario }`; sessão expirada é descartada ao ler. Um 401 em requisição **com token** (exceto o próprio login) limpa a sessão e dispara o evento `doasync:sessao-encerrada`, que o `AuthProvider` escuta. O logout automático na expiração limita o `setTimeout` a 2^31−1 ms (acima disso ele dispara na hora).
 - **Testes:** `setup.js` também limpa a sessão depois de cada teste. Testes que renderizam cabeçalhos fora do `App` precisam envolver com `<AuthProvider>`.
 - **Login (passo 10):** destino pós-login em `src/utils/auth.js` (`ENTIDADE`/`ADMIN` → `/dashboard`, doador → `/`), ou a rota em `location.state.de`. O cabeçalho público mostra "Olá, {primeiro nome}" e "Sair"; "Área de gestão" só para `ENTIDADE`/`ADMIN`. Não há endpoint de recuperação de senha no backend.
@@ -192,6 +197,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - 2026-11-23 — A flag `VITE_USE_API` foi removida no passo 8: com os mocks saindo tela a tela, ela deixou de ter função.
 - 2026-11-23 — PRs da Fase 1 aprovados: front #143 em `develop`; CORS do backend #70 em `main`. `feature/integracao-api` continua sendo a branch de trabalho (atualizada com a `develop`).
 - 2026-11-23 — O atalho "Acessar demonstração" saiu do login (passo 11): a gestão só abre com login, mesmo ainda exibindo dados de demonstração.
+- 2026-11-23 — Doação: o que a API não suporta (itens, cartão/boleto, agendamento, cadastro rápido, código PIX fictício) foi **removido do fluxo**. O cadastro de doador vira tela própria (passo 13).
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
 ---
@@ -214,3 +220,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): adicionar sessão autenticada com POST /auth/login` | Passo 9 — `authService`, `AuthProvider`, `useAuth` |
 | 2026-11-23 | `feat(frontend): login real com a API e sessão nos cabeçalhos` | Passo 10 |
 | 2026-11-23 | `feat(frontend): proteger rotas de gestão com login` | Passo 11 — fecha a Fase 2 |
+| 2026-11-23 | `feat(frontend): registrar doação PIX real com POST /doacoes` | Passo 12 |

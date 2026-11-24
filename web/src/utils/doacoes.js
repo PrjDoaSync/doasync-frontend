@@ -2,29 +2,6 @@ import { formatarData } from './format'
 // Regras das telas do doador (#102 e #103).
 export const primeiroNome = (nome) => nome.split(' ')[0]
 
-// Projection of a local contribution for the donor screens; no API request.
-export function paraHistoricoDoador(doacao, campanha) {
-  const financeira = doacao.tipo === 'Financeira'
-  const quantidade = (doacao.itens ?? []).reduce((total, item) => total + item.quantidade, 0)
-  return {
-    ...doacao,
-    campanhaId: campanha.id,
-    campanha: campanha.nome,
-    entidade: campanha.entidade,
-    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    titulo: doacao.detalhe,
-    subtitulo: financeira ? 'Financeira · única' : `Itens · ${quantidade} unidades`,
-    quantidade,
-    meio: financeira ? doacao.metodo : 'Não se aplica',
-    meioDetalhe: financeira ? `${doacao.metodo} · demonstração` : 'Sem pagamento',
-    pagamento: financeira ? `${doacao.metodo} · pendente` : 'Não se aplica',
-    pagamentoResumo: financeira ? `Pendente · ${doacao.metodo}` : 'Sem pagamento · doação de itens',
-    pagamentoSub: financeira ? 'Nenhum valor foi cobrado' : 'Aguardando entrega',
-    pagamentoStatus: financeira ? 'Pendente' : 'Não se aplica',
-    status: 'Pendente',
-    statusSub: financeira ? 'Aguardando pagamento' : 'Aguardando conferência',
-  }
-}
 const soma = (lista, campo) => lista.reduce((total, d) => total + (d[campo] ?? 0), 0)
 
 export function resumoDoador(lista) {
