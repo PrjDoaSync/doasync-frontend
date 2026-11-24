@@ -15,6 +15,8 @@ import { formatarMoeda } from '../utils/format'
 import { calcularIndicadores } from '../utils/gestao'
 import api from '../services/api'
 import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
+import { limparSessao, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() =>
   vi
@@ -51,9 +53,8 @@ describe('Login e recuperação de senha (GES-01)', () => {
     expect(email.type).toBe('email')
     expect(email.required).toBe(true)
     expect(screen.getByLabelText(/Senha/).type).toBe('password')
-    expect(screen.getByRole('link', { name: 'Acessar demonstração' }).getAttribute('href')).toBe('/dashboard')
+    expect(screen.queryByRole('link', { name: 'Acessar demonstração' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Cadastrar entidade' }).getAttribute('href')).toBe('/cadastro-entidade')
-    expect(screen.getByText('Gestão com dados fictícios · sem login.')).toBeTruthy()
   })
   it('não envia com campos vazios e mostra o erro de credenciais da API', async () => {
     const chamadas = []
@@ -90,6 +91,31 @@ describe('Login e recuperação de senha (GES-01)', () => {
       await user.click(screen.getByRole('button', { name: 'Sair' }))
       expect(screen.getByRole('link', { name: 'Entrar' })).toBeTruthy()
     }
+  })
+  it('visitante em rota de gestão vai para o login e volta à rota de origem depois de entrar', async () => {
+    limparSessao()
+    api.defaults.adapter = (config) => {
+      if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
+      const data = { data: { ...SESSAO_ENTIDADE_TESTE, tipoToken: 'Bearer' } }
+      return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    const user = await abrir('/doadores')
+    expect(screen.getByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeTruthy()
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@redeesperanca.org.br')
+    await user.type(screen.getByLabelText(/Senha/), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /Doadores/ })).toBeTruthy()
+  })
+  it('doador autenticado não acessa a gestão', async () => {
+    salvarSessao({ ...SESSAO_ENTIDADE_TESTE, usuario: { ...SESSAO_ENTIDADE_TESTE.usuario, tipo: 'PESSOA_FISICA' } })
+    await abrir('/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeTruthy()
+  })
+  it('o cadastro de entidade continua público', async () => {
+    limparSessao()
+    await abrir('/cadastro-entidade')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeNull()
   })
   it('alterna para a recuperação, avisa que nenhum e-mail foi enviado e volta ao acesso', async () => {
     const user = await abrir('/login')

@@ -6,6 +6,7 @@ import Doacoes from './pages/DoacoesGestao'
 import Entidades from './pages/Entidades'
 import { DemoProvider } from './context/DemoContext'
 import { AuthProvider } from './context/AuthContext'
+import RotaProtegida from './components/RotaProtegida'
 import { Home, Explorar, DetalheCampanha } from './pages/Publico'
 import FluxoDoacao from './pages/FluxoDoacao'
 import MinhasDoacoes from './pages/MinhasDoacoes'
@@ -58,6 +59,15 @@ export default function App() {
             <Route path="privacidade" element={<Informacoes pagina="privacidade" />} />
             <Route path="termos" element={<Informacoes pagina="termos" />} />
             <Route
+              path="acesso-restrito"
+              element={
+                <Vazio principal titulo="Acesso restrito">
+                  A área de gestão é exclusiva para entidades e administradores.{' '}
+                  <Link to="/">Voltar ao início</Link>
+                </Vazio>
+              }
+            />
+            <Route
               path="*"
               element={
                 <Vazio principal titulo="Página não encontrada">
@@ -66,22 +76,28 @@ export default function App() {
               }
             />
           </Route>
+          {/* Gestão: só ENTIDADE ou ADMIN autenticados. */}
+          <Route element={<RotaProtegida />}>
+            <Route element={<Layout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="dashboard/campanha" element={<Dashboard analitico />} />
+              <Route path="campanhas" element={<Campanhas />} />
+              <Route path="campanhas/nova" element={<CriarCampanha />} />
+              <Route path="campanhas/:id/editar" element={<EditarCampanha />} />
+              <Route path="campanhas/:id/acompanhamento" element={<AcompanhamentoCampanha />} />
+              <Route path="campanhas/:id/prestacao-de-contas" element={<PrestacaoContas />} />
+              <Route path="doacoes" element={<Doacoes />} />
+              <Route path="entidades" element={<Entidades />} />
+              <Route path="doadores" element={<Doadores />} />
+              <Route path="itens" element={<Itens />} />
+              <Route path="relatorios" element={<Relatorios />} />
+              <Route path="configuracoes" element={<CadastroEntidade perfil />} />
+              <Route path="configuracoes/usuarios" element={<Usuarios />} />
+            </Route>
+          </Route>
+          {/* Cadastro de nova entidade: público (link no cabeçalho e no login). */}
           <Route element={<Layout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="dashboard/campanha" element={<Dashboard analitico />} />
-            <Route path="campanhas" element={<Campanhas />} />
-            <Route path="campanhas/nova" element={<CriarCampanha />} />
-            <Route path="campanhas/:id/editar" element={<EditarCampanha />} />
-            <Route path="campanhas/:id/acompanhamento" element={<AcompanhamentoCampanha />} />
-            <Route path="campanhas/:id/prestacao-de-contas" element={<PrestacaoContas />} />
-            <Route path="doacoes" element={<Doacoes />} />
-            <Route path="entidades" element={<Entidades />} />
-            <Route path="doadores" element={<Doadores />} />
-            <Route path="itens" element={<Itens />} />
-            <Route path="relatorios" element={<Relatorios />} />
             <Route path="cadastro-entidade" element={<CadastroEntidade />} />
-            <Route path="configuracoes" element={<CadastroEntidade perfil />} />
-            <Route path="configuracoes/usuarios" element={<Usuarios />} />
           </Route>
         </Routes>
       </DemoProvider>

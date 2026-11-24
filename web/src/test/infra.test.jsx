@@ -864,6 +864,7 @@ describe('DemoProvider e layouts', () => {
     expect(document.querySelector('.toast')).toBe(null)
   })
   it('layout público: navegação, acesso da entidade e rodapé', async () => {
+    limparSessao() // visitante
     render(
       <MemoryRouter initialEntries={['/']}>
         <AuthProvider><DemoProvider>

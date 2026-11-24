@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
+import { limparSessao } from '../services/token'
 
 beforeEach(() => {
   vi.spyOn(fonte, 'carregarDemo').mockImplementation(() =>
@@ -23,6 +24,7 @@ async function abrir(rota) {
 
 describe('Layout e componentes compartilhados', () => {
   it('renderiza o layout público sem impor navegação administrativa', async () => {
+    limparSessao() // visitante
     await abrir('/')
 
     // Deve ter banner/header público

@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import api from '../services/api'
 import { authService } from '../services/authService'
-import { obterSessao, obterToken, salvarSessao } from '../services/token'
+import { limparSessao, obterSessao, obterToken, salvarSessao } from '../services/token'
 import { AuthProvider } from '../context/AuthContext'
 import { useAuth } from '../hooks/useAuth'
+
+beforeEach(() => limparSessao())
 
 // Resposta de POST /api/v1/auth/login no formato do contrato.
 const usuarioEntidade = {
