@@ -10,7 +10,7 @@ export default function Informacoes({ pagina }) {
       <div className="public-page-title"><h1>{titulos[pagina]}</h1><p>Informações sobre o ambiente demonstrativo do DoaSync.</p></div>
       {pagina === 'ajuda' ? (
         <Secao titulo="Como testar a aplicação">
-          <details open><summary>Como faço uma doação de teste?</summary><p>Explore as campanhas, abra uma causa e escolha contribuir com PIX, cartão, boleto ou itens. Os registros são fictícios e nenhum valor é cobrado. Depois, consulte Minhas doações.</p></details>
+          <details open><summary>Como faço uma doação?</summary><p>Explore as campanhas, abra uma causa e clique em “Quero doar”. Escolha o valor, entre com sua conta de doador (ou crie uma) e confirme a doação via PIX. O comprovante fica disponível em Minhas doações.</p></details>
           <details><summary>Como acesso a gestão?</summary><p>Use Entrar e escolha o acesso demonstrativo. No Dashboard, acompanhe campanhas, doações, doadores, estoque, relatórios e configurações.</p></details>
           <details><summary>Os dados ficam salvos?</summary><p>As mudanças permanecem somente enquanto esta aplicação estiver aberta. Recarregar a página reinicia a amostra. Não é necessário iniciar um backend para testar os fluxos.</p></details>
           <details><summary>Por que alguns documentos estão indisponíveis?</summary><p>Comprovantes oficiais, cobranças e envio de mensagens dependem de serviços futuros. A interface informa quando uma operação não está disponível. As exportações locais de relatório usam somente a amostra.</p></details>

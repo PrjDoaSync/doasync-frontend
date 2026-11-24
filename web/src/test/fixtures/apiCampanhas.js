@@ -45,6 +45,36 @@ export const detalheCampanhaApi = (id) => {
   }
 }
 
+// Doações criadas por POST /doacoes nos testes, devolvidas por GET /doacoes/{id}.
+// Inclui uma doação já existente para abrir o comprovante direto pela URL.
+const doacoesCriadas = new Map()
+export const DOACAO_EXISTENTE_ID = 'd0000000-0000-4000-8000-000000000009'
+
+// DoacaoResponse de POST /doacoes (a API registra direto como CONFIRMADA).
+export function doacaoCriadaApi({ campanhaId, valor, anonima, observacao }) {
+  const c = campanhasApi.find((item) => item.id === campanhaId)
+  return {
+    id: 'd0000000-0000-4000-8000-000000000001',
+    codigoComprovante: 'DS-2E95E189B340',
+    valor,
+    formaPagamento: 'PIX',
+    status: 'CONFIRMADA',
+    anonima: Boolean(anonima),
+    ...(observacao && { observacao }),
+    dataDoacao: '2026-11-23T22:08:59Z',
+    campanha: { id: c.id, titulo: c.titulo },
+    entidade: c.entidade,
+    doador: { id: 'u0000000-0000-4000-8000-000000000002', nome: 'Maria Souza' },
+  }
+}
+
+doacoesCriadas.set(DOACAO_EXISTENTE_ID, {
+  ...doacaoCriadaApi({ campanhaId: campanhasApi[0].id, valor: 150, anonima: false, observacao: 'Força!' }),
+  id: DOACAO_EXISTENTE_ID,
+  codigoComprovante: 'DS-0000EXISTE',
+  dataDoacao: '2026-11-20T14:30:00Z',
+})
+
 const resposta = (config, status, data) =>
   status >= 400
     ? Promise.reject({ response: { status, data }, config, isAxiosError: true })
@@ -57,6 +87,20 @@ export function adaptadorApiPadrao(config) {
       data: campanhasApi,
       meta: { total: campanhasApi.length, page: 1, limit: 50, totalPages: 1 },
     })
+  }
+  if (config.method === 'post' && config.url === '/doacoes') {
+    const doacao = doacaoCriadaApi(JSON.parse(config.data))
+    doacoesCriadas.set(doacao.id, doacao)
+    return resposta(config, 201, { message: 'Doação registrada com sucesso.', data: doacao })
+  }
+  if (config.method === 'get' && config.url === '/usuarios/me/doacoes') {
+    const lista = [...doacoesCriadas.values()].sort((a, b) => b.dataDoacao.localeCompare(a.dataDoacao))
+    return resposta(config, 200, { data: lista, meta: { total: lista.length, page: 1, limit: 50, totalPages: 1 } })
+  }
+  const comprovante = config.method === 'get' && /^\/doacoes\/([^/]+)$/.exec(config.url)
+  if (comprovante) {
+    const d = doacoesCriadas.get(comprovante[1])
+    return d ? resposta(config, 200, { data: d }) : resposta(config, 404, { error: 'Doação não encontrada.' })
   }
   const detalhe = config.method === 'get' && /^\/campanhas\/([^/]+)$/.exec(config.url)
   if (detalhe) {

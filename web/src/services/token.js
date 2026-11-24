@@ -1,27 +1,51 @@
-// Guarda o JWT emitido por POST /auth/login. O acesso ao localStorage pode falhar
-// (navegação privada, bloqueio de dados do site), por isso cada chamada é protegida.
-const CHAVE = 'doasync.token'
+// Sessão emitida por POST /auth/login: { token, expiraEm, usuario }.
+// O acesso ao localStorage pode falhar (navegação privada, bloqueio de dados do site),
+// por isso cada chamada é protegida; sem armazenamento a sessão vale até recarregar a página.
+const CHAVE = 'doasync.sessao'
 
-export function obterToken() {
+// Disparado quando a sessão é encerrada fora do AuthProvider (ex.: 401 da API).
+export const EVENTO_SESSAO_ENCERRADA = 'doasync:sessao-encerrada'
+
+let emMemoria = null
+
+export function salvarSessao(sessao) {
+  emMemoria = sessao
   try {
-    return localStorage.getItem(CHAVE)
+    localStorage.setItem(CHAVE, JSON.stringify(sessao))
   } catch {
-    return null
+    // Fica só em memória.
   }
 }
 
-export function salvarToken(token) {
-  try {
-    localStorage.setItem(CHAVE, token)
-  } catch {
-    // Sem armazenamento disponível: a sessão vale só até recarregar a página.
-  }
-}
-
-export function limparToken() {
+export function limparSessao() {
+  emMemoria = null
   try {
     localStorage.removeItem(CHAVE)
   } catch {
     // Nada a limpar.
   }
+}
+
+function ler() {
+  try {
+    const salvo = localStorage.getItem(CHAVE)
+    return salvo ? JSON.parse(salvo) : emMemoria
+  } catch {
+    return emMemoria
+  }
+}
+
+// Sessão válida ou null; uma sessão expirada é descartada.
+export function obterSessao() {
+  const sessao = ler()
+  if (!sessao?.token) return null
+  if (sessao.expiraEm && Date.parse(sessao.expiraEm) <= Date.now()) {
+    limparSessao()
+    return null
+  }
+  return sessao
+}
+
+export function obterToken() {
+  return obterSessao()?.token ?? null
 }

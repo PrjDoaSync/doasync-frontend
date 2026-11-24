@@ -1,8 +1,11 @@
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Marca, Botao } from '../Ui'
+import { useAuth } from '../../hooks/useAuth'
+import { acessaGestao } from '../../utils/auth'
 
 export default function PublicHeader() {
   const { pathname } = useLocation()
+  const { usuario, autenticado, sair } = useAuth()
 
   // Ativação da navegação pública de acordo com a rota
   const isCampanhasActive =
@@ -52,20 +55,36 @@ export default function PublicHeader() {
         </nav>
 
         <div className="public-header__actions">
-          <Link
-            to="/login"
-            className="public-header__link-entidade"
-            aria-label="Ir para área da entidade"
-          >
-            Área da entidade
-          </Link>
-          <Botao
-            para="/login"
-            secundario
-            className="public-header__btn-entrar"
-          >
-            Entrar
-          </Botao>
+          {autenticado ? (
+            <>
+              {acessaGestao(usuario.tipo) && (
+                <Link to="/dashboard" className="public-header__link-entidade">
+                  Área de gestão
+                </Link>
+              )}
+              <span className="public-header__usuario">Olá, {usuario.nome.split(' ')[0]}</span>
+              <Botao secundario className="public-header__btn-entrar" onClick={sair}>
+                Sair
+              </Botao>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="public-header__link-entidade"
+                aria-label="Ir para área da entidade"
+              >
+                Área da entidade
+              </Link>
+              <Botao
+                para="/login"
+                secundario
+                className="public-header__btn-entrar"
+              >
+                Entrar
+              </Botao>
+            </>
+          )}
         </div>
       </div>
     </header>

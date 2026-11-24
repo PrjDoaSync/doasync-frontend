@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
+import { limparSessao, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() => {
   vi.spyOn(fonte, 'carregarDemo').mockImplementation(() =>
@@ -23,6 +25,7 @@ async function abrir(rota) {
 
 describe('Layout e componentes compartilhados', () => {
   it('renderiza o layout público sem impor navegação administrativa', async () => {
+    limparSessao() // visitante
     await abrir('/')
 
     // Deve ter banner/header público
@@ -127,6 +130,8 @@ describe('Layout e componentes compartilhados', () => {
   })
 
   it('abre as páginas institucionais e o histórico pela navegação', async () => {
+    // "Meu histórico" é de doador (GET /usuarios/me/doacoes).
+    salvarSessao({ ...SESSAO_ENTIDADE_TESTE, usuario: { ...SESSAO_ENTIDADE_TESTE.usuario, tipo: 'PESSOA_FISICA' } })
     const user = await abrir('/')
     for (const nome of ['Ajuda', 'Privacidade', 'Termos de uso']) {
       await user.click(screen.getByRole('link', { name: nome, exact: true }))
