@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_URL } from './config'
-import { obterToken } from './token'
+import { EVENTO_SESSAO_ENCERRADA, limparSessao, obterToken } from './token'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -45,7 +45,16 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(normalizeError(error)),
+  (error) => {
+    const normalizado = normalizeError(error)
+    // 401 com token (fora do login) = sessão expirada ou usuário desativado: encerra a sessão.
+    const comToken = Boolean(error.config?.headers?.Authorization)
+    if (normalizado.status === 401 && comToken && error.config?.url !== '/auth/login') {
+      limparSessao()
+      window.dispatchEvent(new Event(EVENTO_SESSAO_ENCERRADA))
+    }
+    return Promise.reject(normalizado)
+  },
 )
 
 export default api

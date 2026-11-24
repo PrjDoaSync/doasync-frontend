@@ -16,7 +16,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import axios from 'axios'
 import api, { normalizeError } from '../services/api'
 import { API_URL } from '../services/config'
-import { limparToken, obterToken, salvarToken } from '../services/token'
+import { limparSessao, obterToken, salvarSessao } from '../services/token'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
@@ -428,14 +428,14 @@ describe('cliente HTTP (services/api.js)', () => {
       chamadas.push(config)
       return Promise.resolve({ data: {}, status: 200, statusText: 'OK', headers: {}, config })
     }
-    limparToken()
+    limparSessao()
     await api.get('/campanhas')
     expect(chamadas[0].headers.Authorization).toBeUndefined()
-    salvarToken('abc.def.ghi')
+    salvarSessao({ token: 'abc.def.ghi', expiraEm: '2999-01-01T00:00:00Z', usuario: null })
     await api.get('/usuarios/me')
     expect(chamadas[1].headers.Authorization).toBe('Bearer abc.def.ghi')
     expect(obterToken()).toBe('abc.def.ghi')
-    limparToken()
+    limparSessao()
     expect(obterToken()).toBeNull()
   })
   it('o cliente usa a URL de config.js', () => {
