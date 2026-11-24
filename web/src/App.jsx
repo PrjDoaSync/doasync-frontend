@@ -20,6 +20,7 @@ import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
 import Login from './pages/Login'
+import CadastroDoador from './pages/CadastroDoador'
 import Doadores from './pages/Doadores'
 import Itens from './pages/Itens'
 import Usuarios from './pages/Usuarios'
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="minhas-doacoes" element={<MinhasDoacoes />} />
             <Route path="minhas-doacoes/:doacaoId" element={<DetalheDoacao />} />
             <Route path="login" element={<Login />} />
+            <Route path="cadastro-doador" element={<CadastroDoador />} />
             <Route path="ajuda" element={<Informacoes pagina="ajuda" />} />
             <Route path="privacidade" element={<Informacoes pagina="privacidade" />} />
             <Route path="termos" element={<Informacoes pagina="termos" />} />

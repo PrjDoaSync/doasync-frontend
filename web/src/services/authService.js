@@ -10,6 +10,8 @@ export const authService = {
       salvarSessao(sessao)
       return sessao
     }),
+  // POST /doadores (público) → { id, nome, email, tipo, dataCadastro }. Não autentica: entrar depois.
+  cadastrarDoador: (corpo) => api.post('/doadores', corpo).then((r) => r.data.data),
   // O backend é stateless: sair é só descartar o token.
   sair: () => limparSessao(),
 }
