@@ -1,7 +1,7 @@
 /* Shared finish rules follow the page styles so mobile layouts cannot be undone. */
 .layout__principal, .conteudo, .public-main, .cartao, .dashboard-grid > *, .detalhe-grid > *, .fluxo-conteudo { min-width: 0; }
 .conteudo { max-width: none; }
-.cartao, .page-header, .campo, .modal, .toast, .det-card { overflow-wrap: anywhere; }
+.cartao, .page-header, .campo, .modal, .toast { overflow-wrap: anywhere; }
 .tabela-wrapper { max-width: 100%; min-width: 0; overflow-x: auto; }
 .tabela-wrapper:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
 .breadcrumb, .rodape-gestao, .vazio, input::placeholder, textarea::placeholder { color: var(--texto-suave); }
@@ -30,7 +30,6 @@
 .galeria-campanha figure { margin: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
 .galeria-campanha img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
 .galeria-campanha figcaption { font-size: 12px; overflow-wrap: anywhere; }
-.det-tl li > div { min-width: 0; }
 @media (max-width: 1024px) {
   .public-header__nav { margin-left: 0; gap: 16px; }
   .public-header__actions { gap: 12px; }
@@ -60,7 +59,7 @@
   .kpis, .kpis--3, .ges-doadores .kpis, .ges-itens .kpis { grid-template-columns: minmax(0, 1fr); }
   .historico__filtros { grid-template-columns: minmax(0, 1fr); padding-inline: 16px; }
   .historico__busca { grid-column: auto; }
-  .filtros-dashboard, .filtros, .secao__cabecalho, .historico__rodape, .banner-status, .det-rodape { flex-wrap: wrap; }
+  .filtros-dashboard, .filtros, .secao__cabecalho, .historico__rodape, .banner-status { flex-wrap: wrap; }
   .filtros-dashboard .campo, .filtros > .campo { width: 100%; }
   .form-grid, .form-filtros, .filtros-publicos { grid-template-columns: minmax(0, 1fr); }
   .public-page-title h1, .cam-publico .public-page-title h1, .cam-home .public-intro h1, .doacao-fluxo .public-page-title h1 { font-size: 24px; }
@@ -68,8 +67,6 @@
   .acoes .botao { max-width: 100%; }
   .etapas { flex-wrap: wrap; gap: 12px; }
   .etapas li { min-width: 110px; }
-  .resumo-final li, .linhas-resumo > div, .det-linhas > div { flex-wrap: wrap; }
-  .det-tl li { grid-template-columns: 34px minmax(0, 1fr); }
-  .det-tl__quando { grid-column: 2; white-space: normal; }
+  .resumo-final li, .linhas-resumo > div { flex-wrap: wrap; }
   .topo__menu-dropdown { width: min(280px, calc(100vw - 32px)); }
 }

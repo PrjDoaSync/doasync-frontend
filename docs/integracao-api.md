@@ -110,10 +110,33 @@ npm run dev                      # http://localhost:5173
 | 12 | Fluxo `/doar/:id` → `POST /doacoes` (PIX, doador logado, anônima, `Idempotency-Key`); itens/cartão/boleto/agendamento removidos | ✅ |
 | 13 | Tela `/cadastro-doador` (`POST /doadores`, PF/PJ) com login automático e volta à doação | ✅ |
 | 14 | Comprovante `/doar/:id/confirmacao/:doacaoId` via `GET /doacoes/{id}`; o fluxo navega para ele ao concluir | ✅ |
-| 15 | Minhas doações via `GET /usuarios/me/doacoes` | ⏳ |
+| 15 | Minhas doações (`GET /usuarios/me/doacoes`) + detalhe = comprovante (`/minhas-doacoes/:id`) | ✅ |
+| **Fase 4** | **Gestão da entidade** (hoje: telas protegidas, mas com dados de demonstração) | |
+| 16 | Cadastro de entidade (`/cadastro-entidade` → `POST /entidades`, status inicial `PENDENTE`) | ⏳ |
+| 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`, id vem de `usuario.entidadeId`) | ⏳ |
+| 18 | Minhas campanhas (`/campanhas` → `GET /campanhas?entidadeId=...` com token, inclui `RASCUNHO`/`ENCERRADA`/`DESATIVADA`) | ⏳ |
+| 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho) | ⏳ |
+| 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
+| 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | ⏳ |
+| 22 | Doações recebidas (`/doacoes` → `GET /entidades/{id}/doacoes`) e arrecadação (`GET /entidades/{id}/arrecadacao`) no dashboard | ⏳ |
+| **Fase 5** | **Administração** | |
+| 23 | Dashboard do ADMIN (`GET /dashboard/kpis`) | ⏳ |
+| 24 | Usuários (`GET /usuarios`, `PATCH /usuarios/{id}/status`) | ⏳ |
+| 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
 
 ### Próximo passo
-**Passo 15** (fecha a Fase 3) — "Minhas doações" (`/minhas-doacoes`) e o detalhe (`/minhas-doacoes/:doacaoId`) leem `GET /usuarios/me/doacoes` (paginado) e `GET /doacoes/{id}`; exigem login de doador. Apagar `mocks/doador.js` e o que só essas telas usavam.
+**Passo 16** (início da Fase 4) — integrar o cadastro de entidade (`src/pages/CadastroEntidade.jsx`, rota pública `/cadastro-entidade`) com `POST /entidades`.
+
+Pontos já conhecidos para a Fase 4:
+- **Corpo de `POST /entidades`:** `nome, email, senha, telefone, cnpj, razaoSocial, descricao` obrigatórios; opcionais `nomeFantasia, areaAtuacao, site, logoUrl, emailContato, telefoneContato, whatsapp, responsavelNome + responsavelCpf (juntos, RN46), endereco{...}` (contrato §7 do backend). **CNPJ e CPF com máscara** (ver §6). Responde 201 com a entidade `PENDENTE`; o login funciona, mas `POST /campanhas` só depois de aprovada por um ADMIN (`admin@doasync.local` no Swagger ou pelo seed).
+- A tela atual tem upload de documentos e onboarding que **não existem na API** → seguir a decisão já tomada: remover do fluxo o que a API não suporta (§7).
+- Ao integrar cada tela de gestão, **apagar os mocks que só ela usava** (`mocks/gestao.js`, `mocks/campanhasDetalhe.js`, `mocks/dados.js`, `mocks/index.js`); quando a última sair, o `DemoProvider` e o `DemoBanner` saem também.
+- Itens, estoque, relatórios/exportação, prestação de contas e equipe da entidade **não têm API** (decidir com o responsável se saem ou ficam como estão).
+- Telas da gestão leem `usuario.entidadeId` da sessão (`useAuth()`) para montar as rotas `/entidades/{id}/...`.
+
+**Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`. **Reinicie o backend se as doações começarem a dar 500** (ver §6).
+
+**PR pendente:** Fases 2 e 3 → `develop`: https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api
 
 **Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`. **Reinicie o backend se as doações começarem a dar 500** (ver §6).
 
@@ -129,6 +152,7 @@ npm run dev                      # http://localhost:5173
 | Doação | `/doar/:id` | `GET /campanhas/{id}` + `POST /doacoes` |
 | Cadastro de doador | `/cadastro-doador` | `POST /doadores` + `POST /auth/login` |
 | Comprovante | `/doar/:id/confirmacao/:doacaoId` | `GET /doacoes/{id}` (exige login) |
+| Minhas doações | `/minhas-doacoes`, `/minhas-doacoes/:doacaoId` | `GET /usuarios/me/doacoes` (limit 50) + `GET /doacoes/{id}` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
 ---
@@ -158,6 +182,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - **⚠️ Bug do H2 no perfil `dev`:** depois de ~30–40 min com o backend no ar, **todo** `POST /doacoes` responde 500. No log: `Check constraint invalid: "CONSTRAINT_97AA"` com causa `The database has been closed` em `SessionLocal.getCompareMode`. O H2 2.4.240 avalia a CHECK com uma sessão já fechada (provavelmente reciclada pelo pool Hikari, `maxLifetime` padrão de 30 min). Reiniciar o backend resolve; PostgreSQL não deve ter o problema. GETs e login continuam funcionando.
 - **⚠️ CPF/CNPJ com máscara:** as colunas têm `CHECK (LENGTH(cpf) = 14)` e `CHECK (LENGTH(cnpj) = 18)` e o backend não valida nem normaliza o formato: CPF só com dígitos vira **500** ("Check constraint violation") em vez de 422. O front sempre envia `000.000.000-00` / `00.000.000/0000-00` (`formatarCpf`/`formatarCnpj` em `utils/cadastroDoador.js`). O backend também não confere os dígitos verificadores; o front confere.
 - **Cadastro de doador:** `POST /doadores` → 201 `{ id, nome, email, tipo, dataCadastro }` **sem token** (é preciso fazer login depois). Erros: 422 `{ erros: {...} }` com todos os campos inválidos; 409 `{ erros: { email | cpf | cnpj: "... já cadastrado." } }`; idade < 18 → 422 em `dataNascimento`.
+- **Histórico do doador:** `GET /usuarios/me/doacoes` devolve `{ data: DoacaoResponse[], meta }`, mais recentes primeiro. **Ignora o parâmetro `busca`** (apesar do contrato) e limita `limit` a 50 → busca/filtros ficam no front. Entidade/ADMIN recebem 403 "Sem permissão.".
 - **Comprovante:** `GET /doacoes/{id}` → 200 para o doador (vê o próprio nome mesmo em doação anônima), para a entidade destino (vê "Doador anônimo" e sem `doador.id`) e para o ADMIN; **404** para qualquer outro usuário (RN71, não revela que existe); 401 sem token. Verificado no backend real.
 - **Doação:** `POST /doacoes` aceita `{ campanhaId, valor, formaPagamento: "PIX", anonima, observacao? }` e responde 201 com `DoacaoResponse` já `CONFIRMADA` (não há provedor de pagamento). Mesmo `Idempotency-Key` → 200 "Doação recuperada com sucesso." com o mesmo id (verificado no backend real). Só `PESSOA_FISICA`/`PESSOA_JURIDICA` podem doar.
 - **Login:** `POST /auth/login` devolve `{ token, tipoToken: "Bearer", expiraEm, usuario: { id, nome, email, tipo, entidadeId, statusEntidade } }`; o token expira em 8 h. O backend ignora o header `Authorization` no login.
@@ -173,6 +198,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Minhas doações (passo 15):** sem linha do tempo, destinação, mensagem da entidade, itens, cartão/boleto, exportação e PDFs (sem API). O detalhe reutiliza `ConfirmacaoDoacao` com a prop `historico`. Apagados: `mocks/doador.js`, `pages/DetalheDoacao.jsx`, `styles/detalhe-doacao.css`, o ramo `historicoDoador` do `DemoContext` e as regras `det-*` do CSS. Indicadores em `utils/doacoes.js` (`resumoDoacoes`).
+- **Mocks que ainda existem** (só gestão): `mocks/gestao.js` (`carregarDemo`, `categorias`), `mocks/dados.js`, `mocks/campanhasDetalhe.js` (`HOJE_DEMO`, `detalheCampanha`), `mocks/index.js` (serviços simulados de Doacoes/Entidades).
 - **Comprovante (passo 14):** ao confirmar, o fluxo faz `navigate(..., { replace: true })` para `/doar/:id/confirmacao/:doacaoId`, que busca a doação na API. Saíram da tela (sem endpoint): PDFs de comprovante/recibo, reenvio por e-mail, destinação; e `mensagemConfirmacao` (`utils/doacoes.js`) com o CSS morto (`.doc-card`, `.lateral-confirmacao`, `.nota-caixa`, …).
 - **Fixtures:** o simulador da API guarda as doações criadas por `POST /doacoes` e as devolve em `GET /doacoes/{id}`; `DOACAO_EXISTENTE_ID` abre um comprovante direto pela URL.
 - **Erros por campo (passo 13):** o `ajuda` do `Campo` mostra a mensagem e `aria-invalid` deixa borda e texto vermelhos (`index.css`, `.campo [aria-invalid]`). `normalizeError` já entrega `campos` para 409 e 422.
@@ -207,6 +234,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - 2026-11-23 — PRs da Fase 1 aprovados: front #143 em `develop`; CORS do backend #70 em `main`. `feature/integracao-api` continua sendo a branch de trabalho (atualizada com a `develop`).
 - 2026-11-23 — O atalho "Acessar demonstração" saiu do login (passo 11): a gestão só abre com login, mesmo ainda exibindo dados de demonstração.
 - 2026-11-23 — Doação: o que a API não suporta (itens, cartão/boleto, agendamento, cadastro rápido, código PIX fictício) foi **removido do fluxo**. O cadastro de doador vira tela própria (passo 13).
+- 2026-11-23 — Minhas doações: o detalhe de demonstração (linha do tempo/destinação/mensagem) foi substituído pelo comprovante real, seguindo a mesma regra de remover o que a API não suporta.
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
 ---
@@ -232,3 +260,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): registrar doação PIX real com POST /doacoes` | Passo 12 |
 | 2026-11-23 | `feat(frontend): cadastro de doador com POST /doadores` | Passo 13 |
 | 2026-11-23 | `feat(frontend): comprovante da doação com GET /doacoes/{id}` | Passo 14 |
+| 2026-11-23 | `feat(frontend): minhas doações com GET /usuarios/me/doacoes` | Passo 15 — fecha a Fase 3 |

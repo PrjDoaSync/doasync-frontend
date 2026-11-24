@@ -93,6 +93,10 @@ export function adaptadorApiPadrao(config) {
     doacoesCriadas.set(doacao.id, doacao)
     return resposta(config, 201, { message: 'Doação registrada com sucesso.', data: doacao })
   }
+  if (config.method === 'get' && config.url === '/usuarios/me/doacoes') {
+    const lista = [...doacoesCriadas.values()].sort((a, b) => b.dataDoacao.localeCompare(a.dataDoacao))
+    return resposta(config, 200, { data: lista, meta: { total: lista.length, page: 1, limit: 50, totalPages: 1 } })
+  }
   const comprovante = config.method === 'get' && /^\/doacoes\/([^/]+)$/.exec(config.url)
   if (comprovante) {
     const d = doacoesCriadas.get(comprovante[1])

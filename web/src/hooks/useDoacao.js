@@ -5,3 +5,8 @@ import { doacoesService } from '../services/doacoesService'
 export function useDoacao(id) {
   return useRequest((config) => doacoesService.buscar(id, config), [id])
 }
+
+// Histórico do doador autenticado (GET /usuarios/me/doacoes): { itens, total, ... }.
+export function useMinhasDoacoes() {
+  return useRequest(doacoesService.minhas)
+}

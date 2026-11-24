@@ -1,34 +1,24 @@
-import { formatarData } from './format'
-// Regras das telas do doador (#102 e #103).
+// Regras de "Minhas doações" sobre as doações da API (mapDoacao em services/mappers.js).
 export const primeiroNome = (nome) => nome.split(' ')[0]
 
-const soma = (lista, campo) => lista.reduce((total, d) => total + (d[campo] ?? 0), 0)
-
-export function resumoDoador(lista) {
-  const fin = lista.filter((d) => d.tipo === 'Financeira')
-  const itens = lista.filter((d) => d.tipo === 'Itens')
-  const finOk = fin.filter((d) => d.pagamentoStatus === 'Confirmado')
-  const itensOk = itens.filter((d) => ['Recebida', 'Aplicada'].includes(d.status))
-  const itensAgendados = itens.filter((d) => d.status === 'Pendente')
+// Indicadores do histórico: só doações confirmadas contam como arrecadado.
+export function resumoDoacoes(lista) {
+  const confirmadas = lista.filter((d) => d.status === 'Confirmada')
   return {
-    financeiroConfirmado: soma(finOk, 'valor'),
-    contribuicoes: finOk.length,
-    itensRecebidos: soma(itensOk, 'quantidade'),
-    itensDescricao: itensOk.map((d) => d.titulo).join(' + '),
-    itensAgendados: soma(itensAgendados, 'quantidade'),
-    pagamentosPendentes: fin.filter((d) => d.pagamentoStatus === 'Pendente').length,
-    entregasPendentes: itensAgendados.length,
+    totalConfirmado: confirmadas.reduce((total, d) => total + d.valor, 0),
+    confirmadas: confirmadas.length,
+    campanhasApoiadas: new Set(confirmadas.map((d) => d.campanhaId ?? `entidade-${d.entidadeId}`)).size,
+    pendentes: lista.filter((d) => d.status === 'Pendente').length,
   }
 }
 
-export function filtrarDoacoes(lista, { busca = '', tipo = '', status = '', mes = '' } = {}) {
+export function filtrarDoacoes(lista, { busca = '', status = '', mes = '' } = {}) {
   const termo = busca.trim().toLowerCase()
   return lista.filter(
     (d) =>
-      (!tipo || d.tipo === tipo) &&
       (!status || d.status === status) &&
       (!mes || d.data.startsWith(mes)) &&
-      (!termo || `${d.campanha} ${d.id}`.toLowerCase().includes(termo)),
+      (!termo || `${d.campanha} ${d.entidade} ${d.comprovante}`.toLowerCase().includes(termo)),
   )
 }
 
@@ -37,22 +27,4 @@ export const nomeDoMes = (ym) => {
   const [ano, mes] = ym.split('-').map(Number)
   const nome = new Date(ano, mes - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })
   return `${nome.charAt(0).toUpperCase()}${nome.slice(1)} de ${ano}`
-}
-
-// Linha do tempo da doação (Pendente → Recebida → Aplicada). Usa os eventos
-// registrados, se houver; senão deriva do estado atual da doação.
-export function eventosDoacao(d) {
-  if (d.eventos) return d.eventos
-  const quando = `${formatarData(d.data)} · ${d.hora}`
-  if (d.status === 'Cancelada') return [{ chave: 'pendente', titulo: 'Cancelada', quando, estado: 'final', texto: 'Registro cancelado na demonstração. Nenhum recurso foi recebido ou destinado.' }]
-  const itens = d.tipo === 'Itens'
-  const pendente = d.status === 'Pendente'
-  return [
-    { chave: 'pendente', titulo: 'Pendente', quando, estado: 'feito',
-      texto: itens ? 'Doação registrada. Aguardando a entrega e a conferência da entidade.' : `Doação registrada. Aguardando ${d.meio === 'boleto bancário' || d.meio === 'Boleto' ? 'o pagamento do boleto' : d.meio === 'PIX' ? 'a confirmação do PIX' : 'a autorização do pagamento no cartão'}.` },
-    { chave: 'recebida', titulo: 'Recebida', quando: pendente ? '' : quando, estado: pendente ? 'futuro' : 'feito',
-      texto: pendente ? 'Será registrada quando a entidade confirmar o recebimento.' : itens ? `Entrega conferida. ${d.titulo} recebidos pela ${d.entidade}.` : `Pagamento confirmado. ${d.titulo} recebidos pela ${d.entidade} para a campanha.` },
-    { chave: 'aplicada', titulo: 'Aplicada', quando: '', estado: 'futuro',
-      texto: itens ? 'Será registrada quando a entidade distribuir os itens.' : 'Será registrada quando a entidade usar o recurso na campanha.' },
-  ]
 }
