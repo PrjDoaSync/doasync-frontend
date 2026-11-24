@@ -46,6 +46,7 @@ import {
 } from '../components/Ui'
 import AppLayout, { PublicLayout } from '../components/layout/AppLayouts'
 import { DemoProvider } from '../context/DemoContext'
+import { AuthProvider } from '../context/AuthContext'
 import { useDemo } from '../hooks/useDemo'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
 
@@ -811,13 +812,13 @@ describe('DemoProvider e layouts', () => {
   function montarAdmin(rota) {
     return render(
       <MemoryRouter initialEntries={[rota]}>
-        <DemoProvider>
+        <AuthProvider><DemoProvider>
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="*" element={<Sonda />} />
             </Route>
           </Routes>
-        </DemoProvider>
+        </DemoProvider></AuthProvider>
       </MemoryRouter>,
     )
   }
@@ -865,13 +866,13 @@ describe('DemoProvider e layouts', () => {
   it('layout público: navegação, acesso da entidade e rodapé', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
-        <DemoProvider>
+        <AuthProvider><DemoProvider>
           <Routes>
             <Route element={<PublicLayout />}>
               <Route index element={<h1>Início</h1>} />
             </Route>
           </Routes>
-        </DemoProvider>
+        </DemoProvider></AuthProvider>
       </MemoryRouter>,
     )
     await screen.findByRole('heading', { name: 'Início' })

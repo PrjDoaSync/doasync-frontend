@@ -1839,6 +1839,12 @@ small {
   color: var(--azul);
 }
 
+.public-header__usuario {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
 .public-header__btn-entrar {
   background: #ffffff !important;
   color: #0f172a !important;

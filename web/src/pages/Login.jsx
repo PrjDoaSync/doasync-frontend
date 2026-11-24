@@ -1,10 +1,30 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Aviso, Botao, Campo, Secao } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
+import { destinoPorTipo } from '../utils/auth'
 
 export default function Login() {
+  const { entrar } = useAuth(),
+    navigate = useNavigate(),
+    location = useLocation()
   const [recuperar, setRecuperar] = useState(false),
-    [aviso, setAviso] = useState('')
+    [aviso, setAviso] = useState(''),
+    [erro, setErro] = useState(''),
+    [enviando, setEnviando] = useState(false)
+
+  async function acessar(form) {
+    const dados = new FormData(form)
+    setErro('')
+    setEnviando(true)
+    try {
+      const usuario = await entrar(String(dados.get('email')), String(dados.get('senha')))
+      navigate(location.state?.de ?? destinoPorTipo(usuario.tipo), { replace: true })
+    } catch (e) {
+      setErro(e?.message ?? 'Não foi possível entrar. Tente novamente.')
+      setEnviando(false)
+    }
+  }
   return (
     <section className="public-section acesso">
       <div className="public-page-title">
@@ -33,17 +53,17 @@ export default function Login() {
           descricao={
             recuperar
               ? 'Informe seu e-mail para solicitar a recuperação do acesso.'
-              : 'Acesse a área de gestão da sua entidade.'
+              : 'Acesse com a conta da sua entidade, de doador ou de administrador.'
           }
         >
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              setAviso(
-                recuperar
-                  ? 'O serviço de recuperação ainda não está integrado. Nenhum e-mail foi enviado.'
-                  : 'A autenticação ainda não está integrada. Use o acesso de demonstração abaixo.',
-              )
+              if (recuperar) {
+                setAviso('O serviço de recuperação ainda não está integrado. Nenhum e-mail foi enviado.')
+                return
+              }
+              acessar(e.currentTarget)
             }}
             className="pilha"
           >
@@ -63,9 +83,10 @@ export default function Login() {
                 required
               />
             )}
-            <Botao type="submit">
-              {recuperar ? 'Solicitar recuperação' : 'Entrar'}
+            <Botao type="submit" disabled={enviando} aria-busy={enviando}>
+              {recuperar ? 'Solicitar recuperação' : enviando ? 'Entrando…' : 'Entrar'}
             </Botao>
+            {erro && !recuperar && <Aviso erro>{erro}</Aviso>}
             {aviso && <Aviso>{aviso}</Aviso>}
             <button
               className="link-botao"
@@ -73,16 +94,18 @@ export default function Login() {
               onClick={() => {
                 setRecuperar(!recuperar)
                 setAviso('')
+                setErro('')
               }}
             >
               {recuperar ? 'Voltar para o acesso' : 'Esqueci minha senha'}
             </button>
           </form>
           <hr />
+          {/* A área de gestão ainda usa dados de demonstração (Fase 4); este atalho sai quando ela for integrada. */}
           <Botao para="/dashboard" secundario>
             Acessar demonstração
           </Botao>
-          <small>Dados fictícios · nenhum acesso autenticado.</small>
+          <small>Gestão com dados fictícios · sem login.</small>
           <p>
             Ainda não tem uma conta?{' '}
             <Link to="/cadastro-entidade">Cadastrar entidade</Link>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon, Modal } from '../Ui'
+import { useAuth } from '../../hooks/useAuth'
 
 const TITULOS_ROTAS = [
   { prefixo: '/dashboard/campanha', titulo: 'Dashboard analítico por campanha' },
@@ -22,6 +23,7 @@ const TITULOS_ROTAS = [
 
 export default function AdminHeader() {
   const { pathname } = useLocation()
+  const { sair } = useAuth()
   const [menuAberto, setMenuAberto] = useState(false)
   const [notificacoes, setNotificacoes] = useState(false)
   const menuRef = useRef(null)
@@ -165,7 +167,10 @@ export default function AdminHeader() {
                 role="menuitem"
                 tabIndex={-1}
                 className="topo__menu-item topo__menu-item--sair"
-                onClick={() => setMenuAberto(false)}
+                onClick={() => {
+                  setMenuAberto(false)
+                  sair()
+                }}
               >
                 <Icon nome="sair" size={16} />
                 <span>Sair da conta</span>
