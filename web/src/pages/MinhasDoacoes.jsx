@@ -1,95 +1,110 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import DataTable from '../components/DataTable'
 import KpiCard from '../components/KpiCard'
+import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { Botao, Icon, Secao, Vazio } from '../components/Ui'
-import { useDemo } from '../hooks/useDemo'
-import { DOADOR, historicoDoadorDemo } from '../mocks/doador'
-import { filtrarDoacoes, mesesDisponiveis, nomeDoMes, primeiroNome, resumoDoador } from '../utils/doacoes'
+import { Aviso, Botao, Icon, Secao, Vazio } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
+import { useMinhasDoacoes } from '../hooks/useDoacao'
+import { ehDoador } from '../utils/auth'
+import { filtrarDoacoes, mesesDisponiveis, nomeDoMes, primeiroNome, resumoDoacoes } from '../utils/doacoes'
 import { formatarData, formatarMoeda } from '../utils/format'
 
-const SEM_FILTRO = { busca: '', tipo: '', status: '', mes: '' }
+const SEM_FILTRO = { busca: '', status: '', mes: '' }
 const qtd = (n) => `${n} ${n === 1 ? 'doação' : 'doações'}`
-const selo = (status) =>
-  status === 'Recebida' ? <span className="badge badge--info">Recebida</span>
-  : status === 'Aplicada' ? <span className="badge badge--sucesso">Aplicada</span>
-  : <StatusBadge valor={status} />
 
-// [DEV-DOA-09] Minhas doações (#103). Conta de demonstração (sem login ainda).
-// SEM CONTRATO na API: exportar histórico, cartão/boleto, "Aplicada" e a tela DOA-10
-// As operações oficiais continuam indisponíveis, mas o detalhe demonstrativo é navegável.
+// Minhas doações (GET /usuarios/me/doacoes): só doador PF/PJ autenticado.
+// Sem endpoint na API: exportação do histórico, destinação/aplicação e doação de itens.
 export default function MinhasDoacoes() {
-  const { dados } = useDemo()
-  const [filtro, setFiltro] = useState(SEM_FILTRO)
-  const minhas = dados.historicoDoador ?? historicoDoadorDemo
-  const resumo = resumoDoador(minhas)
-  const lista = filtrarDoacoes(minhas, filtro)
-  const mudar = (campo) => (e) => setFiltro({ ...filtro, [campo]: e.target.value })
+  const { usuario } = useAuth()
+  const { pathname } = useLocation()
+  if (!usuario)
+    return (
+      <Vazio principal titulo="Entre para ver suas doações">
+        O histórico fica na sua conta de doador. <Link to="/login" state={{ de: pathname }}>Entrar</Link>
+      </Vazio>
+    )
+  if (!ehDoador(usuario.tipo))
+    return (
+      <Vazio principal titulo="Histórico disponível só para doadores">
+        Você entrou como {usuario.nome}. As doações recebidas pela entidade ficam na área de gestão.
+      </Vazio>
+    )
+  return <Historico nome={usuario.nome} />
+}
 
-  const colunas = [
-    { chave: 'data', titulo: 'Data / código', render: (d) => <><strong>{formatarData(d.data)}</strong><br /><small>{d.id}</small></> },
-    { chave: 'titulo', titulo: 'Contribuição', render: (d) => <><strong>{d.titulo}</strong><br /><small>{d.subtitulo}</small></> },
-    { chave: 'campanha', titulo: 'Campanha', render: (d) => <><strong>{d.campanha}</strong><br /><small>{d.entidade}</small></> },
-    { chave: 'pagamento', titulo: 'Pagamento', render: (d) => <><strong>{d.pagamento}</strong><br /><small>{d.pagamentoSub}</small></> },
-    { chave: 'status', titulo: 'Destinação', render: (d) => <>{selo(d.status)}<br /><small>{d.statusSub}</small></> },
-    { chave: 'acao', titulo: '', render: (d) => <Link className="link-azul" to={`/minhas-doacoes/${d.id}`}>Ver detalhe <Icon nome="chevron" size={14} /></Link> },
-  ]
-
+function Historico({ nome }) {
+  const request = useMinhasDoacoes()
   return (
     <section className="public-section">
       <div className="breadcrumb"><Link to="/">Início</Link><span>/</span>Minha conta<span>/</span>Minhas doações</div>
       <div className="public-page-title">
         <h1>Minhas doações</h1>
-        <p>Olá, {primeiroNome(DOADOR.nome)}. Explore o histórico fictício e as contribuições criadas nesta sessão de teste.</p>
+        <p>Olá, {primeiroNome(nome)}. Acompanhe as contribuições feitas com a sua conta.</p>
       </div>
-
-      {minhas.length === 0 ? (
-        <Vazio titulo="Você ainda não fez nenhuma doação">Explore as campanhas e apoie uma causa.</Vazio>
-      ) : (
-        <>
-          <section className="kpis kpis--3">
-            <KpiCard icone="carteira" rotulo="Doações financeiras confirmadas" valor={formatarMoeda(resumo.financeiroConfirmado)} detalhe={`${resumo.contribuicoes} contribuições${resumo.pagamentosPendentes ? ' · pagamento pendente não incluído' : ''}`} />
-            <KpiCard icone="itens" rotulo="Itens recebidos pela entidade" valor={`${resumo.itensRecebidos} unidades`} detalhe={[resumo.itensDescricao, resumo.itensAgendados ? `mais ${resumo.itensAgendados} unidades agendadas` : ''].filter(Boolean).join(' · ') || 'Nenhuma entrega conferida ainda'} />
-            <KpiCard icone="relogio" rotulo="Doações pendentes" valor={qtd(resumo.pagamentosPendentes + resumo.entregasPendentes)} detalhe={`${resumo.pagamentosPendentes} aguardando pagamento · ${resumo.entregasPendentes} aguardando entrega`} />
-          </section>
-
-          <Secao className="historico" titulo={<>Seu histórico <span className="badge badge--neutro">{qtd(minhas.length)}</span></>} acao={<Botao secundario disabled><Icon nome="download" /> Exportar histórico</Botao>}>
-            <div className="historico__filtros">
-              <label className="historico__busca">
-                <Icon nome="busca" size={17} />
-                <input aria-label="Buscar por campanha ou código da doação" placeholder="Buscar por campanha ou código da doação" value={filtro.busca} onChange={mudar('busca')} />
-              </label>
-              <select aria-label="Tipo" value={filtro.tipo} onChange={mudar('tipo')}>
-                <option value="">Todos os tipos</option>
-                <option value="Financeira">Financeira</option>
-                <option value="Itens">Itens</option>
-              </select>
-              <select aria-label="Status" value={filtro.status} onChange={mudar('status')}>
-                <option value="">Todos os status</option>
-                <option value="Recebida">Recebida</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Aplicada">Aplicada</option>
-                <option value="Cancelada">Cancelada</option>
-              </select>
-              <select aria-label="Período" value={filtro.mes} onChange={mudar('mes')}>
-                <option value="">Todos os meses</option>
-                {mesesDisponiveis(minhas).map((m) => <option key={m} value={m}>{nomeDoMes(m)}</option>)}
-              </select>
-            </div>
-            <DataTable colunas={colunas} linhas={lista} vazio="Nenhuma doação encontrada com esses filtros." />
-            <div className="historico__rodape">
-              <span>Mostrando {lista.length} de {qtd(minhas.length)}</span>
-              {lista.length < minhas.length ? <Botao secundario onClick={() => setFiltro(SEM_FILTRO)}>Limpar filtros</Botao> : <span className="pagina-atual">1</span>}
-            </div>
-          </Secao>
-
-          <div className="acoes acoes--entre">
-            <small className="nota-info"><Icon nome="info" size={16} /> Pagamento e destinação são diferentes: recebida indica confirmação pela entidade; aplicada indica uso na campanha. Dados e documentos demonstrativos.</small>
-            <Botao para="/explorar">Explorar campanhas <Icon nome="seta" /></Botao>
-          </div>
-        </>
-      )}
+      <RequestState {...request}>{(pagina) => <Conteudo doacoes={pagina.itens} total={pagina.total} />}</RequestState>
     </section>
+  )
+}
+
+function Conteudo({ doacoes, total }) {
+  const [filtro, setFiltro] = useState(SEM_FILTRO)
+  if (doacoes.length === 0)
+    return (
+      <Vazio titulo="Você ainda não fez nenhuma doação">
+        Explore as campanhas e apoie uma causa. <Link to="/explorar">Explorar campanhas</Link>
+      </Vazio>
+    )
+  const resumo = resumoDoacoes(doacoes)
+  const lista = filtrarDoacoes(doacoes, filtro)
+  const mudar = (campo) => (e) => setFiltro({ ...filtro, [campo]: e.target.value })
+
+  const colunas = [
+    { chave: 'data', titulo: 'Data / comprovante', render: (d) => <><strong>{formatarData(d.data.slice(0, 10))}</strong><br /><small>{d.comprovante}</small></> },
+    { chave: 'valor', titulo: 'Contribuição', render: (d) => <><strong>{formatarMoeda(d.valor)}</strong><br /><small>{d.formaPagamento} · única{d.anonima ? ' · anônima' : ''}</small></> },
+    { chave: 'campanha', titulo: 'Campanha', render: (d) => <><strong>{d.campanha || 'Doação direta'}</strong><br /><small>{d.entidade}</small></> },
+    { chave: 'status', titulo: 'Situação', render: (d) => <StatusBadge valor={d.status} /> },
+    { chave: 'acao', titulo: '', render: (d) => <Link className="link-azul" to={`/minhas-doacoes/${d.id}`}>Ver detalhe <Icon nome="chevron" size={14} /></Link> },
+  ]
+
+  return (
+    <>
+      <section className="kpis kpis--3">
+        <KpiCard icone="carteira" rotulo="Total doado" valor={formatarMoeda(resumo.totalConfirmado)} detalhe={`${qtd(resumo.confirmadas)} confirmada${resumo.confirmadas === 1 ? '' : 's'}`} />
+        <KpiCard icone="campanhas" rotulo="Causas apoiadas" valor={String(resumo.campanhasApoiadas)} detalhe="Campanhas e entidades com doação confirmada" />
+        <KpiCard icone="relogio" rotulo="Doações pendentes" valor={qtd(resumo.pendentes)} detalhe="Aguardando confirmação" />
+      </section>
+
+      <Secao className="historico" titulo={<>Seu histórico <span className="badge badge--neutro">{qtd(total)}</span></>}>
+        <div className="historico__filtros">
+          <label className="historico__busca">
+            <Icon nome="busca" size={17} />
+            <input aria-label="Buscar por campanha, entidade ou comprovante" placeholder="Buscar por campanha, entidade ou comprovante" value={filtro.busca} onChange={mudar('busca')} />
+          </label>
+          <select aria-label="Situação" value={filtro.status} onChange={mudar('status')}>
+            <option value="">Todas as situações</option>
+            <option value="Confirmada">Confirmada</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
+          <select aria-label="Período" value={filtro.mes} onChange={mudar('mes')}>
+            <option value="">Todos os meses</option>
+            {mesesDisponiveis(doacoes).map((m) => <option key={m} value={m}>{nomeDoMes(m)}</option>)}
+          </select>
+        </div>
+        <DataTable colunas={colunas} linhas={lista} vazio="Nenhuma doação encontrada com esses filtros." />
+        <div className="historico__rodape">
+          <span>Mostrando {lista.length} de {qtd(doacoes.length)}</span>
+          {lista.length < doacoes.length && <Botao secundario onClick={() => setFiltro(SEM_FILTRO)}>Limpar filtros</Botao>}
+        </div>
+        {total > doacoes.length && <Aviso>Mostrando as {doacoes.length} doações mais recentes de {total}.</Aviso>}
+      </Secao>
+
+      <div className="acoes acoes--entre">
+        <span />
+        <Botao para="/explorar">Explorar campanhas <Icon nome="seta" /></Botao>
+      </div>
+    </>
   )
 }

@@ -4,14 +4,14 @@ import RequestState from '../components/RequestState'
 import { useAuth } from '../hooks/useAuth'
 import { useDoacao } from '../hooks/useDoacao'
 import { formatarData, formatarMoeda } from '../utils/format'
-import '../styles/detalhe-doacao.css'
 
 const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 // Comprovante da doação (GET /doacoes/{id}). Exige login: o backend só mostra a doação ao
 // próprio doador, à entidade destino ou a um ADMIN (para os demais responde 404, RN71).
 // Sem endpoint na API: PDF de comprovante/recibo, reenvio por e-mail e destinação do recurso.
-export default function ConfirmacaoDoacao() {
+// `historico`: aberto a partir de Minhas doações (/minhas-doacoes/:doacaoId), com título de detalhe.
+export default function ConfirmacaoDoacao({ historico = false }) {
   const { usuario } = useAuth()
   const { pathname } = useLocation()
   if (!usuario)
@@ -21,10 +21,10 @@ export default function ConfirmacaoDoacao() {
         <Link to="/login" state={{ de: pathname }}>Entrar</Link>
       </Vazio>
     )
-  return <Comprovante />
+  return <Comprovante historico={historico} />
 }
 
-function Comprovante() {
+function Comprovante({ historico }) {
   const { doacaoId } = useParams()
   const request = useDoacao(doacaoId)
   if (!request.loading && !request.error && !request.data)
@@ -33,21 +33,31 @@ function Comprovante() {
         Verifique o endereço ou consulte suas doações. <Link to="/minhas-doacoes">Minhas doações</Link>
       </Vazio>
     )
-  return <RequestState {...request}>{(d) => <ComprovanteConteudo d={d} />}</RequestState>
+  return <RequestState {...request}>{(d) => <ComprovanteConteudo d={d} historico={historico} />}</RequestState>
 }
 
-function ComprovanteConteudo({ d }) {
+function ComprovanteConteudo({ d, historico }) {
   const confirmada = d.status === 'Confirmada'
   return (
     <section className="public-section doacao-fluxo confirmacao">
-      <div className="breadcrumb">
-        <Link to="/explorar">Campanhas</Link>
-        <span>/</span>
-        {d.campanhaId ? <Link to={`/campanhas/${d.campanhaId}`}>{d.campanha}</Link> : d.entidade}
-        <span>/</span>Comprovante
-      </div>
+      {historico ? (
+        <div className="breadcrumb">
+          <Link to="/">Início</Link><span>/</span><Link to="/minhas-doacoes">Minhas doações</Link><span>/</span>{d.comprovante}
+        </div>
+      ) : (
+        <div className="breadcrumb">
+          <Link to="/explorar">Campanhas</Link>
+          <span>/</span>
+          {d.campanhaId ? <Link to={`/campanhas/${d.campanhaId}`}>{d.campanha}</Link> : d.entidade}
+          <span>/</span>Comprovante
+        </div>
+      )}
       <div className="public-page-title">
-        <h1>{confirmada ? 'Sua doação foi registrada. Obrigado!' : `Doação ${d.status.toLowerCase()}`}</h1>
+        <h1>
+          {historico
+            ? `Doação ${d.comprovante}`
+            : confirmada ? 'Sua doação foi registrada. Obrigado!' : `Doação ${d.status.toLowerCase()}`}
+        </h1>
         <p>
           {confirmada
             ? `Sua contribuição de ${formatarMoeda(d.valor)} já conta para ${d.campanha || d.entidade}.`
@@ -82,10 +92,16 @@ function ComprovanteConteudo({ d }) {
       </Secao>
 
       <div className="acoes acoes--entre">
-        {d.campanhaId && (
-          <Botao para={`/campanhas/${d.campanhaId}`} secundario><Icon nome="voltar" /> Voltar à campanha</Botao>
+        {historico ? (
+          <Botao para="/minhas-doacoes" secundario><Icon nome="voltar" /> Voltar a Minhas doações</Botao>
+        ) : (
+          d.campanhaId && <Botao para={`/campanhas/${d.campanhaId}`} secundario><Icon nome="voltar" /> Voltar à campanha</Botao>
         )}
-        <Botao para="/minhas-doacoes"><Icon nome="doacoes" /> Minhas doações</Botao>
+        {historico && d.campanhaId ? (
+          <Botao para={`/doar/${d.campanhaId}`}><Icon nome="doacoes" /> Apoiar esta campanha novamente</Botao>
+        ) : (
+          <Botao para="/minhas-doacoes"><Icon nome="doacoes" /> Minhas doações</Botao>
+        )}
       </div>
     </section>
   )
