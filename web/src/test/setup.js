@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import api from '../services/api'
+import { limparSessao } from '../services/token'
 import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
 
 // Telas integradas leem a API: nos testes ela é simulada com fixtures do contrato.
@@ -8,7 +9,10 @@ import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
 beforeEach(() => {
   api.defaults.adapter = adaptadorApiPadrao
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  limparSessao()
+})
 window.scrollTo = vi.fn()
 HTMLDialogElement.prototype.showModal = function () {
   this.setAttribute('open', '')

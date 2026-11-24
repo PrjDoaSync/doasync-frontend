@@ -48,7 +48,7 @@ O front usa `http://localhost:8080/api/v1` por padrão. Para apontar para outro 
 ### Subir o backend (terminal 1)
 ```bash
 cd doasync-backend
-git switch fix/cors-frontend     # enquanto a correção de CORS não estiver na develop (ver §5)
+git switch main                  # a correção de CORS (PR #70) está na main; a develop ainda não a tem
 cd backend
 ./mvnw spring-boot:run           # Windows: .\mvnw.cmd spring-boot:run
 ```
@@ -103,16 +103,14 @@ npm run dev                      # http://localhost:5173
 | 7 | Detalhe via `GET /campanhas/{id}` (`useCampanhaPublica`) + últimas doações | ✅ |
 | 8 | Telas públicas leem sempre a API; flag `VITE_USE_API` removida; testes com fixtures da API | ✅ |
 | **Fase 2** | **Autenticação** | |
-| 9 | `authService` (`POST /auth/login`) + `AuthContext` (token, usuário, expiração, logout) | ⏳ |
+| 9 | `authService` (`POST /auth/login`) + `AuthProvider`/`useAuth` (sessão, expiração, 401, logout) | ✅ |
 | 10 | Tela de login real + redirecionamento por tipo de usuário | ⏳ |
 | 11 | Proteção das rotas de gestão | ⏳ |
 
 ### Próximo passo
-**Passo 9** (início da Fase 2) — criar `src/services/authService.js` (`POST /auth/login` → salva o token com `salvarToken`) e um `AuthContext` com `usuario`, `entrar`, `sair` e expiração (`expiraEm`); 401 em rota autenticada limpa a sessão. Contas para testar em §2.
+**Passo 10** — tela de login real (`src/pages/Login.jsx`) usando `useAuth().entrar`: erros da API na tela, redirecionamento por tipo (`ENTIDADE` → `/dashboard`, `ADMIN` → `/dashboard`, doador → `/`), cabeçalhos com "Entrar"/"Sair" conforme a sessão.
 
-**Antes de começar:** subir o backend (`fix/cors-frontend`) e rodar `node scripts/popular-api.mjs`.
-
-**Pendências com o responsável:** abrir o PR da Fase 1 (https://github.com/PrjDoaSync/doasync-frontend/compare/develop...feature/integracao-api) e o PR de CORS do backend (§5).
+**Antes de começar:** subir o backend (`main`) e rodar `node scripts/popular-api.mjs`.
 
 ### Telas integradas até agora
 | Tela | Rota | Fonte (sempre a API) |
@@ -127,7 +125,7 @@ npm run dev                      # http://localhost:5173
 
 | Item | Repositório | Branch / PR | Status |
 |---|---|---|---|
-| CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | `fix/cors-frontend` (commit `8986154`) | 🔄 branch no GitHub; PR para `develop` a abrir: https://github.com/PrjDoaSync/doasync-backend/pull/new/fix/cors-frontend |
+| CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | PR #70 (`fix/cors-frontend`) | ✅ mesclado na **`main`** (não na `develop`) |
 | Expor `versao` na resposta de campanha | doasync-backend (Equipe 2) | — | ⏳ necessário na Fase 4 |
 
 ---
@@ -144,6 +142,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `gh` (GitHub CLI) não está instalado na máquina de origem: PRs são abertos pelo link impresso no `git push`.
 
 ### API (doasync-backend)
+- **Login:** `POST /auth/login` devolve `{ token, tipoToken: "Bearer", expiraEm, usuario: { id, nome, email, tipo, entidadeId, statusEntidade } }`; o token expira em 8 h. O backend ignora o header `Authorization` no login.
 - **Base `/api/v1`**; o front apontava para `/api`, que só existe como alias legado somente leitura (cliente antigo da Equipe 4).
 - **Erros:** `{ "error": "..." }` em geral e `{ "erros": { "campo": "..." } }` em validação (422). `normalizeError` expõe `message` e `campos`.
 - **Vitrine pública** (`GET /campanhas` sem token): só campanhas `ATIVA` de entidade `APROVADA` dentro do período. `RASCUNHO` nunca aparece. O filtro "Encerradas" do Explorar fica vazio no modo API.
@@ -156,6 +155,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Sessão (passo 9):** guardada em `localStorage` na chave `doasync.sessao` como `{ token, expiraEm, usuario }`; sessão expirada é descartada ao ler. Um 401 em requisição **com token** (exceto o próprio login) limpa a sessão e dispara o evento `doasync:sessao-encerrada`, que o `AuthProvider` escuta. O logout automático na expiração limita o `setTimeout` a 2^31−1 ms (acima disso ele dispara na hora).
+- **Testes:** `setup.js` também limpa a sessão depois de cada teste.
 - **Mocks compartilhados:** `dados.campanhas`, `HOJE_DEMO` e `categorias` também alimentam gestão e doação; só podem ser apagados quando essas telas forem integradas. Nas telas públicas o caminho de demonstração já foi removido.
 - **Testes:** `src/test/setup.js` instala, antes de cada teste, um adaptador Axios que responde como o backend (`src/test/fixtures/apiCampanhas.js`). Testes que precisam de outra resposta trocam `api.defaults.adapter`.
 - **Explorar sem dados da API:** o filtro "Localização" só aparece quando houver cidades (a API não informa); as categorias vêm das campanhas recebidas; "Encerradas" fica sempre vazio na vitrine pública.
@@ -175,6 +176,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - 2026-11-23 — ~~O modo demonstração é preservado por flag (`VITE_USE_API`).~~ **Substituída:** cada tela integrada usa só a API e seus mocks são apagados (§1, regra 6).
 - 2026-11-23 — A correção de CORS vira PR no backend (`fix/cors-frontend`); revisão e merge com a Equipe 2.
 - 2026-11-23 — A flag `VITE_USE_API` foi removida no passo 8: com os mocks saindo tela a tela, ela deixou de ter função.
+- 2026-11-23 — PRs da Fase 1 aprovados: front #143 em `develop`; CORS do backend #70 em `main`. `feature/integracao-api` continua sendo a branch de trabalho (atualizada com a `develop`).
 - 2026-11-23 — Ciclo de entrega: resumo curto + como testar → aprovação → documento + commit + push (§1).
 
 ---
@@ -194,3 +196,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): exibir campanhas da API na Home e no Explorar` | Passo 6 + `scripts/popular-api.mjs` + forma de trabalhar e descobertas |
 | 2026-11-23 | `feat(frontend): exibir detalhe da campanha a partir da API` | Passo 7 — fecha a Fase 1 |
 | 2026-11-23 | `refactor(frontend): telas públicas leem apenas a API` | Passo 8 — sem modo demonstração nas telas públicas; fixtures da API nos testes |
+| 2026-11-23 | `feat(frontend): adicionar sessão autenticada com POST /auth/login` | Passo 9 — `authService`, `AuthProvider`, `useAuth` |
