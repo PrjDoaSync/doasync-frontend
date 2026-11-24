@@ -15,6 +15,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import axios from 'axios'
 import api, { normalizeError } from '../services/api'
+import { API_URL } from '../services/config'
+import { limparToken, obterToken, salvarToken } from '../services/token'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
@@ -386,6 +388,19 @@ describe('cliente HTTP (services/api.js)', () => {
         data: { message: 'Campo inválido' },
       })
     })
+    it('usa o campo "error" do backend', () => {
+      const erro = { response: { status: 404, data: { error: 'Campanha não encontrada.' } } }
+      expect(normalizeError(erro)).toEqual({
+        status: 404,
+        message: 'Campanha não encontrada.',
+        data: { error: 'Campanha não encontrada.' },
+      })
+    })
+    it('expõe os erros por campo (422) e usa o primeiro como mensagem', () => {
+      const erros = { titulo: 'não deve estar em branco', metaValor: 'deve ser maior que 0' }
+      const normalizado = normalizeError({ response: { status: 422, data: { erros } } })
+      expect(normalizado).toMatchObject({ status: 422, message: 'não deve estar em branco', campos: erros })
+    })
     it('cria mensagem com o status quando a API não envia mensagem', () => {
       expect(normalizeError({ response: { status: 503, data: null } }).message).toBe(
         'Erro 503 ao processar a requisição.',
@@ -404,8 +419,27 @@ describe('cliente HTTP (services/api.js)', () => {
   })
 
   it('usa a URL base configurada, com fallback local, e timeout de 15 s', () => {
-    expect(api.defaults.baseURL).toBe(import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api')
+    expect(api.defaults.baseURL).toBe(import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api/v1')
     expect(api.defaults.timeout).toBe(15000)
+  })
+  it('envia Authorization: Bearer somente quando há token salvo', async () => {
+    const chamadas = []
+    api.defaults.adapter = (config) => {
+      chamadas.push(config)
+      return Promise.resolve({ data: {}, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    limparToken()
+    await api.get('/campanhas')
+    expect(chamadas[0].headers.Authorization).toBeUndefined()
+    salvarToken('abc.def.ghi')
+    await api.get('/usuarios/me')
+    expect(chamadas[1].headers.Authorization).toBe('Bearer abc.def.ghi')
+    expect(obterToken()).toBe('abc.def.ghi')
+    limparToken()
+    expect(obterToken()).toBeNull()
+  })
+  it('o cliente usa a URL de config.js', () => {
+    expect(API_URL).toBe(api.defaults.baseURL)
   })
   it('o interceptor rejeita sempre com o erro normalizado', async () => {
     api.defaults.adapter = (config) =>
