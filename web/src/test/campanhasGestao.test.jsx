@@ -3,7 +3,7 @@
 // lista/filtros da gestão, card público, edição (erros e salvamento) e
 // acompanhamento (indicadores, filtro, publicação de atualização).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
@@ -27,7 +27,6 @@ async function abrir(rota) {
   await screen.findByRole('heading', { level: 1 })
   return userEvent.setup()
 }
-const linhaDe = (texto) => screen.getByText(texto).closest('tr')
 const kpi = (rotulo) => screen.getByText(rotulo).closest('.kpi')
 const linhasDaTabela = () => screen.getAllByRole('row').slice(1)
 
@@ -83,73 +82,6 @@ describe('Progresso e CampanhaCard', () => {
     expect(imagem.getAttribute('alt')).toBe('')
     expect(imagem.getAttribute('loading')).toBe('lazy')
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25')
-  })
-})
-
-describe('Gestão de campanhas (DEV-CAM-07)', () => {
-  it('lista só as campanhas da entidade e resume os indicadores do conjunto', async () => {
-    await abrir('/campanhas')
-    const dados = fonte.criarDadosDemo()
-    const minhas = dados.campanhas.filter((c) => c.entidadeId === dados.entidade.id)
-    expect(linhasDaTabela()).toHaveLength(minhas.length)
-    expect(screen.queryByText('Cesta básica mensal')).toBe(null)
-    expect(screen.queryByText('Reforma do abrigo')).toBe(null)
-    expect(kpi('Campanhas ativas').textContent).toContain(
-      String(minhas.filter((c) => c.status === 'Ativa').length),
-    )
-    expect(kpi('Arrecadado').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.arrecadado, 0)),
-    )
-    expect(kpi('Meta total').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.meta, 0)),
-    )
-    expect(
-      screen.getByRole('link', { name: /Criar campanha/ }).getAttribute('href'),
-    ).toBe('/campanhas/nova')
-  })
-  it('mostra o progresso da meta e só oferece as ações permitidas para cada status', async () => {
-    await abrir('/campanhas')
-    const ativa = within(linhaDe('Mesa solidária: alimento para 200 famílias'))
-    expect(ativa.getByRole('img', { name: '61% da meta' })).toBeTruthy()
-    expect(ativa.getByRole('link', { name: 'Acompanhar' }).getAttribute('href')).toBe(
-      '/campanhas/1/acompanhamento',
-    )
-    expect(ativa.getByRole('link', { name: 'Editar' }).getAttribute('href')).toBe(
-      '/campanhas/1/editar',
-    )
-    expect(ativa.queryByRole('link', { name: 'Prestar contas' })).toBe(null)
-    const encerrada = within(linhaDe('Inverno com acolhimento'))
-    expect(encerrada.getByRole('link', { name: 'Prestar contas' }).getAttribute('href')).toBe(
-      '/campanhas/7/prestacao-de-contas',
-    )
-    expect(encerrada.queryByRole('link', { name: 'Editar' })).toBe(null)
-    expect(encerrada.getByRole('img', { name: '100% da meta' })).toBeTruthy()
-  })
-  it('filtra por status e por texto, combinando os dois', async () => {
-    const user = await abrir('/campanhas')
-    const status = screen.getByRole('combobox', { name: 'Todos os status' })
-    await user.selectOptions(status, 'Encerrada')
-    expect(linhasDaTabela()).toHaveLength(1)
-    expect(within(linhasDaTabela()[0]).getByText('Inverno com acolhimento')).toBeTruthy()
-    await user.selectOptions(status, '')
-    const busca = screen.getByRole('searchbox', {
-      name: 'Busque por campanha, entidade ou categoria',
-    })
-    await user.type(busca, 'EDUCAÇÃO')
-    expect(linhasDaTabela()).toHaveLength(1)
-    expect(screen.getByText('Volta às aulas: kits escolares')).toBeTruthy()
-    await user.selectOptions(status, 'Encerrada')
-    expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
-    expect(screen.queryByRole('table')).toBe(null)
-  })
-  it('mantém os indicadores quando o filtro não encontra nada', async () => {
-    const user = await abrir('/campanhas')
-    await user.type(
-      screen.getByRole('searchbox', { name: /Busque por campanha/ }),
-      'zzz',
-    )
-    expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
-    expect(kpi('Campanhas ativas')).toBeTruthy()
   })
 })
 

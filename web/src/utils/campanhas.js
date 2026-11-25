@@ -21,3 +21,6 @@ export function validarEdicao(form, campanha) {
 export function diasRestantes(fim, hoje = '2026-10-06') {
   return Math.max(0, Math.round((Date.parse(fim) - Date.parse(hoje)) / 86400000))
 }
+
+// A API só permite editar campanha que ainda não terminou (e só a entidade dona edita).
+export const podeEditar = (status) => ['Rascunho', 'Agendada', 'Ativa'].includes(status)

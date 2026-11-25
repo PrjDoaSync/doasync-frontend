@@ -112,7 +112,7 @@ npm run dev                      # http://localhost:5173
 | **Fase 4** | **Gestão da entidade** (hoje: telas protegidas, mas com dados de demonstração) | |
 | 16 | Cadastro de entidade (`/cadastro-entidade` → `POST /entidades`, no layout público; documentos removidos) | ✅ |
 | 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`); preferências e documentos removidos | ✅ |
-| 18 | Minhas campanhas (`/campanhas` → `GET /campanhas?entidadeId=...` com token, inclui `RASCUNHO`/`ENCERRADA`/`DESATIVADA`) | ⏳ |
+| 18 | Gestão de campanhas (`/campanhas` → `GET /campanhas` por status; entidade = as próprias, ADMIN = todas) | ✅ |
 | 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho) | ⏳ |
 | 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
 | 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | ⏳ |
@@ -123,7 +123,7 @@ npm run dev                      # http://localhost:5173
 | 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
 
 ### Próximo passo
-**Passo 18** — "Minhas campanhas" (`/campanhas`): a entidade dona lista as próprias campanhas pedindo **um status por vez** (`GET /campanhas?entidadeId=…&status=…`, ver §6); o ADMIN vê todas por status.
+**Passo 19** — criar campanha (`/campanhas/nova` → `POST /campanhas`; `rascunho: true` para rascunho). Itens, galeria e upload de imagem saem (imagem vira URL).
 
 Pontos já conhecidos para a Fase 4:
 - Ao integrar cada tela de gestão, **apagar os mocks que só ela usava** (`mocks/gestao.js`, `mocks/campanhasDetalhe.js`, `mocks/dados.js`, `mocks/index.js`); quando a última sair, o `DemoProvider` e o `DemoBanner` saem também.
@@ -147,6 +147,7 @@ Pontos já conhecidos para a Fase 4:
 | Comprovante | `/doar/:id/confirmacao/:doacaoId` | `GET /doacoes/{id}` (exige login) |
 | Cadastro de entidade | `/cadastro-entidade` | `POST /entidades` (público; não autentica) |
 | Perfil da entidade | `/configuracoes` | `GET` + `PATCH /entidades/{id}` (id da sessão) |
+| Gestão de campanhas | `/campanhas` | `GET /campanhas?status=…` × 5 (entidade: `entidadeId` da sessão; ADMIN: todas) |
 | Minhas doações | `/minhas-doacoes`, `/minhas-doacoes/:doacaoId` | `GET /usuarios/me/doacoes` (limit 50) + `GET /doacoes/{id}` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
@@ -167,6 +168,7 @@ Pontos já conhecidos para a Fase 4:
 Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio.
 
 ### Ambiente
+- **Suíte do front sob carga:** com backend + Vite + testes rodando juntos, uma execução derrubou ~75 testes aleatórios (incluindo Gráfico e layout) e na seguinte passou tudo. Se aparecerem falhas sem relação com a mudança, rode de novo antes de investigar.
 - **Testes do backend × servidor rodando:** com o `spring-boot:run` ativo na mesma pasta, `mvnw test` falhou ao subir o contexto ("DOASYNC_JWT_SEGREDO deve ser definido"). Pare o servidor antes de rodar a suíte do backend.
 - **Variáveis do Vite:** o Vitest também lê `.env.local` (isso já quebrou 8 testes quando havia uma flag lá). Use `.env.development.local`, que só vale para o `npm run dev`. `.env` não está no `.gitignore` (só `*.local`), então não deve ser usado.
 - **Acentos no `curl` do Git Bash (Windows):** JSON com acentos passado como argumento chega corrompido e o backend rejeita. Use o script Node (`scripts/popular-api.mjs`) ou o Swagger.
@@ -201,6 +203,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 
 ### Frontend
 - **Perfil (passo 17):** `PerfilEntidade.jsx` lê `usuario.entidadeId` da sessão; ADMIN vê "Perfil disponível só para entidades". Removidos: `EntityPreferences` (sem API), documentos e as abas para "Usuários e permissões". Validação de responsável/endereço compartilhada com o cadastro (`validarResponsavelEEndereco`, `corpoEndereco`). `StatusBadge` ganhou os status de entidade e de campanha.
+- **Gestão de campanhas (passo 18):** `campanhasService.daGestao` faz 5 chamadas em paralelo (uma por status). A ação "Prestar contas" saiu (sem API); "Editar" só para a entidade dona e status Rascunho/Agendada/Ativa (`podeEditar` em `utils/campanhas.js`). Entidade não aprovada vê aviso e não tem "Criar campanha" (o status vem de `usuario.statusEntidade`, gravado no login: após a aprovação é preciso entrar de novo).
+- **Fixtures (API simulada):** `fixtures/apiCampanhas.js` mantém um acervo mutável (campanhas públicas + privadas da Rede Esperança, entidades, doações) recriado por `resetarApiSimulada()` antes de cada teste; responde listagem por status, detalhe com `versao`, criação, edição (com lock otimista) e troca de status com as transições do backend.
 - **Fixtures de entidade:** `entidadesApi` (em `fixtures/apiCampanhas.js`) responde `GET`/`PATCH /entidades/{id}` e é recriada antes de cada teste (`resetarEntidadesApi` no `setup.js`).
 - **Cadastro × perfil (passo 16):** `CadastroEntidade.jsx` era usado por `/cadastro-entidade` e `/configuracoes` (prop `perfil`). Agora o cadastro é uma tela pública própria e o perfil virou `PerfilEntidade.jsx`. O `nome` informado vai também como `nomeFantasia` (é o nome mostrado na vitrine).
 - **Minhas doações (passo 15):** sem linha do tempo, destinação, mensagem da entidade, itens, cartão/boleto, exportação e PDFs (sem API). O detalhe reutiliza `ConfirmacaoDoacao` com a prop `historico`. Apagados: `mocks/doador.js`, `pages/DetalheDoacao.jsx`, `styles/detalhe-doacao.css`, o ramo `historicoDoador` do `DemoContext` e as regras `det-*` do CSS. Indicadores em `utils/doacoes.js` (`resumoDoacoes`).
@@ -269,3 +273,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-25 | `feat(frontend): cadastro de entidade com POST /entidades` | Passo 16 |
 | 2026-11-25 | `feat(campanha): expor versao no detalhe para o PATCH de edição` | **Backend** `014bbc6` (`feat/campanha-versao`), 270 testes |
 | 2026-11-25 | `feat(frontend): perfil da entidade com GET/PATCH /entidades/{id}` | Passo 17 |
+| 2026-11-25 | `feat(frontend): gestão de campanhas com GET /campanhas por status` | Passo 18 |
