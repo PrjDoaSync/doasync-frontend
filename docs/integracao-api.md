@@ -113,7 +113,7 @@ npm run dev                      # http://localhost:5173
 | 16 | Cadastro de entidade (`/cadastro-entidade` → `POST /entidades`, no layout público; documentos removidos) | ✅ |
 | 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`); preferências e documentos removidos | ✅ |
 | 18 | Gestão de campanhas (`/campanhas` → `GET /campanhas` por status; entidade = as próprias, ADMIN = todas) | ✅ |
-| 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho) | ⏳ |
+| 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`); itens, galeria e upload saem; capa = URL | ✅ |
 | 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
 | 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | ⏳ |
 | 22 | Doações recebidas (`/doacoes` → `GET /entidades/{id}/doacoes`) e arrecadação (`GET /entidades/{id}/arrecadacao`) no dashboard | ⏳ |
@@ -123,7 +123,7 @@ npm run dev                      # http://localhost:5173
 | 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
 
 ### Próximo passo
-**Passo 19** — criar campanha (`/campanhas/nova` → `POST /campanhas`; `rascunho: true` para rascunho). Itens, galeria e upload de imagem saem (imagem vira URL).
+**Passo 20** — editar campanha (`/campanhas/:id/editar` → `GET /campanhas/{id}` para ler `versao` + `PATCH /campanhas/{id}`), reaproveitando `CamposCampanha`. Precisa do backend na branch `feat/campanha-versao` (§5).
 
 Pontos já conhecidos para a Fase 4:
 - Ao integrar cada tela de gestão, **apagar os mocks que só ela usava** (`mocks/gestao.js`, `mocks/campanhasDetalhe.js`, `mocks/dados.js`, `mocks/index.js`); quando a última sair, o `DemoProvider` e o `DemoBanner` saem também.
@@ -147,6 +147,7 @@ Pontos já conhecidos para a Fase 4:
 | Comprovante | `/doar/:id/confirmacao/:doacaoId` | `GET /doacoes/{id}` (exige login) |
 | Cadastro de entidade | `/cadastro-entidade` | `POST /entidades` (público; não autentica) |
 | Perfil da entidade | `/configuracoes` | `GET` + `PATCH /entidades/{id}` (id da sessão) |
+| Criar campanha | `/campanhas/nova` | `POST /campanhas` (`rascunho` true/false) |
 | Gestão de campanhas | `/campanhas` | `GET /campanhas?status=…` × 5 (entidade: `entidadeId` da sessão; ADMIN: todas) |
 | Minhas doações | `/minhas-doacoes`, `/minhas-doacoes/:doacaoId` | `GET /usuarios/me/doacoes` (limit 50) + `GET /doacoes/{id}` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
@@ -177,7 +178,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `gh` (GitHub CLI) não está instalado na máquina de origem: PRs são abertos pelo link impresso no `git push`.
 
 ### API (doasync-backend)
-- **⚠️ Bug do H2 no perfil `dev`:** depois de ~30–40 min com o backend no ar, **todo** `POST /doacoes` responde 500. No log: `Check constraint invalid: "CONSTRAINT_97AA"` com causa `The database has been closed` em `SessionLocal.getCompareMode`. O H2 2.4.240 avalia a CHECK com uma sessão já fechada (provavelmente reciclada pelo pool Hikari, `maxLifetime` padrão de 30 min). Reiniciar o backend resolve; PostgreSQL não deve ter o problema. GETs e login continuam funcionando.
+- **⚠️ Bug do H2 no perfil `dev`:** depois de ~25–40 min com o backend no ar, **todo INSERT em tabela com CHECK** responde 500 — visto em `POST /doacoes` e em `POST /campanhas` (`CK_CAMPANHA_STATUS`). No log: `Check constraint invalid` com causa `The database has been closed` em `SessionLocal.getCompareMode`: o H2 2.4.240 avalia a CHECK com uma sessão já fechada (provavelmente reciclada pelo pool Hikari, `maxLifetime` padrão de 30 min). Reiniciar o backend resolve; PostgreSQL não deve ter o problema. GETs e login continuam funcionando.
 - **⚠️ CPF/CNPJ com máscara:** as colunas têm `CHECK (LENGTH(cpf) = 14)` e `CHECK (LENGTH(cnpj) = 18)` e o backend não valida nem normaliza o formato: CPF só com dígitos vira **500** ("Check constraint violation") em vez de 422. O front sempre envia `000.000.000-00` / `00.000.000/0000-00` (`formatarCpf`/`formatarCnpj` em `utils/cadastroDoador.js`). O backend também não confere os dígitos verificadores; o front confere.
 - **Cadastro de doador:** `POST /doadores` → 201 `{ id, nome, email, tipo, dataCadastro }` **sem token** (é preciso fazer login depois). Erros: 422 `{ erros: {...} }` com todos os campos inválidos; 409 `{ erros: { email | cpf | cnpj: "... já cadastrado." } }`; idade < 18 → 422 em `dataNascimento`.
 - **⚠️ Endereço, CEP e UF da entidade:** o backend não valida o `endereco` de `POST /entidades`; o banco exige todos os campos (menos `complemento`) preenchidos, `cep` com 9 caracteres (`00000-000`) e `uf` com 2 letras maiúsculas. Qualquer desvio → **500** (verificado: CEP sem máscara = 500). O CPF do responsável também precisa de máscara (`CHECK LENGTH = 14`). O front valida e formata tudo (`utils/cadastroEntidade.js`).
@@ -204,6 +205,7 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 ### Frontend
 - **Perfil (passo 17):** `PerfilEntidade.jsx` lê `usuario.entidadeId` da sessão; ADMIN vê "Perfil disponível só para entidades". Removidos: `EntityPreferences` (sem API), documentos e as abas para "Usuários e permissões". Validação de responsável/endereço compartilhada com o cadastro (`validarResponsavelEEndereco`, `corpoEndereco`). `StatusBadge` ganhou os status de entidade e de campanha.
 - **Gestão de campanhas (passo 18):** `campanhasService.daGestao` faz 5 chamadas em paralelo (uma por status). A ação "Prestar contas" saiu (sem API); "Editar" só para a entidade dona e status Rascunho/Agendada/Ativa (`podeEditar` em `utils/campanhas.js`). Entidade não aprovada vê aviso e não tem "Criar campanha" (o status vem de `usuario.statusEntidade`, gravado no login: após a aprovação é preciso entrar de novo).
+- **Criar campanha (passo 19):** assistente em 2 etapas (dados → revisão/publicação). Campos compartilhados com a edição em `components/CamposCampanha.jsx`; regras em `utils/criarCampanha.js` (`validarCampanha`, `corpoCampanha`). A capa é uma das imagens do site enviada como URL absoluta (`urlDaImagem`: `/images/x.jpg` → `http://localhost:5173/images/x.jpg`) ou um link colado; categoria é texto livre com sugestões (`datalist`). Saíram: itens necessários, galeria/upload, localização.
 - **Fixtures (API simulada):** `fixtures/apiCampanhas.js` mantém um acervo mutável (campanhas públicas + privadas da Rede Esperança, entidades, doações) recriado por `resetarApiSimulada()` antes de cada teste; responde listagem por status, detalhe com `versao`, criação, edição (com lock otimista) e troca de status com as transições do backend.
 - **Fixtures de entidade:** `entidadesApi` (em `fixtures/apiCampanhas.js`) responde `GET`/`PATCH /entidades/{id}` e é recriada antes de cada teste (`resetarEntidadesApi` no `setup.js`).
 - **Cadastro × perfil (passo 16):** `CadastroEntidade.jsx` era usado por `/cadastro-entidade` e `/configuracoes` (prop `perfil`). Agora o cadastro é uma tela pública própria e o perfil virou `PerfilEntidade.jsx`. O `nome` informado vai também como `nomeFantasia` (é o nome mostrado na vitrine).
@@ -274,3 +276,4 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-25 | `feat(campanha): expor versao no detalhe para o PATCH de edição` | **Backend** `014bbc6` (`feat/campanha-versao`), 270 testes |
 | 2026-11-25 | `feat(frontend): perfil da entidade com GET/PATCH /entidades/{id}` | Passo 17 |
 | 2026-11-25 | `feat(frontend): gestão de campanhas com GET /campanhas por status` | Passo 18 |
+| 2026-11-25 | `feat(frontend): criar campanha com POST /campanhas` | Passo 19 |
