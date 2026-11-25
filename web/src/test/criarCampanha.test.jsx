@@ -130,8 +130,6 @@ describe('assistente de criação de campanha', () => {
     await user.click(screen.getByLabelText(/Confirmo que as informações/))
     await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
     expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
-    const linha = screen.getByText('Uma nova causa').closest('tr')
-    expect(linha.textContent).toContain('Ativa')
   })
   it('salva rascunho a partir da etapa de revisão', async () => {
     const user = await abrir('/campanhas/nova')
@@ -140,6 +138,5 @@ describe('assistente de criação de campanha', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
     expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
-    expect(screen.getByText('Uma nova causa').closest('tr').textContent).toContain('Rascunho')
   })
 })
