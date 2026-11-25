@@ -12,6 +12,8 @@ export const authService = {
     }),
   // POST /doadores (público) → { id, nome, email, tipo, dataCadastro }. Não autentica: entrar depois.
   cadastrarDoador: (corpo) => api.post('/doadores', corpo).then((r) => r.data.data),
+  // POST /entidades (público) → EntidadeResposta com statusAprovacao PENDENTE. Não autentica.
+  cadastrarEntidade: (corpo) => api.post('/entidades', corpo).then((r) => r.data.data),
   // O backend é stateless: sair é só descartar o token.
   sair: () => limparSessao(),
 }

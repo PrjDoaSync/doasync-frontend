@@ -172,8 +172,9 @@ describe('gestão e estados de dados', () => {
       true,
     )
   })
+  // Perfil da entidade (/configuracoes) ainda em demonstração até o passo 17.
   it('bloqueia CNPJ inválido e salva informações válidas da entidade', async () => {
-    const user = await abrir('/cadastro-entidade')
+    const user = await abrir('/configuracoes')
     const cnpj = screen.getByLabelText(/CNPJ \*/)
     await user.clear(cnpj)
     await user.type(cnpj, '00000000000000')
@@ -185,7 +186,7 @@ describe('gestão e estados de dados', () => {
     expect(screen.getByText(/Informações salvas na demonstração/)).toBeTruthy()
   })
   it('rejeita arquivo acima de 10 MB sem indicar envio', async () => {
-    await abrir('/cadastro-entidade')
+    await abrir('/configuracoes')
     const arquivo = new File(['documento'], 'grande.pdf', {
       type: 'application/pdf',
     })

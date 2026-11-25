@@ -18,6 +18,7 @@ import PrestacaoContas from './pages/PrestacaoContas'
 import Dashboard from './pages/Dashboard'
 import Relatorios from './pages/Relatorios'
 import CadastroEntidade from './pages/CadastroEntidade'
+import PerfilEntidade from './pages/PerfilEntidade'
 import Login from './pages/Login'
 import CadastroDoador from './pages/CadastroDoador'
 import Doadores from './pages/Doadores'
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="minhas-doacoes/:doacaoId" element={<ConfirmacaoDoacao historico />} />
             <Route path="login" element={<Login />} />
             <Route path="cadastro-doador" element={<CadastroDoador />} />
+            <Route path="cadastro-entidade" element={<CadastroEntidade />} />
             <Route path="ajuda" element={<Informacoes pagina="ajuda" />} />
             <Route path="privacidade" element={<Informacoes pagina="privacidade" />} />
             <Route path="termos" element={<Informacoes pagina="termos" />} />
@@ -92,13 +94,9 @@ export default function App() {
               <Route path="doadores" element={<Doadores />} />
               <Route path="itens" element={<Itens />} />
               <Route path="relatorios" element={<Relatorios />} />
-              <Route path="configuracoes" element={<CadastroEntidade perfil />} />
+              <Route path="configuracoes" element={<PerfilEntidade />} />
               <Route path="configuracoes/usuarios" element={<Usuarios />} />
             </Route>
-          </Route>
-          {/* Cadastro de nova entidade: público (link no cabeçalho e no login). */}
-          <Route element={<Layout />}>
-            <Route path="cadastro-entidade" element={<CadastroEntidade />} />
           </Route>
         </Routes>
       </DemoProvider>
