@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Aviso, Botao, Campo, Secao } from '../components/Ui'
 import { authService } from '../services/authService'
-import { corpoCadastroEntidade, validarCadastroEntidade } from '../utils/cadastroEntidade'
+import { AREAS_ATUACAO, corpoCadastroEntidade, validarCadastroEntidade } from '../utils/cadastroEntidade'
 
-const AREAS = ['Assistência social e alimentação', 'Educação', 'Saúde', 'Meio ambiente', 'Proteção animal', 'Outros']
+const AREAS = AREAS_ATUACAO
 const VAZIO = {
   nome: '', razaoSocial: '', cnpj: '', email: '', telefone: '', senha: '', confirmacao: '',
   descricao: '', areaAtuacao: AREAS[0], site: '', responsavelNome: '', responsavelCpf: '',

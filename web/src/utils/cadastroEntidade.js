@@ -6,6 +6,8 @@ import { formatarCnpj, formatarCpf, validarCpf } from './cadastroDoador'
 
 const soDigitos = (v) => String(v ?? '').replace(/\D/g, '')
 const preenchido = (v) => String(v ?? '').trim().length > 0
+export const AREAS_ATUACAO = ['Assistência social e alimentação', 'Educação', 'Saúde', 'Meio ambiente', 'Proteção animal', 'Outros']
+
 export const formatarCep = (v) => soDigitos(v).replace(/^(\d{5})(\d{3})$/, '$1-$2')
 
 // Campos do endereço obrigatórios no banco (o complemento é opcional).
@@ -24,7 +26,12 @@ export function validarCadastroEntidade(f) {
   const digitosTelefone = soDigitos(f.telefone).length
   if (digitosTelefone < 10 || String(f.telefone).trim().length > 20) erros.telefone = 'Informe o telefone com DDD.'
   if (!preenchido(f.descricao)) erros.descricao = 'Descrição é obrigatória.'
-  // RN46: nome e CPF do responsável juntos (ou nenhum dos dois).
+  return { ...erros, ...validarResponsavelEEndereco(f) }
+}
+
+// Responsável (RN46: nome e CPF juntos) e endereço (tudo ou nada). Usado no cadastro e no perfil.
+export function validarResponsavelEEndereco(f) {
+  const erros = {}
   if (preenchido(f.responsavelNome) || preenchido(f.responsavelCpf)) {
     if (!preenchido(f.responsavelNome)) erros.responsavelNome = 'Informe o nome do responsável junto com o CPF.'
     if (!validarCpf(f.responsavelCpf)) erros.responsavelCpf = 'CPF do responsável inválido.'
@@ -35,6 +42,20 @@ export function validarCadastroEntidade(f) {
     if (preenchido(f.uf) && !/^[A-Za-z]{2}$/.test(f.uf.trim())) erros.uf = 'Use a sigla do estado (ex.: SC).'
   }
   return erros
+}
+
+// Endereço no formato da API, ou undefined quando o formulário não tem endereço.
+export function corpoEndereco(f) {
+  if (!temEndereco(f)) return undefined
+  return {
+    logradouro: f.logradouro.trim(),
+    numero: f.numero.trim(),
+    complemento: preenchido(f.complemento) ? f.complemento.trim() : undefined,
+    bairro: f.bairro.trim(),
+    cidade: f.cidade.trim(),
+    uf: f.uf.trim().toUpperCase(),
+    cep: formatarCep(f.cep),
+  }
 }
 
 // Corpo de POST /entidades: formata CNPJ/CPF/CEP, normaliza a UF e omite opcionais vazios.
@@ -57,16 +78,7 @@ export function corpoCadastroEntidade(f) {
     corpo.responsavelNome = f.responsavelNome.trim()
     corpo.responsavelCpf = formatarCpf(f.responsavelCpf)
   }
-  if (temEndereco(f)) {
-    corpo.endereco = {
-      logradouro: f.logradouro.trim(),
-      numero: f.numero.trim(),
-      complemento: opcional(f.complemento),
-      bairro: f.bairro.trim(),
-      cidade: f.cidade.trim(),
-      uf: f.uf.trim().toUpperCase(),
-      cep: formatarCep(f.cep),
-    }
-  }
+  const endereco = corpoEndereco(f)
+  if (endereco) corpo.endereco = endereco
   return corpo
 }

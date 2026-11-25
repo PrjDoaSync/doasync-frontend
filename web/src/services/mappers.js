@@ -74,6 +74,37 @@ export function mapDoacao(api) {
   }
 }
 
+const STATUS_ENTIDADE = { PENDENTE: 'Pendente', APROVADA: 'Aprovada', REPROVADA: 'Reprovada', INATIVA: 'Inativa' }
+export const mapStatusEntidade = (status) => STATUS_ENTIDADE[status] ?? status ?? ''
+
+// EntidadeResposta → entidade usada nas telas. A API não devolve o responsável (nome/CPF).
+export function mapEntidade(api) {
+  const e = api.endereco ?? null
+  return {
+    id: api.id,
+    nome: api.nomeFantasia || api.razaoSocial || '',
+    nomeFantasia: api.nomeFantasia ?? '',
+    razaoSocial: api.razaoSocial ?? '',
+    cnpj: api.cnpj ?? '',
+    descricao: api.descricao ?? '',
+    areaAtuacao: api.areaAtuacao ?? '',
+    site: api.site ?? '',
+    logoUrl: api.logoUrl ?? '',
+    status: mapStatusEntidade(api.statusAprovacao),
+    motivoReprovacao: api.motivoReprovacao ?? '',
+    dataAprovacao: api.dataAprovacao ?? '',
+    emailContato: api.emailContato ?? '',
+    telefoneContato: api.telefoneContato ?? '',
+    whatsapp: api.whatsapp ?? '',
+    endereco: e && {
+      cep: e.cep ?? '', logradouro: e.logradouro ?? '', numero: e.numero ?? '', complemento: e.complemento ?? '',
+      bairro: e.bairro ?? '', cidade: e.cidade ?? '', uf: e.uf ?? '',
+    },
+    usuario: api.usuario ?? null,
+    criadaEm: api.createdAt ?? '',
+  }
+}
+
 // Envelope paginado { data, meta } → { itens, total, pagina, limite, totalPaginas }.
 export function mapPaginado(resposta, mapItem) {
   const meta = resposta?.meta ?? {}
