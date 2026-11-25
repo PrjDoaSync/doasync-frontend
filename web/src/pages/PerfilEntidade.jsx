@@ -1,270 +1,216 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDemo } from '../hooks/useDemo'
-import { Aviso, Botao, Campo, Icon, Secao } from '../components/Ui'
+import { Aviso, Botao, Campo, Icon, Secao, Vazio } from '../components/Ui'
 import PageHeader from '../components/PageHeader'
-import { validarCnpj } from '../utils/gestao'
-import EntityPreferences from '../components/EntityPreferences'
+import RequestState from '../components/RequestState'
+import StatusBadge from '../components/StatusBadge'
+import { useAuth } from '../hooks/useAuth'
+import { useRequest } from '../hooks/useRequest'
+import { entidadesService } from '../services/entidadesService'
+import { formatarCpf } from '../utils/cadastroDoador'
+import { AREAS_ATUACAO, corpoEndereco, validarResponsavelEEndereco } from '../utils/cadastroEntidade'
 
-// Perfil da entidade (/configuracoes). Ainda em demonstração: integração com
-// GET/PATCH /entidades/{id} no passo 17 (docs/integracao-api.md).
+// Perfil da entidade (/configuracoes): GET e PATCH /entidades/{id}, com id da sessão.
+// Sem endpoint na API: documentos, preferências de notificação e equipe da entidade.
 export default function PerfilEntidade() {
-  const { dados, atualizar, notificar } = useDemo(),
-    [form, setForm] = useState(dados.entidade),
-    [erro, setErro] = useState(''),
-    [sucesso, setSucesso] = useState(false),
-    [salvando, setSalvando] = useState(false)
-  const alterar = (e) => setForm({ ...form, [e.target.name]: e.target.value })
-  function documentos(e) {
-    const arquivos = [...e.target.files]
-    if (
-      arquivos.some(
-        (a) =>
-          a.size > 10 * 1024 * 1024 ||
-          !['application/pdf', 'image/jpeg', 'image/png'].includes(a.type),
-      )
-    ) {
-      setErro('Use documentos PDF, JPG ou PNG de até 10 MB cada.')
-      e.target.value = ''
-      return
-    }
-    setErro('')
-    setForm({
-      ...form,
-      documentos: [
-        ...form.documentos,
-        ...arquivos.map((a) => ({ nome: a.name, tamanho: a.size })),
-      ],
-    })
-    e.target.value = ''
-  }
-  async function salvar(e) {
-    e.preventDefault()
-    setSucesso(false)
-    if (!form.nome.trim() || !form.responsavel.trim()) {
-      setErro('Informe o nome da entidade e do responsável.')
-      return
-    }
-    if (!validarCnpj(form.cnpj)) {
-      setErro('Informe um CNPJ numérico válido, com 14 dígitos.')
-      return
-    }
-    setSalvando(true)
-    setErro('')
-    try {
-      atualizar('entidade', {
-        ...form,
-        nome: form.nome.trim(),
-        responsavel: form.responsavel.trim(),
-      })
-      setSucesso(true)
-      notificar('Informações atualizadas somente nesta sessão de demonstração.')
-    } catch {
-      setErro('Não foi possível salvar as informações. Tente novamente.')
-    } finally {
-      setSalvando(false)
-    }
-  }
+  const { usuario } = useAuth()
+  if (!usuario?.entidadeId)
+    return (
+      <Vazio principal titulo="Perfil disponível só para entidades">
+        A conta de administrador não tem perfil de entidade. <Link to="/dashboard">Voltar ao painel</Link>
+      </Vazio>
+    )
+  return <Perfil id={usuario.entidadeId} email={usuario.email} />
+}
+
+function Perfil({ id, email }) {
+  const request = useRequest((config) => entidadesService.buscar(id, config), [id])
   return (
     <>
       <div className="breadcrumb">
         <Link to="/dashboard">Área da entidade</Link>
         <span>/</span>
-        Perfil e configurações
+        Perfil da entidade
       </div>
-      <PageHeader
-        titulo="Perfil da entidade e configurações"
-        descricao="Mantenha os dados e as preferências da sua entidade atualizados."
-      />
-      <div className="abas">
-        <Link to="/configuracoes" className="ativa">
-          Perfil da entidade
-        </Link>
-        <Link to="/configuracoes/usuarios">Usuários e permissões</Link>
-      </div>
-      <form onSubmit={salvar} className="pilha">
-        <div className="dashboard-grid">
-          <div className="pilha">
-            <Secao
-              titulo="Informações da entidade"
-              descricao="Os campos com * são obrigatórios. Seus dados ficam apenas nesta sessão."
-            >
-              <div className="form-grid">
-                <Campo
-                  rotulo="Nome da entidade"
-                  name="nome"
-                  value={form.nome}
-                  onChange={alterar}
-                  required
-                  maxLength={150}
-                />
-                <Campo
-                  rotulo="CNPJ"
-                  name="cnpj"
-                  inputMode="numeric"
-                  value={form.cnpj}
-                  onChange={alterar}
-                  required
-                  maxLength={18}
-                />
-                <Campo
-                  rotulo="E-mail institucional"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={alterar}
-                  required
-                />
-                <Campo
-                  rotulo="Telefone"
-                  name="telefone"
-                  type="tel"
-                  value={form.telefone}
-                  onChange={alterar}
-                  required
-                  pattern="[0-9()+ .-]{10,20}"
-                />
-                <Campo rotulo="Área de atuação">
-                  <select name="area" value={form.area} onChange={alterar}>
-                    {[
-                      'Assistência social e alimentação',
-                      'Educação',
-                      'Saúde',
-                      'Meio ambiente',
-                      'Proteção animal',
-                      'Outros',
-                    ].map((a) => (
-                      <option key={a}>{a}</option>
-                    ))}
-                  </select>
-                </Campo>
-                <Campo
-                  rotulo="Localização"
-                  name="cidade"
-                  value={form.cidade}
-                  onChange={alterar}
-                  required
-                />
-                <Campo
-                  rotulo="Responsável legal"
-                  name="responsavel"
-                  className="campo--inteiro"
-                  value={form.responsavel}
-                  onChange={alterar}
-                  required
-                />
-                <Campo
-                  rotulo="Site"
-                  name="site"
-                  type="url"
-                  className="campo--inteiro"
-                  value={form.site}
-                  onChange={alterar}
-                  placeholder="https://"
-                />
-                <Campo rotulo="Sobre a entidade" className="campo--inteiro">
-                  <textarea
-                    name="descricao"
-                    value={form.descricao}
-                    onChange={alterar}
-                    rows={4}
-                  />
-                </Campo>
-              </div>
-            </Secao>
-            <EntityPreferences form={form} setForm={setForm} />
-            <Secao
-              titulo="Documentos para verificação"
-              descricao="PDF, JPG ou PNG · até 10 MB por arquivo. A seleção não realiza envio."
-            >
-              {form.documentos.length ? (
-                form.documentos.map((doc, i) => (
-                  <div className="lista-linha" key={`${doc.nome}-${i}`}>
-                    <span>
-                      <Icon nome="relatorios" />
-                      {doc.nome}
-                      <small>
-                        {Math.ceil(doc.tamanho / 1024)} KB · selecionado
-                        localmente
-                      </small>
-                    </span>
-                    <button
-                      type="button"
-                      className="link-botao"
-                      onClick={() =>
-                        setForm({
-                          ...form,
-                          documentos: form.documentos.filter(
-                            (_, index) => index !== i,
-                          ),
-                        })
-                      }
-                      aria-label={`Remover ${doc.nome}`}
-                    >
-                      Remover
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p>Nenhum documento selecionado.</p>
-              )}
-              <Campo
-                rotulo="Adicionar documentos"
-                ajuda="Comprovante de CNPJ, estatuto social e documento do responsável."
-              >
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  multiple
-                  onChange={documentos}
+      <PageHeader titulo="Perfil da entidade" descricao="Mantenha os dados públicos e de contato da sua entidade atualizados." />
+      <RequestState {...request}>
+        {(entidade) => <Formulario key={entidade.id} entidade={entidade} email={email} onSalvo={request.reload} />}
+      </RequestState>
+    </>
+  )
+}
+
+const deEntidade = (e) => ({
+  nomeFantasia: e.nomeFantasia,
+  descricao: e.descricao,
+  areaAtuacao: e.areaAtuacao,
+  site: e.site,
+  emailContato: e.emailContato,
+  telefoneContato: e.telefoneContato,
+  whatsapp: e.whatsapp,
+  responsavelNome: '',
+  responsavelCpf: '',
+  ...(e.endereco ?? { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' }),
+})
+
+function validar(f) {
+  const erros = validarResponsavelEEndereco(f)
+  if (!f.descricao.trim()) erros.descricao = 'Descrição é obrigatória.'
+  // telefone_contato e whatsapp são VARCHAR(20) no banco: acima disso o backend responde 500.
+  for (const c of ['telefoneContato', 'whatsapp']) if (f[c].trim().length > 20) erros[c] = 'Use até 20 caracteres.'
+  if (f.emailContato.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.emailContato.trim())) erros.emailContato = 'E-mail inválido.'
+  return erros
+}
+
+function corpo(f) {
+  const c = {
+    nomeFantasia: f.nomeFantasia.trim(),
+    descricao: f.descricao.trim(),
+    areaAtuacao: f.areaAtuacao,
+    site: f.site.trim(),
+    emailContato: f.emailContato.trim(),
+    telefoneContato: f.telefoneContato.trim(),
+    whatsapp: f.whatsapp.trim(),
+  }
+  // Responsável só vai quando preenchido (a API não devolve o atual; null = manter).
+  if (f.responsavelNome.trim()) {
+    c.responsavelNome = f.responsavelNome.trim()
+    c.responsavelCpf = formatarCpf(f.responsavelCpf)
+  }
+  const endereco = corpoEndereco(f)
+  if (endereco) c.endereco = endereco
+  return c
+}
+
+function Formulario({ entidade, email, onSalvo }) {
+  const [f, setF] = useState(() => deEntidade(entidade)),
+    [erros, setErros] = useState({}),
+    [erro, setErro] = useState(''),
+    [sucesso, setSucesso] = useState(false),
+    [salvando, setSalvando] = useState(false)
+  const areas = AREAS_ATUACAO.includes(f.areaAtuacao) || !f.areaAtuacao ? AREAS_ATUACAO : [f.areaAtuacao, ...AREAS_ATUACAO]
+
+  const campo = (nome, ajuda) => ({
+    name: nome,
+    value: f[nome],
+    onChange: (e) => setF((atual) => ({ ...atual, [nome]: e.target.value })),
+    ajuda: erros[nome] ?? ajuda,
+    'aria-invalid': erros[nome] ? true : undefined,
+  })
+
+  async function salvar(e) {
+    e.preventDefault()
+    setSucesso(false)
+    setErro('')
+    const encontrados = validar(f)
+    setErros(encontrados)
+    if (Object.keys(encontrados).length) {
+      setErro('Revise os campos destacados.')
+      return
+    }
+    setSalvando(true)
+    try {
+      await entidadesService.atualizar(entidade.id, corpo(f))
+      setSucesso(true)
+      onSalvo()
+    } catch (falha) {
+      if (falha?.campos) {
+        const { responsavel, ...demais } = falha.campos
+        setErros(responsavel ? { ...demais, responsavelNome: responsavel, responsavelCpf: responsavel } : demais)
+      }
+      setErro(falha?.campos ? 'Revise os campos destacados.' : (falha?.message ?? 'Não foi possível salvar.'))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <form onSubmit={salvar} className="pilha" noValidate>
+      <div className="dashboard-grid">
+        <div className="pilha">
+          <Secao titulo="Dados públicos" descricao="Aparecem para os doadores na vitrine e nas campanhas.">
+            <div className="form-grid">
+              <Campo rotulo="Nome da entidade" maxLength={200} {...campo('nomeFantasia')} />
+              <Campo rotulo="Área de atuação">
+                <select name="areaAtuacao" value={f.areaAtuacao} onChange={(e) => setF({ ...f, areaAtuacao: e.target.value })}>
+                  {areas.map((a) => <option key={a}>{a}</option>)}
+                </select>
+              </Campo>
+              <Campo rotulo="Sobre a entidade" required className="campo--inteiro" ajuda={erros.descricao}>
+                <textarea
+                  name="descricao"
+                  rows={4}
+                  maxLength={5000}
+                  value={f.descricao}
+                  aria-invalid={erros.descricao ? true : undefined}
+                  onChange={(e) => setF({ ...f, descricao: e.target.value })}
                 />
               </Campo>
-            </Secao>
-          </div>
-          <Secao titulo="Dados da sua entidade">
-            <span className="badge badge--alerta">Ambiente de demonstração</span>
-            <h3>{dados.entidade.nome}</h3>
-            <p>Confira suas informações e os documentos necessários.</p>
-            <ul className="lista-dicas">
-              <li>Dados institucionais atualizados</li>
-              <li>Responsável legal identificado</li>
-              <li>Comprovante de CNPJ</li>
-              <li>Estatuto e documento do responsável</li>
-            </ul>
-            <Aviso>
-              A verificação depende do envio e da análise pelo serviço
-              responsável. Selecionar documentos não significa que a entidade
-              foi verificada.
-            </Aviso>
-            <Link className="link-azul" to="/dashboard">
-              Voltar ao dashboard →
-            </Link>
+              <Campo rotulo="Site" type="url" placeholder="https://" className="campo--inteiro" {...campo('site')} />
+            </div>
+          </Secao>
+          <Secao titulo="Contato">
+            <div className="form-grid">
+              <Campo rotulo="E-mail de contato" type="email" {...campo('emailContato')} />
+              <Campo rotulo="Telefone de contato" type="tel" maxLength={20} {...campo('telefoneContato')} />
+              <Campo rotulo="WhatsApp" type="tel" maxLength={20} {...campo('whatsapp')} />
+            </div>
+          </Secao>
+          <Secao titulo="Responsável legal" descricao="Por privacidade, a API não mostra o responsável atual. Preencha nome e CPF só para alterá-lo.">
+            <div className="form-grid">
+              <Campo rotulo="Nome do responsável" maxLength={200} {...campo('responsavelNome')} />
+              <Campo rotulo="CPF do responsável" inputMode="numeric" placeholder="000.000.000-00" {...campo('responsavelCpf')} />
+            </div>
+          </Secao>
+          <Secao titulo="Endereço" descricao="Se informar, preencha todos os campos (o complemento é opcional).">
+            <div className="form-grid">
+              <Campo rotulo="CEP" inputMode="numeric" placeholder="00000-000" {...campo('cep')} />
+              <Campo rotulo="Logradouro" maxLength={200} {...campo('logradouro')} />
+              <Campo rotulo="Número" maxLength={20} {...campo('numero')} />
+              <Campo rotulo="Complemento" maxLength={100} {...campo('complemento')} />
+              <Campo rotulo="Bairro" maxLength={100} {...campo('bairro')} />
+              <Campo rotulo="Cidade" maxLength={100} {...campo('cidade')} />
+              <Campo rotulo="UF" maxLength={2} placeholder="SC" {...campo('uf')} />
+            </div>
           </Secao>
         </div>
-        {erro && <Aviso erro>{erro}</Aviso>}
-        {sucesso && (
-          <Aviso>
-            Informações salvas na demonstração. Nenhum documento foi enviado
-            para análise.
-          </Aviso>
-        )}
-        <div className="acoes acoes--fim">
-          <Botao
-            secundario
-            onClick={() => {
-              setForm({ ...dados.entidade })
-              setErro('')
-              setSucesso(false)
-            }}
-          >
-            Descartar alterações
-          </Botao>
-          <Botao type="submit" disabled={salvando}>
-            <Icon nome="check" />
-            {salvando ? 'Salvando…' : 'Salvar informações'}
-          </Botao>
-        </div>
-      </form>
-    </>
+        <Secao titulo="Situação da entidade">
+          <StatusBadge valor={entidade.status} />
+          <h3>{entidade.nome}</h3>
+          <dl className="linhas-resumo">
+            <div><dt>Razão social</dt><dd>{entidade.razaoSocial}</dd></div>
+            <div><dt>CNPJ</dt><dd>{entidade.cnpj}</dd></div>
+            <div><dt>E-mail de acesso</dt><dd>{email}</dd></div>
+          </dl>
+          {entidade.status === 'Pendente' && (
+            <Aviso>Cadastro em análise. Depois da aprovação, a entidade aparece na vitrine e pode criar campanhas.</Aviso>
+          )}
+          {entidade.status === 'Reprovada' && (
+            <Aviso erro>Cadastro reprovado{entidade.motivoReprovacao ? `: ${entidade.motivoReprovacao}` : '.'}</Aviso>
+          )}
+          {entidade.status === 'Inativa' && <Aviso erro>Entidade desativada pela administração do DoaSync.</Aviso>}
+          <small>Razão social e CNPJ não podem ser alterados por aqui.</small>
+        </Secao>
+      </div>
+      {erro && <Aviso erro>{erro}</Aviso>}
+      {sucesso && <Aviso>Perfil atualizado.</Aviso>}
+      <div className="acoes acoes--fim">
+        <Botao
+          secundario
+          onClick={() => {
+            setF(deEntidade(entidade))
+            setErros({})
+            setErro('')
+            setSucesso(false)
+          }}
+        >
+          Descartar alterações
+        </Botao>
+        <Botao type="submit" disabled={salvando} aria-busy={salvando}>
+          <Icon nome="check" />
+          {salvando ? 'Salvando…' : 'Salvar perfil'}
+        </Botao>
+      </div>
+    </form>
   )
 }

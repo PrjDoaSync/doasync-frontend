@@ -172,31 +172,6 @@ describe('gestão e estados de dados', () => {
       true,
     )
   })
-  // Perfil da entidade (/configuracoes) ainda em demonstração até o passo 17.
-  it('bloqueia CNPJ inválido e salva informações válidas da entidade', async () => {
-    const user = await abrir('/configuracoes')
-    const cnpj = screen.getByLabelText(/CNPJ \*/)
-    await user.clear(cnpj)
-    await user.type(cnpj, '00000000000000')
-    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
-    expect(screen.getByRole('alert').textContent).toContain('CNPJ')
-    await user.clear(cnpj)
-    await user.type(cnpj, '11.222.333/0001-81')
-    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
-    expect(screen.getByText(/Informações salvas na demonstração/)).toBeTruthy()
-  })
-  it('rejeita arquivo acima de 10 MB sem indicar envio', async () => {
-    await abrir('/configuracoes')
-    const arquivo = new File(['documento'], 'grande.pdf', {
-      type: 'application/pdf',
-    })
-    Object.defineProperty(arquivo, 'size', { value: 11 * 1024 * 1024 })
-    fireEvent.change(screen.getByLabelText('Adicionar documentos'), {
-      target: { files: [arquivo] },
-    })
-    expect(screen.getByRole('alert').textContent).toContain('até 10 MB')
-    expect(screen.queryByText('grande.pdf')).toBe(null)
-  })
   it('bloqueia saída acima do saldo e atualiza quantidade válida', async () => {
     const user = await abrir('/itens')
     await user.click(

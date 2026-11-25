@@ -46,7 +46,7 @@ O front usa `http://localhost:8080/api/v1` por padrão. Para apontar para outro 
 ### Subir o backend (terminal 1)
 ```bash
 cd doasync-backend
-git switch main                  # a correção de CORS (PR #70) está na main; a develop ainda não a tem
+git switch feat/campanha-versao  # main + versao no detalhe de campanha (§5); depois do merge, use a main
 cd backend
 ./mvnw spring-boot:run           # Windows: .\mvnw.cmd spring-boot:run
 ```
@@ -111,7 +111,7 @@ npm run dev                      # http://localhost:5173
 | 15 | Minhas doações (`GET /usuarios/me/doacoes`) + detalhe = comprovante (`/minhas-doacoes/:id`) | ✅ |
 | **Fase 4** | **Gestão da entidade** (hoje: telas protegidas, mas com dados de demonstração) | |
 | 16 | Cadastro de entidade (`/cadastro-entidade` → `POST /entidades`, no layout público; documentos removidos) | ✅ |
-| 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`, id vem de `usuario.entidadeId`) | ⏳ |
+| 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`); preferências e documentos removidos | ✅ |
 | 18 | Minhas campanhas (`/campanhas` → `GET /campanhas?entidadeId=...` com token, inclui `RASCUNHO`/`ENCERRADA`/`DESATIVADA`) | ⏳ |
 | 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho) | ⏳ |
 | 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
@@ -123,7 +123,7 @@ npm run dev                      # http://localhost:5173
 | 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
 
 ### Próximo passo
-**Passo 17** — perfil da entidade (`src/pages/PerfilEntidade.jsx`, rota `/configuracoes`) com `GET /entidades/{id}` e `PATCH /entidades/{id}` (id = `usuario.entidadeId` da sessão); aviso "aguardando aprovação" para entidade `PENDENTE`/`REPROVADA`.
+**Passo 18** — "Minhas campanhas" (`/campanhas`): a entidade dona lista as próprias campanhas pedindo **um status por vez** (`GET /campanhas?entidadeId=…&status=…`, ver §6); o ADMIN vê todas por status.
 
 Pontos já conhecidos para a Fase 4:
 - Ao integrar cada tela de gestão, **apagar os mocks que só ela usava** (`mocks/gestao.js`, `mocks/campanhasDetalhe.js`, `mocks/dados.js`, `mocks/index.js`); quando a última sair, o `DemoProvider` e o `DemoBanner` saem também.
@@ -146,6 +146,7 @@ Pontos já conhecidos para a Fase 4:
 | Cadastro de doador | `/cadastro-doador` | `POST /doadores` + `POST /auth/login` |
 | Comprovante | `/doar/:id/confirmacao/:doacaoId` | `GET /doacoes/{id}` (exige login) |
 | Cadastro de entidade | `/cadastro-entidade` | `POST /entidades` (público; não autentica) |
+| Perfil da entidade | `/configuracoes` | `GET` + `PATCH /entidades/{id}` (id da sessão) |
 | Minhas doações | `/minhas-doacoes`, `/minhas-doacoes/:doacaoId` | `GET /usuarios/me/doacoes` (limit 50) + `GET /doacoes/{id}` |
 | Gestão (guarda) | `/dashboard`, `/campanhas`, `/doacoes`, … | exige sessão `ENTIDADE`/`ADMIN`; conteúdo ainda é demonstração (Fase 4) |
 
@@ -156,7 +157,7 @@ Pontos já conhecidos para a Fase 4:
 | Item | Repositório | Branch / PR | Status |
 |---|---|---|---|
 | CORS em `/api/v1/**` para o front | doasync-backend (Equipe 2) | PR #70 (`fix/cors-frontend`) | ✅ mesclado na **`main`** (não na `develop`) |
-| Expor `versao` na resposta de campanha | doasync-backend (Equipe 2) | — | ⏳ necessário na Fase 4 |
+| Expor `versao` na resposta de campanha (necessário para editar) | doasync-backend (Equipe 2) | `feat/campanha-versao` (commit `014bbc6`, 270 testes) | 🔄 branch no GitHub; PR para a `main`: https://github.com/PrjDoaSync/doasync-backend/pull/new/feat/campanha-versao — **até o merge, rode o backend por essa branch** |
 | H2 (perfil `dev`) quebra o `INSERT` em `doacoes` após ~30–40 min de execução (ver §6) | doasync-backend (Equipe 2) | — | ⏳ reportar; contorno: reiniciar o backend |
 
 ---
@@ -166,6 +167,7 @@ Pontos já conhecidos para a Fase 4:
 Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio.
 
 ### Ambiente
+- **Testes do backend × servidor rodando:** com o `spring-boot:run` ativo na mesma pasta, `mvnw test` falhou ao subir o contexto ("DOASYNC_JWT_SEGREDO deve ser definido"). Pare o servidor antes de rodar a suíte do backend.
 - **Variáveis do Vite:** o Vitest também lê `.env.local` (isso já quebrou 8 testes quando havia uma flag lá). Use `.env.development.local`, que só vale para o `npm run dev`. `.env` não está no `.gitignore` (só `*.local`), então não deve ser usado.
 - **Acentos no `curl` do Git Bash (Windows):** JSON com acentos passado como argumento chega corrompido e o backend rejeita. Use o script Node (`scripts/popular-api.mjs`) ou o Swagger.
 - **Fim de linha:** os arquivos do front usam CRLF. Scripts com regex de `\n` falham silenciosamente.
@@ -178,6 +180,10 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - **Cadastro de doador:** `POST /doadores` → 201 `{ id, nome, email, tipo, dataCadastro }` **sem token** (é preciso fazer login depois). Erros: 422 `{ erros: {...} }` com todos os campos inválidos; 409 `{ erros: { email | cpf | cnpj: "... já cadastrado." } }`; idade < 18 → 422 em `dataNascimento`.
 - **⚠️ Endereço, CEP e UF da entidade:** o backend não valida o `endereco` de `POST /entidades`; o banco exige todos os campos (menos `complemento`) preenchidos, `cep` com 9 caracteres (`00000-000`) e `uf` com 2 letras maiúsculas. Qualquer desvio → **500** (verificado: CEP sem máscara = 500). O CPF do responsável também precisa de máscara (`CHECK LENGTH = 14`). O front valida e formata tudo (`utils/cadastroEntidade.js`).
 - **Cadastro de entidade:** `POST /entidades` → 201 com `statusAprovacao: "PENDENTE"`, sem token. O login funciona e devolve `statusEntidade: "PENDENTE"`; `GET /entidades` (público) só lista `APROVADA`. 409 por campo para `email`/`cnpj`; RN46 vem como `{ erros: { responsavel: ... } }`.
+- **Perfil da entidade:** `EntidadeResposta` **não devolve o responsável** (nome/CPF) nem o telefone da conta; o perfil só envia o par quando o usuário preenche. `PATCH` com campo ausente/`null` mantém o valor; texto vazio vira `null` (ex.: `site: ""`). `telefone_contato` e `whatsapp` são `VARCHAR(20)` (acima disso → 500; o front limita).
+- **Lista de entidades:** `GET /entidades` devolve **só `APROVADA`, inclusive para o ADMIN** (o `listarTodas` do serviço não está exposto). Para a aprovação (passo 25) o caminho é `GET /usuarios?tipo=ENTIDADE` (ADMIN), que traz `entidadeId` e `statusEntidade`.
+- **Campanhas da entidade dona:** `GET /campanhas?entidadeId=…` **sem `status` devolve a visão pública** (só ATIVA recebendo doações). Com `status=RASCUNHO|AGENDADA|ATIVA|ENCERRADA|DESATIVADA` a dona (e o ADMIN) veem tudo daquele status → "Minhas campanhas" faz uma chamada por status.
+- **Regras de status de campanha:** `RASCUNHO → AGENDADA|ATIVA|DESATIVADA`, `AGENDADA → ATIVA|DESATIVADA`, `ATIVA → ENCERRADA|DESATIVADA`; `ENCERRADA`/`DESATIVADA` são finais; `motivo` obrigatório para `DESATIVADA`. Criar: `rascunho: true` → RASCUNHO; `dataInicio` futura → AGENDADA; senão ATIVA. Imagem: só URL http(s). `dataFim ≥ dataInicio`.
 - **Histórico do doador:** `GET /usuarios/me/doacoes` devolve `{ data: DoacaoResponse[], meta }`, mais recentes primeiro. **Ignora o parâmetro `busca`** (apesar do contrato) e limita `limit` a 50 → busca/filtros ficam no front. Entidade/ADMIN recebem 403 "Sem permissão.".
 - **Comprovante:** `GET /doacoes/{id}` → 200 para o doador (vê o próprio nome mesmo em doação anônima), para a entidade destino (vê "Doador anônimo" e sem `doador.id`) e para o ADMIN; **404** para qualquer outro usuário (RN71, não revela que existe); 401 sem token. Verificado no backend real.
 - **Doação:** `POST /doacoes` aceita `{ campanhaId, valor, formaPagamento: "PIX", anonima, observacao? }` e responde 201 com `DoacaoResponse` já `CONFIRMADA` (não há provedor de pagamento). Mesmo `Idempotency-Key` → 200 "Doação recuperada com sucesso." com o mesmo id (verificado no backend real). Só `PESSOA_FISICA`/`PESSOA_JURIDICA` podem doar.
@@ -194,6 +200,8 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 - O `main` e o `develop` do backend diferem só por uma linha do README; o PR de CORS parte da `develop`.
 
 ### Frontend
+- **Perfil (passo 17):** `PerfilEntidade.jsx` lê `usuario.entidadeId` da sessão; ADMIN vê "Perfil disponível só para entidades". Removidos: `EntityPreferences` (sem API), documentos e as abas para "Usuários e permissões". Validação de responsável/endereço compartilhada com o cadastro (`validarResponsavelEEndereco`, `corpoEndereco`). `StatusBadge` ganhou os status de entidade e de campanha.
+- **Fixtures de entidade:** `entidadesApi` (em `fixtures/apiCampanhas.js`) responde `GET`/`PATCH /entidades/{id}` e é recriada antes de cada teste (`resetarEntidadesApi` no `setup.js`).
 - **Cadastro × perfil (passo 16):** `CadastroEntidade.jsx` era usado por `/cadastro-entidade` e `/configuracoes` (prop `perfil`). Agora o cadastro é uma tela pública própria e o perfil virou `PerfilEntidade.jsx`. O `nome` informado vai também como `nomeFantasia` (é o nome mostrado na vitrine).
 - **Minhas doações (passo 15):** sem linha do tempo, destinação, mensagem da entidade, itens, cartão/boleto, exportação e PDFs (sem API). O detalhe reutiliza `ConfirmacaoDoacao` com a prop `historico`. Apagados: `mocks/doador.js`, `pages/DetalheDoacao.jsx`, `styles/detalhe-doacao.css`, o ramo `historicoDoador` do `DemoContext` e as regras `det-*` do CSS. Indicadores em `utils/doacoes.js` (`resumoDoacoes`).
 - **Mocks que ainda existem** (só gestão): `mocks/gestao.js` (`carregarDemo`, `categorias`), `mocks/dados.js`, `mocks/campanhasDetalhe.js` (`HOJE_DEMO`, `detalheCampanha`), `mocks/index.js` (serviços simulados de Doacoes/Entidades).
@@ -259,3 +267,5 @@ Anotações feitas durante o trabalho. Acrescente aqui tudo o que não é óbvio
 | 2026-11-23 | `feat(frontend): comprovante da doação com GET /doacoes/{id}` | Passo 14 |
 | 2026-11-23 | `feat(frontend): minhas doações com GET /usuarios/me/doacoes` | Passo 15 — fecha a Fase 3 |
 | 2026-11-25 | `feat(frontend): cadastro de entidade com POST /entidades` | Passo 16 |
+| 2026-11-25 | `feat(campanha): expor versao no detalhe para o PATCH de edição` | **Backend** `014bbc6` (`feat/campanha-versao`), 270 testes |
+| 2026-11-25 | `feat(frontend): perfil da entidade com GET/PATCH /entidades/{id}` | Passo 17 |
