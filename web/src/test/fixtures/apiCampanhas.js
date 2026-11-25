@@ -139,7 +139,7 @@ function rotasCampanhas(config) {
   if (method === 'post' && url === '/campanhas') {
     const corpo = JSON.parse(config.data)
     const id = `c1000000-0000-4000-8000-00000000000${proximaCampanha++}`
-    const status = corpo.rascunho ? 'RASCUNHO' : corpo.dataInicio > '2026-11-25' ? 'AGENDADA' : 'ATIVA'
+    const status = corpo.rascunho ? 'RASCUNHO' : corpo.dataInicio > new Date().toISOString().slice(0, 10) ? 'AGENDADA' : 'ATIVA'
     const dados = { ...corpo }
     delete dados.rascunho
     const nova = { ...campanha(9, corpo.titulo, REDE, corpo.categoria ?? null, corpo.metaValor, 0, corpo.dataFim, status), ...dados, id }

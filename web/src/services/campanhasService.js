@@ -23,6 +23,9 @@ export const campanhasService = {
           .then((r) => mapPaginado(r.data, mapCampanha).itens),
       ),
     ).then((listas) => listas.flat().sort((a, b) => b.criadaEm.localeCompare(a.criadaEm))),
+  // POST /campanhas (ENTIDADE aprovada). rascunho: true → RASCUNHO; senão AGENDADA/ATIVA pela data de início.
+  criar: (corpo, rascunho) =>
+    api.post('/campanhas', { ...corpo, rascunho }).then((r) => mapCampanha(r.data.data)),
   // Detalhe público; 404 (inexistente, rascunho ou sem acesso) vira null.
   buscarPublica: (id, config) =>
     api

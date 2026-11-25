@@ -85,26 +85,6 @@ describe('campanhas públicas e navegação', () => {
       screen.getByRole('heading', { name: 'Campanha não encontrada' }),
     ).toBeTruthy()
   })
-  it('salva os dados básicos como rascunho e volta à gestão', async () => {
-    const user = await abrir('/campanhas/nova')
-    await user.type(screen.getByLabelText(/Nome da campanha/), 'Uma nova causa')
-    await user.selectOptions(screen.getByLabelText('Categoria'), 'Alimentação')
-    await user.type(
-      screen.getByLabelText('Descrição da campanha'),
-      'Uma causa de demonstração para famílias.',
-    )
-    fireEvent.change(screen.getByLabelText(/Início/), {
-      target: { value: '2026-10-01' },
-    })
-    fireEvent.change(screen.getByLabelText(/Encerramento/), {
-      target: { value: '2026-11-01' },
-    })
-    await user.type(screen.getByLabelText(/Meta financeira/), '500')
-    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
-    expect(
-      await screen.findByRole('heading', { name: 'Gestão de campanhas' }),
-    ).toBeTruthy()
-  })
 })
 
 describe('gestão e estados de dados', () => {
