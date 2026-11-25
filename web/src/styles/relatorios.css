@@ -1,0 +1,17 @@
+/* Relatórios e exportação (#112): estrutura do protótipo, escopado em .rel */
+.rel { display: grid; gap: 26px; }
+.rel-card { display: grid; gap: 14px; align-content: start; padding: 22px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.rel-card h2 { font-size: 17px; }
+.rel-card h3 { font-size: 14px; }
+.rel-sub { color: var(--texto-suave); font-size: 12px; }
+.rel-escopo { display: grid; grid-template-columns: minmax(0, 1.1fr) repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: 16px; }
+.rel-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.rel-grid { display: grid; grid-template-columns: minmax(0, 2.06fr) minmax(270px, 1fr); gap: 24px; align-items: start; }
+.rel-col { display: grid; gap: 26px; min-width: 0; }
+.rel-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.rel .tabela th { background: #f8fafc; padding: 9px 12px; }
+.rel .tabela td { padding: 12px; border-top: 1px solid var(--borda); }
+.rel-sep { margin: 0; border: 0; border-top: 1px solid var(--borda); }
+.rel-selo { justify-self: start; padding: 3px 10px; border-radius: 6px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 600; }
+.rel-total td { font-weight: 700; }
+@media (max-width: 1000px) { .rel-escopo, .rel-kpis, .rel-grid { grid-template-columns: 1fr; } }

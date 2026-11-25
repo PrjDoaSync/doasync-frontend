@@ -198,7 +198,7 @@ describe('gestão e estados de dados', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }))
     expect(
-      screen.getByText('Nenhum registro para os filtros selecionados.'),
+      screen.getByText('Nenhum recebimento confirmado no período.'),
     ).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Baixar CSV' }).disabled).toBe(
       true,
@@ -233,31 +233,21 @@ describe('gestão e estados de dados', () => {
   })
   it('bloqueia saída acima do saldo e atualiza quantidade válida', async () => {
     const user = await abrir('/itens')
-    await user.click(
-      screen.getByRole('button', { name: 'Registrar movimentação' }),
-    )
-    const dialog = screen.getByRole('dialog'),
-      quantidade = within(dialog).getByLabelText(/Quantidade/)
+    const form = within(screen.getByRole('region', { name: /Registrar saída e destinação/ }))
+    const quantidade = form.getByLabelText(/Quantidade/)
     await user.type(quantidade, '9999')
-    await user.type(
-      within(dialog).getByLabelText(/Destino/),
-      'Famílias atendidas',
-    )
-    fireEvent.change(within(dialog).getByLabelText(/Data/), {
+    await user.type(form.getByLabelText(/Destino/), 'Famílias atendidas')
+    fireEvent.change(form.getByLabelText(/Data prevista/), {
       target: { value: '2026-10-29' },
     })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Confirmar na demonstração' }),
-    )
+    await user.click(form.getByRole('button', { name: 'Confirmar saída' }))
     expect(screen.getByRole('alert').textContent).toContain('excede o saldo')
     await user.clear(quantidade)
     await user.type(quantidade, '2')
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Confirmar na demonstração' }),
-    )
-    expect(screen.queryByRole('dialog')).toBe(null)
+    await user.click(form.getByRole('button', { name: 'Confirmar saída' }))
+    expect(screen.queryByRole('alert')).toBe(null)
     const tabela = screen.getAllByRole('table')[0]
-    expect(within(tabela).getByText('118 unidades')).toBeTruthy()
+    expect(within(tabela).getByText('118')).toBeTruthy()
   })
   it('edita o acesso local sem simular um convite enviado', async () => {
     const user = await abrir('/configuracoes/usuarios')

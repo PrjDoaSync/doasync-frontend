@@ -1,0 +1,20 @@
+/* Controle de itens doados (#111): estrutura do protótipo, escopado em .itn */
+.itn { display: grid; gap: 26px; }
+.itn-topo { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.itn-topo__periodo { color: var(--texto-suave); font-size: 12px; }
+.itn-camp { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--borda); border-radius: 8px; background: var(--branco); font-size: 13px; font-weight: 600; }
+.itn-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.itn-card { display: grid; gap: 14px; align-content: start; padding: 22px; background: var(--branco); border: 1px solid var(--borda); border-radius: 12px; }
+.itn-card h2 { font-size: 17px; }
+.itn-sub { color: var(--texto-suave); font-size: 12px; }
+.itn .tabela th { background: #f8fafc; padding: 10px 12px; }
+.itn .tabela td { padding: 14px 12px; border-top: 1px solid var(--borda); vertical-align: middle; }
+.itn .tabela small { display: block; color: var(--texto-suave); font-size: 11.5px; }
+.itn-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid var(--borda); font-weight: 700; }
+.itn-filtros { display: flex; gap: 12px; flex-wrap: wrap; }
+.itn-filtros select, .itn-filtros input { height: 38px; padding: 0 12px; border: 1px solid var(--borda); border-radius: 8px; background: var(--branco); font: inherit; font-size: 13px; }
+.itn-saida { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.itn-saida__obs { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 12px; }
+.itn-botao { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--borda); border-radius: 8px; background: var(--branco); font-size: 13px; font-weight: 600; }
+.itn-botao:disabled { opacity: 0.55; cursor: not-allowed; }
+@media (max-width: 1000px) { .itn-kpis, .itn-saida, .itn-saida__obs { grid-template-columns: 1fr; } .itn-topo { flex-wrap: wrap; } }

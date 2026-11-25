@@ -225,64 +225,79 @@ describe('Controle de itens doados (GES-07)', () => {
   const dados = fonte.criarDadosDemo()
   const recebido = dados.itens.reduce((s, i) => s + i.recebido, 0)
   const destinado = dados.itens.reduce((s, i) => s + i.destinado, 0)
+  const formSaida = () => within(screen.getByRole('region', { name: /Registrar saída e destinação/ }))
 
-  async function abrirMovimentacao(user) {
-    await user.click(screen.getByRole('button', { name: /Registrar movimentação/ }))
+  async function abrirEntrada(user) {
+    await user.click(screen.getByRole('button', { name: /Registrar entrada/ }))
     return within(document.querySelector('dialog'))
   }
 
-  it('totaliza o que foi recebido, destinado e o saldo disponível', async () => {
+  it('totaliza entradas, saídas destinadas e o saldo em estoque', async () => {
     await abrir('/itens')
-    expect(kpi('Total recebido').textContent).toContain(`${recebido} unidades`)
-    expect(kpi('Total destinado').textContent).toContain(`${destinado} unidades`)
-    expect(kpi('Saldo disponível').textContent).toContain(`${recebido - destinado} unidades`)
-    expect(celulas(secao('Saldo por item').getByText('Cesta básica').closest('tr'))).toEqual([
-      'Cesta básica',
-      '200',
-      '80',
-      '120 unidades',
-    ])
+    expect(kpi('Entradas confirmadas').textContent).toContain(`${recebido} unidades`)
+    expect(kpi('Saídas destinadas').textContent).toContain(`${destinado} unidades`)
+    expect(kpi('Saldo em estoque').textContent).toContain(`${recebido - destinado} unidades`)
+    const linha = celulas(secao('Saldo por item').getByText(/Cesta básica/).closest('tr'))
+    expect(linha.slice(1, 5)).toEqual(['0', '200', '80', '120'])
   })
-  it('o rótulo do último campo acompanha o tipo (destino na saída, origem na entrada)', async () => {
+  it('o formulário de entrada pede a origem e some o erro ao fechar e reabrir', async () => {
     const user = await abrir('/itens')
-    const dialog = await abrirMovimentacao(user)
-    expect(dialog.getByLabelText(/Destino/)).toBeTruthy()
-    await user.selectOptions(dialog.getAllByRole('combobox')[1], 'Entrada')
+    let dialog = await abrirEntrada(user)
     expect(dialog.getByLabelText(/Origem/)).toBeTruthy()
-    expect(dialog.queryByLabelText(/Destino/)).toBe(null)
+    await user.type(dialog.getByLabelText(/Quantidade/), '10')
+    fireEvent.change(dialog.getByLabelText(/Data/), { target: { value: '2026-10-10' } })
+    await user.click(dialog.getByRole('button', { name: 'Confirmar na demonstração' }))
+    expect(dialog.getByRole('alert').textContent).toContain('Informe a origem ou o destino da movimentação.')
+    await user.click(dialog.getByRole('button', { name: 'Fechar' }))
+    dialog = await abrirEntrada(user)
+    expect(dialog.queryByRole('alert')).toBe(null)
   })
   it('registra uma entrada e atualiza saldos, totais e histórico', async () => {
     const user = await abrir('/itens')
-    const dialog = await abrirMovimentacao(user)
-    await user.selectOptions(dialog.getAllByRole('combobox')[1], 'Entrada')
+    const dialog = await abrirEntrada(user)
     await user.type(dialog.getByLabelText(/Quantidade/), '10')
     await user.type(dialog.getByLabelText(/Origem/), 'Doação de vizinhos')
     fireEvent.change(dialog.getByLabelText(/Data/), { target: { value: '2026-10-10' } })
     await user.click(dialog.getByRole('button', { name: 'Confirmar na demonstração' }))
     expect(document.querySelector('dialog')).toBe(null)
     expect(screen.getByText('Movimentação registrada na demonstração.')).toBeTruthy()
-    expect(kpi('Total recebido').textContent).toContain(`${recebido + 10} unidades`)
-    expect(celulas(secao('Saldo por item').getByText('Cesta básica').closest('tr'))).toEqual([
-      'Cesta básica',
-      '210',
-      '80',
-      '130 unidades',
-    ])
+    expect(kpi('Entradas confirmadas').textContent).toContain(`${recebido + 10} unidades`)
+    expect(celulas(secao('Saldo por item').getByText(/Cesta básica/).closest('tr')).slice(1, 5)).toEqual(['0', '210', '80', '130'])
     const registro = celulas(secao('Registro de movimentações').getByText('Doação de vizinhos').closest('tr'))
-    expect(registro).toEqual(['10/10/2026', 'Cesta básica', 'Entrada', '10', 'Doação de vizinhos'])
+    expect(registro[0]).toContain('10/10/2026')
+    expect(registro[1]).toBe('Entrada conferida')
+    expect(registro[2]).toContain('10')
+    expect(registro[2]).toContain('Cesta básica')
+    expect(registro[4]).toBe('Ana Silva')
   })
-  it('mostra o erro da saída acima do saldo, que some ao fechar e reabrir o formulário', async () => {
+  it('registra uma saída pelo formulário de destinação', async () => {
     const user = await abrir('/itens')
-    let dialog = await abrirMovimentacao(user)
-    await user.type(dialog.getByLabelText(/Quantidade/), '999')
-    await user.type(dialog.getByLabelText(/Destino/), 'Famílias')
-    fireEvent.change(dialog.getByLabelText(/Data/), { target: { value: '2026-10-10' } })
-    await user.click(dialog.getByRole('button', { name: 'Confirmar na demonstração' }))
-    expect(dialog.getByRole('alert').textContent).toContain('A quantidade excede o saldo disponível.')
-    expect(kpi('Total destinado').textContent).toContain(`${destinado} unidades`)
-    await user.click(dialog.getByRole('button', { name: 'Fechar' }))
-    dialog = await abrirMovimentacao(user)
-    expect(dialog.queryByRole('alert')).toBe(null)
+    const form = formSaida()
+    await user.type(form.getByLabelText(/Quantidade/), '20')
+    await user.type(form.getByLabelText(/Destino/), 'Núcleo Vila Mariana')
+    fireEvent.change(form.getByLabelText(/Data prevista/), { target: { value: '2026-10-10' } })
+    await user.click(form.getByRole('button', { name: 'Confirmar saída' }))
+    expect(screen.getByText('Movimentação registrada na demonstração.')).toBeTruthy()
+    expect(kpi('Saídas destinadas').textContent).toContain(`${destinado + 20} unidades`)
+    expect(celulas(secao('Saldo por item').getByText(/Cesta básica/).closest('tr')).slice(1, 5)).toEqual(['0', '200', '100', '100'])
+  })
+  it('mostra o erro da saída acima do saldo sem alterar os totais', async () => {
+    const user = await abrir('/itens')
+    const form = formSaida()
+    await user.type(form.getByLabelText(/Quantidade/), '999')
+    await user.type(form.getByLabelText(/Destino/), 'Famílias')
+    fireEvent.change(form.getByLabelText(/Data prevista/), { target: { value: '2026-10-10' } })
+    await user.click(form.getByRole('button', { name: 'Confirmar saída' }))
+    expect(form.getByRole('alert').textContent).toContain('A quantidade excede o saldo disponível.')
+    expect(kpi('Saídas destinadas').textContent).toContain(`${destinado} unidades`)
+  })
+  it('filtra o registro de movimentações por tipo', async () => {
+    const user = await abrir('/itens')
+    const todas = linhasDe(within(secao('Registro de movimentações').getByRole('table'))).length
+    await user.selectOptions(screen.getByLabelText('Tipo de movimentação'), 'Saída')
+    const saidas = dados.movimentos.filter((m) => m.tipo === 'Saída').length
+    expect(linhasDe(within(secao('Registro de movimentações').getByRole('table')))).toHaveLength(saidas)
+    expect(saidas).toBeLessThan(todas)
   })
 
   describe('movimentarEstoque', () => {
@@ -319,23 +334,27 @@ describe('Controle de itens doados (GES-07)', () => {
 describe('Relatórios e exportação (GES-08)', () => {
   const dados = fonte.criarDadosDemo()
   const minhas = dados.doacoes.filter((d) => d.entidadeId === dados.entidade.id)
+  const tabelaCampanhas = () => linhasDe(within(secao('Prévia do relatório').getAllByRole('table')[0]))
 
-  it('gera a prévia para o tipo escolhido e a limpa depois', async () => {
+  it('mostra os totais confirmados e a linha de total por campanha', async () => {
+    await abrir('/relatorios')
+    const ind = calcularIndicadores(dados.campanhas, minhas)
+    expect(kpi('Financeiro confirmado').textContent).toContain(formatarMoeda(ind.arrecadado))
+    expect(kpi('Itens recebidos').textContent).toContain(`${ind.itens} unidades`)
+    const total = celulas(tabelaCampanhas().at(-1))
+    expect(total[0]).toBe('Total confirmado')
+    expect(total[1]).toBe(formatarMoeda(ind.arrecadado))
+    expect(total[2]).toBe(`${ind.itens} un.`)
+  })
+  it('gera a prévia para a campanha escolhida', async () => {
     const user = await abrir('/relatorios')
-    const todas = linhasDe().length
-    expect(todas).toBe(minhas.length)
-    await user.selectOptions(screen.getByRole('combobox', { name: /^Tipo/ }), 'Itens')
+    const campanha = dados.campanhas.find((c) => c.entidadeId === dados.entidade.id)
+    const dela = minhas.filter((d) => d.campanhaId === campanha.id)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Campanha' }), String(campanha.id))
     await user.click(screen.getByRole('button', { name: /Gerar prévia/ }))
     expect(screen.getByText('Prévia atualizada para os filtros selecionados.')).toBeTruthy()
-    const itens = minhas.filter((d) => d.tipo === 'Itens')
-    expect(linhasDe()).toHaveLength(itens.length)
-    expect(kpi('Financeiro confirmado').textContent).toContain(formatarMoeda(0))
-    expect(kpi('Itens recebidos').textContent).toContain(
-      `${calcularIndicadores([], itens).itens} unidades`,
-    )
-    await user.click(screen.getByRole('button', { name: 'Limpar' }))
-    expect(screen.getByText('Filtros limpos.')).toBeTruthy()
-    expect(linhasDe()).toHaveLength(todas)
+    expect(kpi('Financeiro confirmado').textContent).toContain(formatarMoeda(calcularIndicadores([], dela).arrecadado))
+    expect(tabelaCampanhas()).toHaveLength(2) // a campanha escolhida + o total
   })
   it('o navegador barra o período invertido antes de gerar a prévia', async () => {
     const user = await abrir('/relatorios')
