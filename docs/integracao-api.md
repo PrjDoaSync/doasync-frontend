@@ -8,6 +8,8 @@
 
 ---
 
+> Consulte [Finalização do DoaSync](FINALIZACAO_DOASYNC.md) para a revisão de 26/11/2026, endpoints conectados após o passo 19 e evidências de QA.
+
 ## 1. Forma de trabalhar
 
 Combinado com o responsável (João Pedro Matias):
