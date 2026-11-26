@@ -49,7 +49,7 @@ function Lista({ adminId, entidades }) {
         { chave: 'status', titulo: 'Status', render: (u) => <StatusBadge valor={u.status === 'ATIVO' ? 'Ativo' : 'Inativo'} /> },
       ]),
     { chave: 'acoes', titulo: 'Ações', render: (u) => (entidades ? u.entidadeId : u.id !== adminId) &&
-      <Botao secundario onClick={() => { setSelecionado(u); setMensagem('') }} aria-label={`Alterar status de ${u.nome}`}>Alterar status</Botao> },
+      <Botao secundario disabled={request.loading || Boolean(request.error)} onClick={() => { setSelecionado(u); setMensagem('') }} aria-label={`Alterar status de ${u.nome}`}>Alterar status</Botao> },
   ]
 
   return (

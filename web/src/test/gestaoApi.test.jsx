@@ -182,6 +182,31 @@ describe('gestão pela API', () => {
     expect(chamadas).toHaveLength(0)
   })
 
+  it('aguarda o status atualizado da conta antes de permitir outra alteração', async () => {
+    admin()
+    const conta = { id: 'conta-doador', nome: 'Conta QA', email: 'qa@example.test', tipo: 'PESSOA_FISICA', status: 'ATIVO' }
+    const recarga = Promise.withResolvers()
+    const chamadas = interceptar((c) => {
+      if (c.method === 'patch') return resposta(c, { data: { ...conta, status: 'INATIVO' } })
+      if (c.url !== '/usuarios') return
+      return chamadas.length === 1
+        ? resposta(c, paginado([conta]))
+        : recarga.promise.then(() => resposta(c, paginado([{ ...conta, status: 'INATIVO' }])))
+    })
+    const user = userEvent.setup()
+    const acao = { name: 'Alterar status de Conta QA' }
+    abrir('/configuracoes/usuarios')
+    await user.click(await screen.findByRole('button', acao))
+    await user.click(screen.getByRole('button', { name: 'Confirmar mudança' }))
+    await screen.findByText('Status atualizado.')
+    expect(screen.getByRole('button', acao).disabled).toBe(true)
+
+    recarga.resolve()
+    await screen.findByText('Inativo')
+    await user.click(screen.getByRole('button', acao))
+    expect(screen.getByRole('dialog').textContent).toContain('voltará a ter acesso')
+  })
+
   it('reprova entidade com motivo e consulta a lista administrativa novamente', async () => {
     admin()
     const conta = { id: 'conta-entidade', entidadeId: entidade, nome: 'Conta QA', email: 'qa@example.test', statusEntidade: 'PENDENTE' }
