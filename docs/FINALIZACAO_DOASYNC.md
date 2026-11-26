@@ -11,6 +11,28 @@ Revisão de 26/11/2026. A entrega usa o worktree `doasync-finalizacao`, branch l
 - O Figma recusou a leitura e a captura. O navegador integrado do VS Code também ficou indisponível para automação. A matriz descreve cobertura funcional com base no inventário versionado. A inspeção da vitrine em Chrome levou à remoção da oferta de doação de itens e de marcações vazias de categoria e localização.
 - Documentação complementar. [Auditoria GitHub](AUDITORIA_GITHUB.md) · [Matriz Figma](MATRIZ_FIGMA_FRONTEND.md) · [Matriz backend](MATRIZ_INTEGRACAO_BACKEND.md)
 
+## Revisão para publicação
+
+O frontend e o backend mantêm os históricos verificados das entregas anteriores. A pipeline do backend passa a usar o PostgreSQL também no teste de doações. A auditoria npm da API Express legada revelou alertas em dependências transitivas. O lockfile foi atualizado e a suíte de sete cenários voltou a passar com zero alertas nessa auditoria.
+
+O escopo documentado mantém itens físicos, estoque e prestação de contas fora da entrega MVP. A interface ainda depende de acesso de leitura ao Figma para validação visual. A avaliação operacional classifica a aplicação como não pronta para deploy integral e registra os procedimentos de implantação e reversão. [Auditoria da organização](ORGANIZACAO_AUDITORIA_COMPLETA.md) · [Preparação para produção](PRODUCTION_READINESS.md)
+
+### Evidências da revisão
+
+| Medida | Resultado | Critério |
+|---|---:|---|
+| Fluxo principal das telas com backend oficial | 15/30 | Telas desktop do inventário com operação principal e API disponível |
+| Fluxo principal das telas com backend local | 16/30 | Mesmo inventário, com a edição de campanha validada em PostgreSQL |
+| Comparação visual contra o Figma | 0/30 | Só conta com comparação direta do frame oficial |
+| Operações REST catalogadas | 22/22 | Rotas do contrato MVP com correspondência documentada no serviço do frontend. A lista não representa teste E2E individual por operação |
+| Testes frontend | 232/232 | Execução em instalação limpa do lockfile |
+| Testes Spring | 270/270 | Maven verify com PostgreSQL isolado nas suítes de contrato e doações |
+| Regressão Express legada | 7/7 | Cenários da suíte Node |
+| Cobertura de linhas React | 1.204/1.341 (89,78%) | Vitest com provider V8 instalado somente no checkout descartável de medição |
+| Requisitos operacionais aferidos | 6/15 | Itens validados localmente na matriz de preparação para produção |
+
+O teste em navegador repetiu a confirmação do 409 em duas abas, manteve o rascunho e gravou após reler a versão. O backend foi publicado em `de5d079` para revisão contra `main`. [PR do backend #71](https://github.com/PrjDoaSync/doasync-backend/pull/71)
+
 ## GitHub e fontes auditadas
 
 | Fonte | Revisão | Evidência examinada |
