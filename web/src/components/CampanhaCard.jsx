@@ -31,11 +31,11 @@ export default function CampanhaCard({ campanha: c }) {
     <article className="campanha-card">
       <Link to={`/campanhas/${c.id}`} className="campanha-card__imagem">
         <img src={c.imagem} alt="" loading="lazy" />
-        <span>{c.categoria}</span>
+        {c.categoria && <span>{c.categoria}</span>}
       </Link>
       <div className="campanha-card__conteudo">
         <small>
-          {c.entidade} · {c.cidade}
+          {c.entidade}{c.cidade && <> · {c.cidade}</>}
         </small>
         <h2>
           <Link to={`/campanhas/${c.id}`}>{c.nome}</Link>

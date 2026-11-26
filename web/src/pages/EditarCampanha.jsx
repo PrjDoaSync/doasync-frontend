@@ -37,9 +37,8 @@ function ConsultaEdicao({ id }) {
   )
 }
 
-function Formulario({ campanha }) {
-  const [atual, setAtual] = useState(campanha)
-  const [f, setF] = useState({
+function camposDaCampanha(campanha) {
+  return {
     titulo: campanha.nome,
     descricao: campanha.descricao,
     categoria: campanha.categoria,
@@ -47,9 +46,30 @@ function Formulario({ campanha }) {
     dataInicio: campanha.iniciaEm,
     dataFim: campanha.encerraEm,
     imagemUrl: campanha.imagemUrl,
-  })
+  }
+}
+
+function Formulario({ campanha }) {
+  const [atual, setAtual] = useState(campanha)
+  const [f, setF] = useState(() => camposDaCampanha(campanha))
   const [erros, setErros] = useState({})
   const salvar = useAsyncAction((corpo) => campanhasService.atualizar(atual.id, corpo))
+  const recarregar = useAsyncAction(async () => {
+    const versaoAtual = await campanhasService.buscarPublica(atual.id)
+    if (!versaoAtual || !podeEditar(versaoAtual.status) || !Number.isSafeInteger(versaoAtual.versao)) {
+      throw new Error('A campanha não está disponível para edição.')
+    }
+    return versaoAtual
+  })
+
+  async function descartarRascunho() {
+    const versaoAtual = await recarregar.executar()
+    if (!versaoAtual) return
+    setAtual(versaoAtual)
+    setF(camposDaCampanha(versaoAtual))
+    setErros({})
+    salvar.reset()
+  }
 
   async function submit(event) {
     event.preventDefault()
@@ -72,7 +92,15 @@ function Formulario({ campanha }) {
       </fieldset>
       {salvar.success && <Aviso>Campanha atualizada.</Aviso>}
       {salvar.error && <Aviso erro>{salvar.error.message}</Aviso>}
-      {salvar.error?.status === 409 && <Botao para={`/campanhas/${atual.id}/acompanhamento`} secundario>Consultar versão atual</Botao>}
+      {salvar.error?.status === 409 && (
+        <>
+          <p>Copie as alterações que quiser reaplicar antes de carregar a versão atual.</p>
+          <Botao secundario onClick={descartarRascunho} disabled={recarregar.pending}>
+            {recarregar.pending ? 'Carregando…' : 'Descartar rascunho e carregar versão atual'}
+          </Botao>
+          {recarregar.error && <Aviso erro>{recarregar.error.message}</Aviso>}
+        </>
+      )}
     </form>
   )
 }

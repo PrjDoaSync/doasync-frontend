@@ -59,6 +59,33 @@ describe('campanhas pela API', () => {
     expect(chamadas.filter((c) => c.method === 'patch')).toHaveLength(1)
   })
 
+  it('recupera a edição após conflito usando a versão confirmada na nova consulta', async () => {
+    let conflito = false
+    const chamadas = interceptar((config) => {
+      if (config.method === 'get' && conflito) {
+        return resposta(config, { data: { ...ativa, versao: 2, titulo: 'Título de outra sessão' } })
+      }
+      if (config.method !== 'patch') return undefined
+      if (conflito) return resposta(config, { data: { ...ativa, versao: 3 } })
+      conflito = true
+      return erro(config, 409, 'Campanha alterada por outra operação.')
+    })
+    const user = userEvent.setup()
+    abrir(`/campanhas/${ativa.id}/editar`)
+    const titulo = await screen.findByRole('textbox', { name: /Título da campanha/ })
+    await user.clear(titulo)
+    await user.type(titulo, 'Rascunho local')
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    const recarregar = await screen.findByRole('button', { name: 'Descartar rascunho e carregar versão atual' })
+    expect(titulo.value).toBe('Rascunho local')
+    await user.click(recarregar)
+    expect(await screen.findByDisplayValue('Título de outra sessão')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    await screen.findByText('Campanha atualizada.')
+    expect(chamadas.map((c) => c.method)).toEqual(['get', 'patch', 'get', 'patch'])
+    expect(chamadas.filter((c) => c.method === 'patch').map((c) => JSON.parse(c.data).versao)).toEqual([0, 2])
+  })
+
   it('impede edição quando a API não expõe a versão', async () => {
     const chamadas = interceptar((c) => c.url === `/campanhas/${ativa.id}` && resposta(c, { data: ativa }))
     abrir(`/campanhas/${ativa.id}/editar`)

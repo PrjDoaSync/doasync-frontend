@@ -2,6 +2,15 @@
 
 Revisão de 26/11/2026. A entrega usa o worktree `doasync-finalizacao`, branch local `codex/finalizacao-doasync`. O checkout original `doasync-frontend` permanece em `develop` com as 52 entradas de trabalho preexistentes. O Git compartilha o histórico entre os dois diretórios.
 
+## Continuação da validação
+
+- O worktree manteve a arquitetura de João Pedro. Em conflito de edição, o formulário bloqueia a gravação e mantém o rascunho até a ação explícita de carregar novamente. A gravação seguinte usa a versão devolvida pelo Spring.
+- A execução com PostgreSQL 16.16 isolado revelou o erro `42P18` nas consultas de arrecadação e doações recebidas com filtros opcionais. A correção local mantém o método HTTP, o DTO e o escopo de entidade. A branch de backend `codex/doasync-versao-postgres` inclui a versão de campanha de `014bbc6` e a correção `a981d18`. A cópia de trabalho do backend fica em `doasync-backend-validacao`.
+- A validação com Playwright e PostgreSQL passou para vitrine e detalhe, login, painel, doações recebidas, CSV, perfil, registro direto e por campanha, comprovante, histórico, gestão de contas e ciclo de campanha. Foram verificadas as larguras de 390, 768 e 1366 px nas telas de fumaça. O teste de edição em duas abas confirmou `409`, manutenção do rascunho e nova gravação com a versão relida.
+- O frontend passou em 232 testes, lint, typecheck e build. A suíte do backend passou em 270 testes e o `DoacaoControllerTest` passou nos 11 casos também em PostgreSQL isolado. As auditorias npm do frontend e do cliente de contrato do backend retornaram zero alertas após atualizar a dependência transitiva do cliente.
+- O Figma recusou a leitura e a captura. O navegador integrado do VS Code também ficou indisponível para automação. A matriz descreve cobertura funcional com base no inventário versionado. A inspeção da vitrine em Chrome levou à remoção da oferta de doação de itens e de marcações vazias de categoria e localização.
+- Documentação complementar. [Auditoria GitHub](AUDITORIA_GITHUB.md) · [Matriz Figma](MATRIZ_FIGMA_FRONTEND.md) · [Matriz backend](MATRIZ_INTEGRACAO_BACKEND.md)
+
 ## GitHub e fontes auditadas
 
 | Fonte | Revisão | Evidência examinada |
@@ -69,7 +78,7 @@ O inventário de 30 frames vem da revisão anterior em [frontend-validacao.md](f
 | Usuários e permissões | GES-09 | `/configuracoes/usuarios` | Parcial | ADMIN gerencia status de contas; convites e papéis internos da entidade sem API |
 | Perfil e configurações | GES-10 | `/configuracoes`, `/perfil-usuario` | Parcial | Edição de entidade e conta disponível. Documentos e preferências específicas pendentes |
 
-Contagem por módulo pelo critério **API disponível e fluxo principal implementado**, sem crédito para linhas parciais, condicionais ou sem API. Campanhas 6/10 (60%), Doações 5/10 (50%) e Gestão 4/10 (40%). O total é 15/30 telas (50%). A verificação visual detalhada contra o Figma continua sem aceite. Notificações, PDF, recuperação de senha, uploads e gateway continuam como dependências de produto/backend.
+Contagem por módulo pelo critério **API disponível e fluxo principal implementado**, sem crédito para linhas parciais, condicionais ou sem API. Campanhas 6/10 (60%), Doações 5/10 (50%) e Gestão 4/10 (40%). O total é 15/30 telas (50%). Com a branch local do backend em PostgreSQL, o fluxo de edição de campanha acrescenta uma tela e a cobertura funcional fica em 16/30 (53,3%). A verificação visual detalhada contra o Figma continua sem aceite. Notificações, PDF, recuperação de senha, uploads e gateway continuam como dependências de produto/backend.
 
 ## Qualidade
 
@@ -81,10 +90,14 @@ Contagem por módulo pelo critério **API disponível e fluxo principal implemen
 - As telas Home, Explorar, Dashboard e Gestão de entidades foram medidas em 390, 768 e 1366 px. Os cenários medidos passaram sem rolagem horizontal do documento.
 - A edição foi bloqueada corretamente na `main` do backend quando faltava `versao`. No Spring em `014bbc6`, o Chrome validou a criação em rascunho, a gravação com incremento de versão e a ativação. O Vitest cobre o conflito 409.
 
+## Segurança revisada na integração
+
+A API aplica as permissões de acesso no Spring. O teste em navegador verificou o login e o logout e a ativação e desativação de uma conta em base descartável. As requisições passam pelo cliente Axios existente, que restringe o envio do token ao destino configurado e descarta a sessão quando o mesmo token recebe `401`. O armazenamento da sessão no navegador continua em `localStorage`, conforme o contrato atual de JWT. Segredos da validação ficaram na instância isolada e fora do Git.
+
 ## Pendências para aceite
 
 1. Obter leitura detalhada do Figma e validar os frames, estados e interações com a equipe. O QA de layout em Chrome mediu responsividade e não compara fidelidade visual.
 2. Publicar na versão oficial do backend o detalhe de campanha com `versao` para liberar edição em produção. Confirmar gateway PIX antes de divulgar o fluxo como pagamento.
 3. Definir os contratos pendentes da matriz, priorizando recuperação de senha, itens, prestação de contas e equipe interna.
 4. Conciliar a branch de entrega com o trabalho preexistente do checkout principal. A pasta original está íntegra, porém a `develop` de trabalho ainda aponta ao commit anterior ao fetch. A integração dos commits aprovados está no worktree de entrega.
-5. Executar o aceite com PostgreSQL e o ambiente de homologação. As evidências de execução desta entrega usam H2 de desenvolvimento.
+5. Repetir o aceite no ambiente de homologação compartilhado após revisão das branches. O PostgreSQL isolado e a base H2 de desenvolvimento já foram usados localmente.
