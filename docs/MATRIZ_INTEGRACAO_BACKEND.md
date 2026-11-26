@@ -39,3 +39,6 @@ O OpenAPI da instância local respondeu e confirmou a correspondência de métod
 - PIX efetua um registro de doação no sistema. A liquidação bancária exige provedor.
 - O contrato publicado e as 30 referências remotas de backend examinadas não apresentaram controladores Java para estoque, prestação de contas, agendamento de doação ou recuperação de senha. Essas operações permanecem sem simulação.
 - Upload de documentos, galeria, envio de comprovante, notificações e convites da equipe dependem de contratos. A busca de doadores por nome usa registros autorizados e preserva o anonimato.
+## Ambiente de demonstração
+
+O [Compose](DOCKER_EXECUTION.md) executa o mesmo Spring com PostgreSQL 16 e migrations Flyway. A SPA usa `/api/v1` na mesma origem pelo Nginx, preservando os serviços Axios e os contratos da matriz. A carga de demonstração chama os endpoints de cadastro, login, aprovação, campanha e doação pela mesma API. A confirmação PIX registra a contribuição na base demonstrativa, sem liquidação.

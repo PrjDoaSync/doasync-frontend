@@ -1,5 +1,15 @@
 # Finalização do DoaSync
 
+## Entrega executável para demonstração
+
+O Compose sobe a SPA React em Nginx, a API Spring e um PostgreSQL 16 com volume persistente. O frontend acessa a API pela mesma origem. O Flyway aplicou seis migrations na primeira subida. A carga fictícia depende da API e pode ser repetida sem duplicar as contribuições demonstrativas.
+
+Os testes da pilha exercitaram vitrine, login por perfil, doação direta e por campanha, comprovante, histórico, campanhas, dashboard, CSV e permissões. A edição em duas abas retornou HTTP 409 e manteve o rascunho até a recarga explícita da versão. O teste administrativo também expôs uma janela em que a lista aceitava alterações usando um status desatualizado. O botão agora espera a consulta terminar e o comportamento possui teste de regressão.
+
+A demonstração validou cadastro de doador, cadastro e aprovação de entidade pelo navegador. Após recriar os três containers, os registros continuaram disponíveis pela API. A verificação comparou o volume, os IDs, as versões das campanhas, os valores das doações e a contagem de migrations. Os comandos e as evidências estão no [guia Docker](DOCKER_EXECUTION.md).
+
+O Figma continua inacessível. O registro PIX é demonstrativo e a liquidação depende de provedor. Os módulos sem contrato constam na matriz de integração. [Execução e roteiro da banca](DOCKER_EXECUTION.md) · [Preparação para produção](PRODUCTION_READINESS.md)
+
 Revisão de 26/11/2026. A entrega usa o worktree `doasync-finalizacao`, branch local `codex/finalizacao-doasync`. O checkout original `doasync-frontend` permanece em `develop` com as 52 entradas de trabalho preexistentes. O Git compartilha o histórico entre os dois diretórios.
 
 ## Continuação da validação

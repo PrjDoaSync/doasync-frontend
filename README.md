@@ -1,5 +1,24 @@
 # DoaSync — Equipe 4 | Front-end
 
+## Executar a demonstração
+
+Clone as branches de entrega dos dois repositórios em pastas irmãs. O backend requer acesso ao repositório da organização.
+
+```sh
+git clone --branch codex/finalizacao-doasync https://github.com/PrjDoaSync/doasync-frontend.git
+git clone --branch codex/doasync-versao-postgres https://github.com/PrjDoaSync/doasync-backend.git
+cd doasync-frontend
+```
+
+Copie `.env.example` para `.env` e preencha as senhas e o segredo JWT com valores locais. O [guia da demonstração](docs/DOCKER_EXECUTION.md) inclui um comando PowerShell para gerar esses valores e as contas disponíveis.
+
+```sh
+docker compose up --build -d --wait
+node --env-file=.env web/scripts/popular-api.mjs
+```
+
+Abra [localhost:8080](http://localhost:8080). Para parar e preservar os dados, execute `docker compose down`.
+
 ## Sobre o DoaSync
 
 O DoaSync é uma plataforma que conecta doadores, pessoas físicas ou jurídicas, a entidades assistenciais e organizações não governamentais. O projeto contempla campanhas, doações financeiras e de itens, acompanhamento das doações e ferramentas de gestão, indicadores e relatórios.

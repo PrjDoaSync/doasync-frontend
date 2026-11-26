@@ -7,6 +7,7 @@
 | Build e qualidade do frontend | Vite, Vitest, lint e typecheck | Validado localmente |
 | Compilação e testes da API | Maven e cliente de contrato da Equipe 4 | Validado localmente |
 | PostgreSQL e Flyway | PostgreSQL 16 isolado, perfil Spring `prod`, consultas de doações e controle de versão | Validado localmente |
+| Docker e volume persistente | Imagens Linux, healthchecks, seis migrations e verificação de registros após recriar os três containers | Validado na demonstração local |
 | Fluxos de integração | Playwright em 390 / 768 / 1366 px para vitrine e gestão. Registro de doações sem liquidação | Validado no ambiente descartável |
 | Auditoria npm | Frontend, cliente de contrato e aplicação Express legada | Validada sobre os lockfiles da entrega |
 | Origem e credenciais | CORS, JWT e PostgreSQL configurados por ambiente no perfil `prod` | Validados localmente |
@@ -20,7 +21,7 @@
 | Performance, cache e capacidade | Build local e paginação por API | SLO, carga e cache em ambiente equivalente pendentes |
 | Uploads e armazenamento | Sem contrato de upload aprovado para os fluxos pendentes | Pendente |
 
-São 6 de 15 itens validados no nível indicado. O denominador é a tabela desta revisão. Evidência local não comprova configuração de produção. Referências funcionais em [Finalização Doasync](FINALIZACAO_DOASYNC.md) e [Matriz de integração](MATRIZ_INTEGRACAO_BACKEND.md).
+São 7 de 16 itens validados no nível indicado. O denominador é a tabela desta revisão. Evidência local não comprova configuração de produção. Referências funcionais em [Finalização Doasync](FINALIZACAO_DOASYNC.md) e [Matriz de integração](MATRIZ_INTEGRACAO_BACKEND.md).
 
 ## Procedimento de implantação para revisão
 
@@ -41,3 +42,10 @@ São 6 de 15 itens validados no nível indicado. O denominador é a tabela desta
 ## Segurança da sessão
 
 O backend aplica autenticação stateless com JWT, papéis e verificação de recursos. O frontend restringe o destino do token e preserva a abordagem existente em `localStorage`. Scripts que executem na origem podem ler esse armazenamento. Antes de produção, validar CSP aplicada pelo host e proteção contra conteúdo ativo não confiável. Uma mudança para cookies exige revisar CSRF, CORS, expiração e revogação em conjunto com o backend.
+# Implantação com as imagens da demonstração
+
+O [guia Docker](DOCKER_EXECUTION.md) documenta a topologia local. Em homologação ou produção, publique as imagens a partir de revisões aprovadas dos dois repositórios e configure o serviço da API com perfil `prod`. Se a plataforma hospedar o frontend e backend separadamente, mantenha a rota pública `/api/` no mesmo domínio HTTPS e encaminhe-a à API privada na camada de ingresso. A resolução `127.0.0.11` do Nginx da demonstração depende da rede Docker. Em outro ambiente, configure o proxy de acordo com o DNS dessa plataforma.
+
+Use PostgreSQL gerenciado, uma conta própria para a aplicação e backups com teste de restauração. Injete `DB_URL`, `DB_USER`, `DB_PASSWORD` e `DOASYNC_JWT_SEGREDO` pelo gerenciador de segredos. Use `ADMIN_EMAIL` e `ADMIN_PASSWORD` para criar o primeiro administrador. Valide as migrações Flyway em homologação antes de executar a mesma revisão em produção. Defina `DOASYNC_CORS_ORIGINS` com as origens HTTPS autorizadas, mantenha `SWAGGER_ENABLED=false` e proteja o ingresso com TLS. Direcione os logs da aplicação a um coletor e preserve os healthchecks sem expor endpoints administrativos.
+
+A carga demonstrativa usa apenas loopback e deve permanecer em uma base dedicada. Antes de receber pagamentos, o DoaSync precisa de provedor PIX e de confirmação financeira no backend. A aprovação dos PRs, homologação compartilhada, revisão de sessão e observabilidade continuam como critérios para produção.
