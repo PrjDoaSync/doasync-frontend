@@ -82,6 +82,7 @@ O último comando usa a configuração padrão de testes Java. Para exercitar a 
 
 - Compose subiu Nginx, Spring e PostgreSQL 16, com os três serviços saudáveis e seis migrations Flyway aplicadas. Repetir a carga manteve as mesmas campanhas e doações iniciais.
 - Playwright verificou a interface em 390, 768 e 1366 px, cadastro de doador e entidade, aprovação administrativa, login, edição de perfil, doação por campanha e direta, comprovante, histórico, dashboard, CSV e controle de contas.
+- O comprovante compartilhava uma classe CSS com o formulário de campanhas. Após isolar esse estilo, o comprovante persistido foi reaberto sem rolagem horizontal em 320, 390, 768 e 1366 px.
 - Duas abas produziram HTTP 409 na edição de campanha. O rascunho continuou visível e o reenvio usou a versão lida novamente. A API retornou HTTP 401 sem sessão e HTTP 403 em operações restritas com o perfil errado.
 - Após `docker compose down` e nova subida, mudaram os três containers e foi preservado o mesmo volume. A comparação confirmou 6 usuários, 5 campanhas, 6 doações e 6 migrations, além dos IDs e versões das campanhas e dos IDs e valores das doações. Login, histórico e comprovante responderam após a recriação.
 - O frontend passou em 234 testes, lint, TypeScript e build no Windows e em Linux. Com as suítes Java e Web simultâneas em uma VM limitada, um teste de cadastro excedeu o tempo de espera durante o carregamento. A suíte Web passou em Linux com um worker, sem alterar esse teste.

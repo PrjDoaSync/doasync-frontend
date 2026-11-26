@@ -104,7 +104,7 @@ export default function CriarCampanha() {
             {f.dataInicio > hojeISO() && (
               <Aviso>O início é em {formatarData(f.dataInicio)}: a campanha fica agendada e começa a receber doações nesse dia.</Aviso>
             )}
-            <label className="confirmacao">
+            <label className="campanha-confirmacao">
               <input type="checkbox" checked={confirmado} onChange={(e) => setConfirmado(e.target.checked)} />
               Confirmo que as informações estão corretas.
             </label>
