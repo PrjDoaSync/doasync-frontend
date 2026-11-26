@@ -52,9 +52,19 @@ describe('Progresso e CampanhaCard', () => {
     expect(links).toHaveLength(3)
     expect(links.every((l) => l.getAttribute('href') === '/campanhas/9')).toBe(true)
     expect(screen.getByRole('link', { name: /Conhecer campanha/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Alimentação · Ver campanha Natal solidário' })).toBeTruthy()
     const imagem = container.querySelector('img')
     expect(imagem.getAttribute('alt')).toBe('')
     expect(imagem.getAttribute('loading')).toBe('lazy')
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25')
+  })
+
+  it('nomeia o link da imagem mesmo quando a campanha não tem categoria', () => {
+    render(
+      <MemoryRouter>
+        <CampanhaCard campanha={{ id: 9, nome: 'Natal solidário', entidade: 'Casa Acolher', imagem: '/images/cestas.jpg', arrecadado: 0, meta: 200 }} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: 'Ver campanha Natal solidário' }).getAttribute('href')).toBe('/campanhas/9')
   })
 })

@@ -29,7 +29,7 @@ export function Progresso({ atual, meta }) {
 export default function CampanhaCard({ campanha: c }) {
   return (
     <article className="campanha-card">
-      <Link to={`/campanhas/${c.id}`} className="campanha-card__imagem">
+      <Link to={`/campanhas/${c.id}`} className="campanha-card__imagem" aria-label={[c.categoria, `Ver campanha ${c.nome}`].filter(Boolean).join(' · ')}>
         <img src={c.imagem} alt="" loading="lazy" />
         {c.categoria && <span>{c.categoria}</span>}
       </Link>

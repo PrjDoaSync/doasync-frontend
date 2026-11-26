@@ -23,9 +23,10 @@ O escopo documentado mantém itens físicos, estoque e prestação de contas for
 |---|---:|---|
 | Fluxo principal das telas com backend oficial | 15/30 | Telas desktop do inventário com operação principal e API disponível |
 | Fluxo principal das telas com backend local | 16/30 | Mesmo inventário, com a edição de campanha validada em PostgreSQL |
+| Axe-core nas páginas públicas amostradas | 3/3 | Home, Explorar e login sem violações nas regras automatizadas executadas |
 | Comparação visual contra o Figma | 0/30 | Só conta com comparação direta do frame oficial |
 | Operações REST catalogadas | 22/22 | Rotas do contrato MVP com correspondência documentada no serviço do frontend. A lista não representa teste E2E individual por operação |
-| Testes frontend | 232/232 | Execução em instalação limpa do lockfile |
+| Testes frontend | 233/233 | Execução em instalação limpa do lockfile |
 | Testes Spring | 270/270 | Maven verify com PostgreSQL isolado nas suítes de contrato e doações |
 | Regressão Express legada | 7/7 | Cenários da suíte Node |
 | Cobertura de linhas React | 1.204/1.341 (89,78%) | Vitest com provider V8 instalado somente no checkout descartável de medição |

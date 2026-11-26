@@ -27,6 +27,8 @@ Os caminhos usam o prefixo `/api/v1`. A referência executável é o Spring do r
 | Listar contas | `GET /usuarios` | Filtro por tipo e paginação | Administrador | `usuariosService` |
 | Ativar ou desativar conta | `PATCH /usuarios/{id}/status` | Novo status da conta | Administrador | `usuariosService` |
 
+O OpenAPI da instância local respondeu e confirmou a correspondência de método e caminho de todas as 22 operações sob `/api/v1`. O teste de igualdade dessa lista verifica o contrato exposto. As suítes de contrato e os fluxos Playwright exercitam as regras das operações selecionadas.
+
 ## Concorrência e PostgreSQL
 
 - `014bbc6`, de João Pedro, estende a resposta de detalhe com a versão persistida. A `main` oficial em `3c911d7` ainda não inclui essa resposta. O frontend bloqueia a edição sem uma versão inteira e envia exatamente a versão retornada. Após conflito, uma ação explícita permite carregar um novo detalhe.

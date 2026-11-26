@@ -11,7 +11,7 @@
 | Auditoria npm | Frontend, cliente de contrato e aplicação Express legada | Validada sobre os lockfiles da entrega |
 | Origem e credenciais | CORS, JWT e PostgreSQL configurados por ambiente no perfil `prod` | Validados localmente |
 | CI remota | Workflows de PR dos dois repositórios | Consultar o estado do commit no GitHub |
-| Figma, Design System e WCAG | Inventário de 30 telas, tokens CSS e inspeção responsiva da aplicação | Aceite visual e auditoria de acessibilidade pendentes |
+| Figma, Design System e WCAG | Inventário de 30 telas, tokens CSS, inspeção responsiva e axe-core sem violações nas três páginas públicas verificadas | Aceite visual e auditoria de acessibilidade pendentes |
 | Gateway PIX e integrações externas | A API registra a doação. Faltam liquidação, credenciais de provedor e eventos autenticados | Pendente |
 | DNS, HTTPS e certificados | Depende dos domínios e da plataforma de hospedagem | Pendente |
 | Homologação compartilhada | Validação local com PostgreSQL 16.16 e navegador | Pendente no ambiente compartilhado |

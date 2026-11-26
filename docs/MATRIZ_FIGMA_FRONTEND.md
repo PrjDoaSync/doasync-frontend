@@ -40,3 +40,5 @@ Fontes para o inventário e o escopo. [Validação anterior](frontend-validacao.
 ## Inspeção da aplicação
 
 O Chrome renderizou a vitrine em 390 e 1366 px com dados do PostgreSQL isolado. A inspeção do aplicativo levou à remoção da oferta de doação de itens e das marcações vazias de categoria e localização. Essas evidências cobrem a saída da aplicação. A comparação de cada tela com o Figma continua pendente.
+
+O axe-core foi executado na Home, em Explorar e no login. A primeira leitura apontou contraste de etiquetas e legendas e nomes acessíveis insuficientes nos links de imagens. Foram adotadas cores semânticas existentes e nomes que incluem a categoria quando ela está visível. A segunda verificação final passou nas três rotas e a navegação por teclado alcançou o link de salto ao conteúdo. Faltam os demais fluxos, leitores de tela e a comparação com o protótipo.

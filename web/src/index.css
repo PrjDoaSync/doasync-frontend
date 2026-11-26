@@ -922,7 +922,7 @@ small {
   gap: 8px;
   font-size: 11px;
   margin-bottom: 5px;
-  color: #778497;
+  color: var(--texto-suave);
 }
 .progresso-legenda strong {
   color: #24354b;
@@ -1104,7 +1104,7 @@ small {
 .sobretitulo {
   font-size: 10px;
   letter-spacing: 1.5px;
-  color: #4c77c4;
+  color: var(--azul);
   font-weight: 650;
 }
 .public-intro h1 {
