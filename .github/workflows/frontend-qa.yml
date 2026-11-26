@@ -52,6 +52,9 @@ jobs:
       - name: Executar analise estatica (Lint)
         run: npm run lint --if-present
 
+      - name: Verificar tipos da camada de serviços
+        run: npm run typecheck
+
       - name: Executar suite de testes QA (Vitest / React Testing Library)
         run: npm test
 

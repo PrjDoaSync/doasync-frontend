@@ -2,7 +2,6 @@ import { Outlet } from 'react-router-dom'
 import AdminSidebar from './AdminSidebar'
 import AdminHeader from './AdminHeader'
 import ContentArea from './ContentArea'
-import { DemoBanner, Toast } from './AppLayouts'
 
 export default function AdminLayout() {
   return (
@@ -14,7 +13,6 @@ export default function AdminLayout() {
         <AdminSidebar />
         <div className="layout__principal">
           <AdminHeader />
-          <DemoBanner />
           <ContentArea>
             <Outlet />
           </ContentArea>
@@ -23,7 +21,6 @@ export default function AdminLayout() {
           </footer>
         </div>
       </div>
-      <Toast />
     </>
   )
 }

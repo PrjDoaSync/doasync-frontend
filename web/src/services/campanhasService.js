@@ -1,5 +1,6 @@
 import api from './api'
-import { mapCampanha, mapPaginado } from './mappers'
+import { mapCampanha } from './mappers'
+import { carregarPaginas } from './paginacao'
 
 // A vitrine pública da API devolve no máximo 50 itens por página (contrato do backend).
 const LIMITE_VITRINE = 50
@@ -10,23 +11,26 @@ export const campanhasService = {
   buscarPorId: (id, config) => api.get(`/campanhas/${id}`, config).then((r) => r.data),
   // Campanhas públicas já no formato das telas (filtros e paginação da vitrine ficam no front).
   listarPublicas: (config) =>
-    api
-      .get('/campanhas', { params: { limit: LIMITE_VITRINE }, ...config })
-      .then((r) => mapPaginado(r.data, mapCampanha).itens),
+    carregarPaginas(
+      (page) => campanhasService.listar({ page, limit: LIMITE_VITRINE }, config),
+      mapCampanha,
+    ).then(({ itens }) => itens),
   // Campanhas da gestão em todos os status. Sem `status` a API devolve só a visão pública,
   // então pedimos um status por vez: a entidade dona filtra pelo próprio entidadeId; o ADMIN, sem ele.
+  /** @param {{entidadeId?: string}} [filtros] @param {import('axios').AxiosRequestConfig} [config] */
   daGestao: ({ entidadeId } = {}, config) =>
     Promise.all(
-      STATUS_GESTAO.map((status) =>
-        api
-          .get('/campanhas', { params: { status, limit: LIMITE_VITRINE, ...(entidadeId && { entidadeId }) }, ...config })
-          .then((r) => mapPaginado(r.data, mapCampanha).itens),
-      ),
-    ).then((listas) => listas.flat().sort((a, b) => b.criadaEm.localeCompare(a.criadaEm))),
+      STATUS_GESTAO.map((status) => carregarPaginas(
+        (page) => campanhasService.listar({ page, status, limit: LIMITE_VITRINE, ...(entidadeId && { entidadeId }) }, config),
+        mapCampanha,
+      )),
+    ).then((listas) => listas.flatMap(({ itens }) => itens).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm))),
   // POST /campanhas (ENTIDADE aprovada). rascunho: true → RASCUNHO; senão AGENDADA/ATIVA pela data de início.
   criar: (corpo, rascunho) =>
     api.post('/campanhas', { ...corpo, rascunho }).then((r) => mapCampanha(r.data.data)),
-  // Detalhe público; 404 (inexistente, rascunho ou sem acesso) vira null.
+  atualizar: (id, corpo) => api.patch(`/campanhas/${id}`, corpo).then((r) => mapCampanha(r.data.data)),
+  alterarStatus: (id, corpo) => api.patch(`/campanhas/${id}/status`, corpo).then((r) => mapCampanha(r.data.data)),
+  // O detalhe respeita a sessão atual; 404 vira null.
   buscarPublica: (id, config) =>
     api
       .get(`/campanhas/${id}`, config)

@@ -1,344 +1,112 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { useDemo } from '../hooks/useDemo'
-import PageHeader from '../components/PageHeader'
-import KpiCard from '../components/KpiCard'
 import DataTable from '../components/DataTable'
-import StatusBadge from '../components/StatusBadge'
-import Grafico from '../components/Grafico'
-import { Aviso, Botao, Campo, Icon, Secao, Vazio } from '../components/Ui'
-import { Progresso } from '../components/CampanhaCard'
-import {
-  calcularIndicadores,
-  filtrarRegistros,
-  validarPeriodo,
-} from '../utils/gestao'
-import { formatarMoeda, percentual } from '../utils/format'
+import KpiCard from '../components/KpiCard'
+import PageHeader from '../components/PageHeader'
+import RequestState from '../components/RequestState'
+import { Aviso, Botao, Campo } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
+import { useRequest } from '../hooks/useRequest'
+import { dashboardService } from '../services/dashboardService'
+import { doacoesService } from '../services/doacoesService'
+import { baixarArrecadacao } from '../utils/exportarArrecadacao'
+import { formatarData, formatarMoeda } from '../utils/format'
 
-export default function Dashboard({ analitico = false }) {
-  const { dados } = useDemo(),
-    [params, setParams] = useSearchParams()
-  const [inicio, setInicio] = useState(''),
-    [fim, setFim] = useState('')
-  const campanhasEntidade = dados.campanhas.filter(
-    (c) => c.entidadeId === dados.entidade.id,
-  )
-  const campanhaId =
-    params.get('campanha') ?? String(campanhasEntidade[0]?.id ?? '')
-  const campanha = campanhasEntidade.find((c) => String(c.id) === campanhaId)
-  const erro = validarPeriodo(inicio, fim)
-  const doacoes = erro
-    ? []
-    : filtrarRegistros(dados.doacoes, {
-        inicio,
-        fim,
-        entidadeId: dados.entidade.id,
-        campanhaId: analitico ? campanhaId : '',
-      })
-  const campanhas = analitico
-    ? campanhasEntidade.filter((c) => String(c.id) === campanhaId)
-    : campanhasEntidade
-  const indicadores = calcularIndicadores(campanhas, doacoes)
+const indicadores = [
+  ['totalArrecadado', 'Total arrecadado', formatarMoeda],
+  ['valorArrecadadoMes', 'Arrecadado no mês', formatarMoeda],
+  ['doacoesMes', 'Doações no mês'],
+  ['totalDoacoes', 'Total de doações'],
+  ['totalDoadores', 'Doadores'],
+  ['totalEntidades', 'Entidades'],
+  ['campanhasAtivas', 'Campanhas ativas'],
+  ['usuariosAtivos', 'Usuários ativos'],
+]
+
+export default function Dashboard({ analitico = false, relatorio = false }) {
+  const { usuario } = useAuth()
+  if (relatorio && usuario.tipo !== 'ENTIDADE') return <><PageHeader titulo="Relatórios e exportação" /><Aviso>O relatório de arrecadação está disponível no acesso da entidade.</Aviso></>
+  return usuario.tipo === 'ADMIN'
+    ? <PainelAdmin />
+    : <PainelEntidade key={usuario.entidadeId} id={usuario.entidadeId} analitico={analitico} relatorio={relatorio} />
+}
+
+function PainelAdmin() {
+  const request = useRequest(dashboardService.kpis, [])
   return (
     <>
-      <div className="breadcrumb">
-        <Link to="/dashboard">Dashboard</Link>
-        <span>/</span>
-        {analitico ? 'Análise por campanha' : 'Visão geral'}
-      </div>
-      <PageHeader
-        titulo={
-          analitico
-            ? 'Análise por campanha'
-            : `Visão geral da ${dados.entidade.nome}`
-        }
-        descricao={
-          analitico
-            ? 'Entenda a evolução da arrecadação e dos itens recebidos no período selecionado.'
-            : 'Um panorama das campanhas e do impacto que construímos juntos.'
-        }
-      >
-        {!analitico && (
-          <Botao para="/relatorios" secundario>
-            <Icon nome="download" />
-            Ver relatórios
-          </Botao>
-        )}
+      <PageHeader titulo="Dashboard geral" descricao="Indicadores da plataforma DoaSync." />
+      <RequestState {...request}>
+        {(kpis) => <section className="kpis">{indicadores.map(([campo, rotulo, formatar]) => (
+          <KpiCard key={campo} rotulo={rotulo} valor={formatar ? formatar(kpis[campo]) : kpis[campo]} />
+        ))}</section>}
+      </RequestState>
+    </>
+  )
+}
+
+function PainelEntidade({ id, analitico, relatorio }) {
+  if (!id) return <><PageHeader titulo="Dashboard geral" /><Aviso erro>Sua conta não está vinculada a uma entidade.</Aviso></>
+  return <Arrecadacao id={id} analitico={analitico} relatorio={relatorio} />
+}
+
+function Arrecadacao({ id, analitico, relatorio }) {
+  const [periodo, setPeriodo] = useState({})
+  const [erro, setErro] = useState('')
+  const [campanha, setCampanha] = useState('')
+  const request = useRequest((config) => doacoesService.arrecadacao(id, periodo, config), [id, periodo])
+
+  function submit(event) {
+    event.preventDefault()
+    const { dataInicio, dataFim } = Object.fromEntries(new FormData(event.currentTarget))
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+      setErro('A data final deve ser igual ou posterior à inicial.')
+      return
+    }
+    setErro('')
+    setPeriodo({ dataInicio: dataInicio || undefined, dataFim: dataFim || undefined })
+  }
+
+  return (
+    <>
+      <PageHeader titulo={relatorio ? 'Relatórios e exportação' : analitico ? 'Dashboard por campanha' : 'Dashboard geral'} descricao="Doações confirmadas no período da consulta.">
+        {!relatorio && <Botao para={analitico ? "/dashboard" : "/dashboard/campanha"} secundario>{analitico ? "Visão geral" : "Analisar por campanha"}</Botao>}
       </PageHeader>
-      {analitico && campanha && (
-        <div className="cartao ges-campanha">
-          <img src={campanha.imagem} alt="" />
-          <div><small>Campanha selecionada</small><strong>{campanha.nome}</strong><br /><StatusBadge valor={campanha.status} /></div>
-        </div>
-      )}
-      <div className="filtros-dashboard">
-        {analitico && (
-          <Campo rotulo="Campanha">
-            <select
-              value={campanhaId}
-              onChange={(e) => setParams({ campanha: e.target.value })}
-            >
-              {campanhasEntidade.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
-                </option>
-              ))}
-            </select>
-          </Campo>
-        )}
-        <Campo
-          rotulo="Data inicial"
-          type="date"
-          value={inicio}
-          onChange={(e) => setInicio(e.target.value)}
-        />
-        <Campo
-          rotulo="Data final"
-          type="date"
-          value={fim}
-          min={inicio || undefined}
-          onChange={(e) => setFim(e.target.value)}
-        />
-        <Botao
-          secundario
-          onClick={() => {
-            setInicio('')
-            setFim('')
-          }}
-        >
-          Todo o período
-        </Botao>
-      </div>
-      {erro && <Aviso erro>{erro}</Aviso>}
-      <div className="atualizacao">
-        <span />
-        Dados da amostra ·{' '}
-        {inicio || fim ? 'Período selecionado' : 'Todo o período'}
-      </div>
-      <section className="kpis">
-        <KpiCard
-          rotulo="Arrecadação financeira"
-          icone="carteira"
-          valor={formatarMoeda(indicadores.arrecadado)}
-          detalhe="Somente pagamentos confirmados"
-        />
-        <KpiCard
-          rotulo="Doadores"
-          icone="doadores"
-          valor={indicadores.doadores}
-          detalhe="Pessoas e organizações com doações confirmadas"
-        />
-        {analitico ? (
-          <>
-            <KpiCard
-              rotulo="Itens recebidos"
-              icone="itens"
-              valor={`${indicadores.itens} unidades`}
-              detalhe="Doações de itens confirmadas"
-            />
-            <KpiCard
-              rotulo="Situação da campanha"
-              icone="campanhas"
-              valor={campanha?.status ?? '—'}
-              detalhe={campanha?.categoria}
-            />
-          </>
-        ) : (
-          <>
-            <KpiCard
-              rotulo="Campanhas ativas"
-              icone="campanhas"
-              valor={indicadores.ativas}
-              detalhe={`${campanhas.length} campanhas cadastradas`}
-            />
-            <KpiCard
-              rotulo="Taxa de conclusão"
-              icone="check"
-              valor={`${indicadores.concluidas}%`}
-              detalhe="Campanhas encerradas / total cadastrado"
-            />
-          </>
-        )}
-      </section>
-      {analitico && !campanha ? (
-        <Vazio titulo="Campanha não encontrada" />
-      ) : (
-        <>
-          <div className="dashboard-grid">
-            <Secao
-              titulo={
-                analitico ? 'Evolução financeira' : 'Arrecadação no período'
-              }
-              descricao="Evolução acumulada de pagamentos confirmados"
-            >
-              <strong className="numero-destaque">
-                {formatarMoeda(indicadores.arrecadado)}
-              </strong>
-              <Grafico doacoes={doacoes} />
-            </Secao>
-            <Secao
-              titulo={
-                analitico ? 'Progresso da campanha' : 'O que precisa de atenção'
-              }
-            >
-              {analitico ? (
-                <>
-                  <Progresso atual={campanha.arrecadado} meta={campanha.meta} />
-                  <p>A meta considera o histórico completo da campanha.</p>
-                  <Botao para={`/campanhas/${campanha.id}`} secundario>
-                    Ver campanha <Icon nome="externo" />
-                  </Botao>
-                </>
-              ) : (
-                <>
-                  {campanhasEntidade.some((c) => c.status === 'Ativa') ? (
-                    <>
-                      <span className="badge badge--alerta">
-                        Campanhas em andamento
-                      </span>
-                      <h3>
-                        {
-                          campanhasEntidade.find((c) => c.status === 'Ativa')
-                            .nome
-                        }
-                      </h3>
-                      <p>Acompanhe as metas e as contribuições recebidas.</p>
-                      <Progresso atual={campanhasEntidade.find((c) => c.status === 'Ativa').arrecadado} meta={campanhasEntidade.find((c) => c.status === 'Ativa').meta} />
-                      <Botao
-                        para={`/dashboard/campanha?campanha=${campanhasEntidade.find((c) => c.status === 'Ativa').id}`}
-                      >
-                        <Icon nome="relatorios" />
-                        Analisar campanha
-                      </Botao>
-                    </>
-                  ) : (
-                    <p>Nenhuma campanha ativa no momento.</p>
-                  )}
-                  <hr />
-                  <p>
-                    {
-                      campanhasEntidade.filter((c) => c.status === 'Rascunho')
-                        .length
-                    }{' '}
-                    campanha(s) em rascunho.
-                  </p>
-                  <Link className="link-azul" to="/campanhas">
-                    Ver minhas campanhas →
-                  </Link>
-                </>
-              )}
-            </Secao>
-          </div>
-          {analitico && (
-            <div className="dashboard-grid">
-              <Secao
-                titulo="Evolução de itens"
-                descricao="Recebimentos confirmados no período selecionado."
-              >
-                <Grafico doacoes={doacoes} medida="itens" id="itens-campanha" />
-              </Secao>
-              <Secao
-                titulo="Progresso por item"
-                descricao="Metas da campanha e recebimentos do período."
-              >
-                {campanha.necessidades?.length ? (
-                  campanha.necessidades.map((item) => {
-                    const recebido = doacoes
-                      .filter((d) => d.status === 'Confirmada')
-                      .flatMap((d) => d.itens ?? [])
-                      .filter((i) => i.nome === item.nome)
-                      .reduce((s, i) => s + i.quantidade, 0)
-                    return (
-                      <div className="progresso-item" key={item.nome}>
-                        <div className="lista-linha">
-                          <strong>{item.nome}</strong>
-                          <small>
-                            {recebido} de {item.meta}
-                          </small>
-                        </div>
-                        <div
-                          className="progresso"
-                          role="progressbar"
-                          aria-label={item.nome}
-                          aria-valuenow={Math.min(recebido, item.meta)}
-                          aria-valuemin={0}
-                          aria-valuemax={item.meta}
-                        >
-                          <div
-                            className="progresso__barra"
-                            style={{
-                              width: `${percentual(recebido, item.meta)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <p>Nenhuma meta de itens informada para esta campanha.</p>
-                )}
-              </Secao>
-            </div>
-          )}
-          <Secao
-            titulo={
-              analitico ? 'Contribuições da campanha' : 'Campanhas da entidade'
-            }
-            descricao={
-              analitico
-                ? 'Registros correspondentes ao período selecionado.'
-                : 'O progresso considera o histórico completo de cada campanha.'
-            }
-          >
-            {analitico ? (
-              <DataTable
-                linhas={doacoes}
-                colunas={[
-                  { chave: 'doador', titulo: 'Doador' },
-                  { chave: 'detalhe', titulo: 'Contribuição' },
-                  { chave: 'data', titulo: 'Data' },
-                  {
-                    chave: 'status',
-                    titulo: 'Status',
-                    render: (d) => <StatusBadge valor={d.status} />,
-                  },
-                ]}
-              />
-            ) : (
-              <DataTable
-                linhas={campanhas}
-                colunas={[
-                  {
-                    chave: 'nome',
-                    titulo: 'Campanha',
-                    render: (c) => (
-                      <Link to={`/dashboard/campanha?campanha=${c.id}`}>
-                        {c.nome}
-                      </Link>
-                    ),
-                  },
-                  {
-                    chave: 'meta',
-                    titulo: 'Arrecadado / meta',
-                    render: (c) => (
-                      <Progresso atual={c.arrecadado} meta={c.meta} />
-                    ),
-                  },
-                  {
-                    chave: 'status',
-                    titulo: 'Status',
-                    render: (c) => <StatusBadge valor={c.status} />,
-                  },
-                ]}
-              />
-            )}
-          </Secao>
-        </>
-      )}
-      <Aviso>
-        Os indicadores refletem somente a amostra de demonstração. Registros
-        pendentes ou cancelados não entram na arrecadação confirmada.
-      </Aviso>
+      <form className="cartao form-grid" onSubmit={submit}>
+        <Campo name="dataInicio" rotulo="Data inicial" type="date" />
+        <Campo name="dataFim" rotulo="Data final" type="date" />
+        <div><Botao type="submit">Aplicar período</Botao></div>
+        {erro && <Aviso erro>{erro}</Aviso>}
+      </form>
+      <RequestState {...request}>
+        {(resultado) => {
+          const selecionada = analitico && resultado.porCampanha.find((linha) => linha.campanhaId === campanha)
+          const linhas = selecionada ? [selecionada] : resultado.porCampanha
+          return (
+            <>
+              <p>Período consultado: {formatarData(resultado.inicio)} a {formatarData(resultado.fim)}</p>
+              {analitico && <Campo rotulo="Campanha">
+                <select value={selecionada ? campanha : ''} onChange={(e) => setCampanha(e.target.value)}>
+                  <option value="">Todas as campanhas</option>
+                  {resultado.porCampanha.filter((linha) => linha.campanhaId).map((linha) => <option key={linha.campanhaId} value={linha.campanhaId}>{linha.titulo}</option>)}
+                </select>
+              </Campo>}
+              <section className="kpis">
+                <KpiCard rotulo="Total arrecadado" valor={formatarMoeda(selecionada ? selecionada.total : resultado.totalArrecadado)} />
+                <KpiCard rotulo="Doações confirmadas" valor={selecionada ? selecionada.quantidade : resultado.quantidadeDoacoes} />
+              </section>
+              <section className="cartao">
+                <h2>Arrecadação por campanha</h2>
+                {relatorio && resultado.porCampanha.length > 0 && <Botao secundario disabled={request.loading} onClick={() => baixarArrecadacao(resultado)}>Baixar CSV</Botao>}
+                <DataTable linhas={linhas.map((c) => ({ ...c, id: c.campanhaId ?? 'direta' }))} colunas={[
+                  { chave: 'titulo', titulo: 'Campanha', render: (c) => c.titulo ?? 'Doação direta' },
+                  { chave: 'quantidade', titulo: 'Doações' },
+                  { chave: 'total', titulo: 'Total', render: (c) => formatarMoeda(c.total) },
+                ]} vazio="Nenhuma doação confirmada no período." />
+              </section>
+            </>
+          )
+        }}
+      </RequestState>
     </>
   )
 }

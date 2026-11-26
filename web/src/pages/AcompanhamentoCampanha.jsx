@@ -1,152 +1,101 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import DataTable from '../components/DataTable'
-import { Ico } from '../components/IconesCampanha'
 import KpiCard from '../components/KpiCard'
 import PageHeader from '../components/PageHeader'
+import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { useDemo } from '../hooks/useDemo'
-import { HOJE_DEMO, HORA_DEMO, detalheCampanha } from '../mocks/campanhasDetalhe'
-import { diasRestantes } from '../utils/campanhas'
-import { formatarData, formatarMoeda, percentual } from '../utils/format'
-import '../styles/campanhas.css'
+import { Aviso, Botao, Campo, Vazio } from '../components/Ui'
+import { useAsyncAction } from '../hooks/useAsyncAction'
+import { useAuth } from '../hooks/useAuth'
+import { useRequest } from '../hooks/useRequest'
+import { campanhasService } from '../services/campanhasService'
+import { mapStatusCampanha } from '../services/mappers'
+import { podeEditar } from '../utils/campanhas'
+import { formatarData, formatarMoeda } from '../utils/format'
 
-// [DEV-CAM-09] Acompanhamento da campanha (#93). Dados de demonstração.
-// SEM CONTRATO na API: itens por tipo, famílias, timeline, publicar atualização,
-// filtro por período, exportação e paginação.
+const transicoes = {
+  Rascunho: ['AGENDADA', 'ATIVA', 'DESATIVADA'],
+  Agendada: ['ATIVA', 'DESATIVADA'],
+  Ativa: ['ENCERRADA', 'DESATIVADA'],
+}
+
 export default function AcompanhamentoCampanha() {
   const { id } = useParams()
-  const { dados, atualizar } = useDemo()
-  const c = dados.campanhas.find((item) => item.id === Number(id))
-  const det = c ? detalheCampanha(c) : null
-  const [modalidade, setModalidade] = useState('')
-  const [mensagem, setMensagem] = useState('')
-  const [erro, setErro] = useState('')
-  const [feedback, setFeedback] = useState('')
+  return <ConsultaAcompanhamento key={id} id={id} />
+}
 
-  if (!c)
-    return (
-      <>
-        <Vazio titulo="Campanha não encontrada" principal>Verifique o endereço ou volte para a lista de campanhas.</Vazio>
-        <Botao para="/campanhas">Voltar para campanhas</Botao>
-      </>
-    )
+function ConsultaAcompanhamento({ id }) {
+  const { usuario } = useAuth()
+  const request = useRequest((config) => campanhasService.buscarPublica(id, config).then((campanha) => ({ campanha })), [id])
+  return (
+    <>
+      <PageHeader titulo="Acompanhamento da campanha"><Botao para="/campanhas" secundario>Voltar</Botao></PageHeader>
+      <RequestState {...request}>
+        {({ campanha }) => campanha && (usuario.tipo === 'ADMIN' || campanha.entidadeId === usuario.entidadeId)
+          ? <Detalhes key={id} campanha={campanha} recarregar={request.reload} entidade={usuario.tipo === 'ENTIDADE'} />
+          : <Vazio titulo="Campanha não encontrada" />}
+      </RequestState>
+    </>
+  )
+}
 
-  const ativa = c.status === 'Ativa'
-  const dias = diasRestantes(c.encerraEm)
-  const itensRec = det.itens.length ? det.itens.reduce((s, i) => s + i.recebido, 0) : c.itensRecebidos ?? 0
-  const itensMeta = det.itens.length ? det.itens.reduce((s, i) => s + i.meta, 0) : c.itensMeta ?? 0
-  const linhas = det.doacoes.linhas.filter((l) => !modalidade || l.tipo === modalidade)
+function Detalhes({ campanha, recarregar, entidade }) {
+  const [novo, setNovo] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const salvar = useAsyncAction((dados) => campanhasService.alterarStatus(campanha.id, dados))
+  const opcoes = transicoes[campanha.status] ?? []
 
-  function publicar(e) {
-    e.preventDefault()
-    const texto = mensagem.trim()
-    setFeedback('')
-    if (!texto) return setErro('Escreva a mensagem antes de publicar.')
-    const nova = { id: `nova-${det.timeline.length}`, data: `${formatarData(HOJE_DEMO)} · ${HORA_DEMO}`, titulo: texto.split(/[.!?\n]/)[0].slice(0, 60), texto, link: 'Atualização pública' }
-    atualizar('campanhas', dados.campanhas.map((x) => (x.id === c.id ? { ...x, timeline: [nova, ...det.timeline] } : x)))
-    setMensagem('')
-    setErro('')
-    setFeedback('Atualização publicada nesta sessão de demonstração.')
+  async function submit(event) {
+    event.preventDefault()
+    if (!opcoes.includes(novo) || (novo === 'DESATIVADA' && !motivo.trim())) return
+    const resposta = await salvar.executar({ status: novo, ...(novo === 'DESATIVADA' && { motivo: motivo.trim() }) })
+    if (resposta) {
+      setNovo('')
+      setMotivo('')
+      recarregar()
+    }
   }
 
-  const colunas = [
-    { chave: 'doador', titulo: 'Doador', render: (l) => <><strong>{l.doador}</strong><br /><small className="camp-ok">Recebida e confirmada</small></> },
-    { chave: 'tipo', titulo: 'Tipo' },
-    { chave: 'contribuicao', titulo: 'Contribuição', render: (l) => <strong>{l.contribuicao}</strong> },
-    { chave: 'recebida', titulo: 'Recebida em' },
-  ]
-
   return (
-    <div className="camp">
-      <nav className="breadcrumb" aria-label="Você está em">
-        <Link to="/campanhas">Campanhas</Link> / <span>{c.nome.split(':')[0]}</span> / Acompanhamento
-      </nav>
-      <PageHeader titulo="Acompanhamento da campanha" descricao={c.nome}>
-        {ativa && <Botao para={`/campanhas/${c.id}/editar`} secundario><Icon nome="editar" size={16} /> Editar</Botao>}
-        <Botao para={`/campanhas/${c.id}`} secundario><Icon nome="externo" size={16} /> Ver campanha</Botao>
-      </PageHeader>
-      <div className="camp-chips">
-        <StatusBadge valor={c.status} />
-        {ativa && <span className="badge badge--alerta">{dias <= 14 ? 'Urgente · ' : ''}{dias} dias restantes</span>}
-        <span className="camp-data">{formatarData(c.criadaEm).slice(0, 5)} a {formatarData(c.encerraEm)}{det.atualizadoEm ? ` · Atualizado em ${det.atualizadoEm}` : ''}</span>
-      </div>
-
-      <section className="camp-kpis">
-        <KpiCard rotulo="Arrecadação financeira" valor={formatarMoeda(c.arrecadado)} detalhe={`${percentual(c.arrecadado, c.meta)}% da meta de ${formatarMoeda(c.meta)}${det.doacoes.financeiras ? ` · ${det.doacoes.financeiras} doações` : ''}`} />
-        <KpiCard rotulo="Itens recebidos" valor={`${itensRec} de ${itensMeta}`} detalhe={`${percentual(itensRec, itensMeta)}% da meta de itens${det.doacoes.itens ? ` · ${det.doacoes.itens} doações` : ''}`} />
-        {det.familias
-          ? <KpiCard rotulo="Famílias beneficiadas" valor={`${det.familias.atendidas} de ${det.familias.meta}`} detalhe={det.familias.nota} />
-          : <KpiCard rotulo="Doações confirmadas" valor={String(det.doacoes.total)} detalhe="Somente doações confirmadas" />}
+    <>
+      <section className="cartao pilha">
+        <h2>{campanha.nome}</h2>
+        <p>{campanha.descricao}</p>
+        <p>{campanha.entidade} · {formatarData(campanha.iniciaEm)} a {formatarData(campanha.encerraEm)}</p>
+        <StatusBadge valor={campanha.status} />
+        {campanha.motivoDesativacao && <p>{campanha.motivoDesativacao}</p>}
+        {entidade && podeEditar(campanha.status) && <Botao para={`/campanhas/${campanha.id}/editar`} secundario>Editar campanha</Botao>}
       </section>
-
-      <div className="camp-grid">
-        <div className="camp-col">
-          <div className="camp-card">
-            <div className="camp-cab"><h2>Doações recebidas</h2><button type="button" className="camp-botao" disabled aria-disabled="true"><Icon nome="download" size={16} /> Exportar</button></div>
-            <p className="camp-sub">Contribuições confirmadas nesta campanha.</p>
-            <div className="camp-chips" style={{ margin: 0 }}>
-              <select aria-label="Modalidade" value={modalidade} onChange={(e) => setModalidade(e.target.value)}>
-                <option value="">Todas as modalidades</option>
-                <option>Pix</option><option>Cartão</option><option>Itens</option>
-              </select>
-              <select aria-label="Período" aria-describedby="periodo-amostra" disabled><option>Todo o período</option></select>
-            </div>
-            <small id="periodo-amostra">Esta amostra mostra o histórico completo. Para filtrar datas, use o Dashboard analítico.</small>
-            <DataTable colunas={colunas} linhas={linhas} vazio="Nenhuma doação confirmada ainda." />
-            <div className="camp-tabela-rodape">
-              <span>{linhas.length} de {det.doacoes.total} doações · Página 1</span>
-              <button type="button" className="camp-botao" disabled aria-disabled="true">Próxima <Ico nome="chevron" /></button>
-            </div>
-          </div>
-
-          {det.itens.length > 0 && (
-            <div className="camp-card">
-              <div className="camp-cab"><h2>Progresso dos itens</h2><strong className="camp-link">{itensRec} de {itensMeta}</strong></div>
-              {det.itens.map((i) => {
-                const p = percentual(i.recebido, i.meta)
-                return (
-                  <div className="camp-prog" key={i.nome}>
-                    <strong>{i.nome}</strong>
-                    <div>
-                      <div className="camp-prog__dados"><span>{i.recebido} de {i.meta}</span><strong>Faltam {Math.max(0, i.meta - i.recebido)}</strong></div>
-                      <div className="progresso" role="img" aria-label={`${p}% de ${i.nome}`}><div className="progresso__barra" style={{ width: `${p}%` }} /></div>
-                    </div>
-                  </div>
-                )
-              })}
-              <hr className="camp-sep" />
-              <small className="camp-sub">Entregas de itens confirmadas pela {c.entidade}. O progresso financeiro é contabilizado separadamente.</small>
-            </div>
-          )}
-        </div>
-
-        <aside className="camp-aside">
-          <div className="camp-card">
-            <h2>Timeline de atualizações</h2>
-            <p className="camp-sub">Mantenha os doadores informados sobre o impacto da campanha.</p>
-            {det.timeline.length === 0 ? <p className="camp-sub">Nenhuma atualização publicada ainda.</p> : (
-              <ul className="camp-tl">
-                {det.timeline.map((t) => (
-                  <li key={t.id}>
-                    <span className="camp-tl__ponto"><Icon nome="check" size={13} /></span>
-                    <div><span className="camp-sub">{t.data}</span><strong>{t.titulo}</strong>{t.texto}<br /><a href="#atualizacao">{t.link}</a></div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <form className="camp-card" onSubmit={publicar} noValidate>
-            <h2>Publicar uma atualização</h2>
-            <Campo rotulo="Mensagem aos doadores" ajuda={erro || 'A mensagem ficará visível na página pública.'}>
-              <textarea rows={4} placeholder="Conte uma novidade sobre a campanha…" value={mensagem} aria-invalid={!!erro} onChange={(e) => setMensagem(e.target.value)} />
-            </Campo>
-            {feedback && <Aviso>{feedback}</Aviso>}
-            <Botao type="submit"><Ico nome="enviar" /> Publicar atualização</Botao>
-          </form>
-        </aside>
-      </div>
-    </div>
+      <section className="kpis">
+        <KpiCard rotulo="Arrecadado" valor={formatarMoeda(campanha.arrecadado)} />
+        <KpiCard rotulo="Meta financeira" valor={formatarMoeda(campanha.meta)} />
+        <KpiCard rotulo="Progresso" valor={`${campanha.percentual}%`} />
+      </section>
+      <section className="cartao">
+        <h2>Doações recentes</h2>
+        <DataTable linhas={campanha.ultimasDoacoes.map((d, i) => ({ ...d, id: i }))} colunas={[
+          { chave: 'doador', titulo: 'Doador' },
+          { chave: 'data', titulo: 'Data', render: (d) => formatarData(d.data) },
+          { chave: 'valor', titulo: 'Valor', render: (d) => formatarMoeda(d.valor) },
+        ]} vazio="Nenhuma doação recente." />
+      </section>
+      {opcoes.length > 0 && (
+        <form className="cartao pilha" onSubmit={submit}>
+          <h2>Alterar status</h2>
+          <Campo rotulo="Novo status" required>
+            <select required value={novo} onChange={(e) => setNovo(e.target.value)} disabled={salvar.pending}>
+              <option value="">Selecione</option>
+              {opcoes.map((opcao) => <option key={opcao} value={opcao}>{mapStatusCampanha(opcao)}</option>)}
+            </select>
+          </Campo>
+          {novo === 'DESATIVADA' && <Campo rotulo="Motivo da desativação" required maxLength={1000} value={motivo} onChange={(e) => setMotivo(e.target.value)} disabled={salvar.pending} />}
+          {(novo === 'ENCERRADA' || novo === 'DESATIVADA') && <Aviso>Esta alteração encerra o recebimento de doações para esta campanha.</Aviso>}
+          <Botao type="submit" disabled={!novo || salvar.pending}>{salvar.pending ? 'Salvando…' : 'Confirmar mudança'}</Botao>
+        </form>
+      )}
+      {salvar.success && <Aviso>Status atualizado.</Aviso>}
+      {salvar.error && <Aviso erro>{salvar.error.message}</Aviso>}
+    </>
   )
 }

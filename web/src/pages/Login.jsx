@@ -9,7 +9,6 @@ export default function Login() {
     navigate = useNavigate(),
     location = useLocation()
   const [recuperar, setRecuperar] = useState(false),
-    [aviso, setAviso] = useState(''),
     [erro, setErro] = useState(''),
     [enviando, setEnviando] = useState(false)
 
@@ -52,17 +51,13 @@ export default function Login() {
           titulo={recuperar ? 'Esqueceu sua senha?' : 'Entre na sua conta'}
           descricao={
             recuperar
-              ? 'Informe seu e-mail para solicitar a recuperação do acesso.'
+              ? 'A recuperação de senha por e-mail está indisponível.'
               : 'Acesse com a conta da sua entidade, de doador ou de administrador.'
           }
         >
-          <form
+          {!recuperar && <form
             onSubmit={(e) => {
               e.preventDefault()
-              if (recuperar) {
-                setAviso('O serviço de recuperação ainda não está integrado. Nenhum e-mail foi enviado.')
-                return
-              }
               acessar(e.currentTarget)
             }}
             className="pilha"
@@ -74,32 +69,28 @@ export default function Login() {
               autoComplete="email"
               required
             />
-            {!recuperar && (
-              <Campo
+            <Campo
                 rotulo="Senha"
                 type="password"
                 name="senha"
                 autoComplete="current-password"
                 required
               />
-            )}
             <Botao type="submit" disabled={enviando} aria-busy={enviando}>
-              {recuperar ? 'Solicitar recuperação' : enviando ? 'Entrando…' : 'Entrar'}
+              {enviando ? 'Entrando…' : 'Entrar'}
             </Botao>
-            {erro && !recuperar && <Aviso erro>{erro}</Aviso>}
-            {aviso && <Aviso>{aviso}</Aviso>}
+            {erro && <Aviso erro>{erro}</Aviso>}
+          </form>}
             <button
               className="link-botao"
               type="button"
               onClick={() => {
                 setRecuperar(!recuperar)
-                setAviso('')
                 setErro('')
               }}
             >
               {recuperar ? 'Voltar para o acesso' : 'Esqueci minha senha'}
             </button>
-          </form>
           <hr />
           <p>
             Ainda não tem uma conta?{' '}

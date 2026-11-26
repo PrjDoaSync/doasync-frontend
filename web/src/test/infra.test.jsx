@@ -18,7 +18,6 @@ import api, { normalizeError } from '../services/api'
 import { API_URL } from '../services/config'
 import { limparSessao, obterToken, salvarSessao } from '../services/token'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
-import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
 import * as mocks from '../mocks'
 import * as fonte from '../mocks/gestao'
@@ -462,7 +461,6 @@ describe('cliente HTTP (services/api.js)', () => {
   })
   it.each([
     ['campanhas', campanhasApi, '/campanhas'],
-    ['doações', doacoesApi, '/doacoes'],
     ['entidades', entidadesApi, '/entidades'],
   ])('service de %s consulta a rota certa e devolve só o corpo', async (_nome, servico, rota) => {
     const chamadas = []
@@ -822,7 +820,7 @@ describe('DemoProvider e layouts', () => {
       </MemoryRouter>,
     )
   }
-  it('layout de gestão: navegação principal, entidade, título e aviso de demonstração', async () => {
+  it('layout de gestão: navegação principal, usuário autenticado e título', async () => {
     montarAdmin('/campanhas')
     await screen.findByRole('navigation', { name: 'Navegação administrativa' })
     const nav = screen.getByRole('navigation', { name: 'Navegação administrativa' })
@@ -831,16 +829,15 @@ describe('DemoProvider e layouts', () => {
       'Campanhas',
       'Doações',
       'Doadores',
-      'Itens doados',
       'Relatórios',
       'Configurações',
     ])
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('aria-current')).toBe('page')
     expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de campanhas')
     expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(
-      fonte.criarDadosDemo().entidade.nome,
+      'Ana Silva',
     )
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBeNull()
     expect(screen.getByRole('link', { name: 'Pular para o conteúdo' }).getAttribute('href')).toBe('#conteudo')
     expect(document.querySelector('main#conteudo')).toBeTruthy()
   })
@@ -852,16 +849,6 @@ describe('DemoProvider e layouts', () => {
     montarAdmin('/entidades')
     await screen.findByRole('navigation', { name: 'Navegação administrativa' })
     expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de entidades')
-  })
-  it('exibe o aviso (Toast) e permite dispensá-lo', async () => {
-    const user = userEvent.setup()
-    montarAdmin('/dashboard')
-    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
-    expect(document.querySelector('.toast')).toBe(null)
-    await user.click(screen.getByRole('button', { name: 'Avisar' }))
-    expect(document.querySelector('.toast').textContent).toContain('Salvo na sessão')
-    await user.click(screen.getByRole('button', { name: 'Dispensar aviso' }))
-    expect(document.querySelector('.toast')).toBe(null)
   })
   it('layout público: navegação, acesso da entidade e rodapé', async () => {
     limparSessao() // visitante
@@ -879,9 +866,9 @@ describe('DemoProvider e layouts', () => {
     await screen.findByRole('heading', { name: 'Início' })
     const nav = screen.getByRole('navigation', { name: 'Navegação pública' })
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('href')).toBe('/explorar')
-    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
     expect(screen.getByRole('link', { name: 'Entrar' }).getAttribute('href')).toBe('/login')
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBeNull()
     expect(screen.getByText(/Projeto de extensão/)).toBeTruthy()
     expect(document.querySelector('main#conteudo')).toBeTruthy()
   })

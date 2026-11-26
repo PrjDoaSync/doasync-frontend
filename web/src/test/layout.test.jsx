@@ -39,7 +39,7 @@ describe('Layout e componentes compartilhados', () => {
     expect(navPublica).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Início' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Campanhas' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
 
     // Ações públicas: Área da entidade e botão Entrar
     expect(
@@ -90,8 +90,6 @@ describe('Layout e componentes compartilhados', () => {
     expect(within(navAdmin).getByRole('link', { name: 'Dashboard' })).toBeTruthy()
     expect(within(navAdmin).getByRole('link', { name: 'Campanhas' })).toBeTruthy()
     expect(within(navAdmin).getByRole('link', { name: 'Doações' })).toBeTruthy()
-    expect(within(navAdmin).getByRole('link', { name: 'Doadores' })).toBeTruthy()
-    expect(within(navAdmin).getByRole('link', { name: 'Itens doados' })).toBeTruthy()
     expect(within(navAdmin).getByRole('link', { name: 'Relatórios' })).toBeTruthy()
     expect(within(navAdmin).getByRole('link', { name: 'Configurações' })).toBeTruthy()
 
@@ -103,8 +101,8 @@ describe('Layout e componentes compartilhados', () => {
     ).toBe(null)
 
     // Topo administrativo com informações do perfil
-    expect(screen.getByText('Ana Silva')).toBeTruthy()
-    expect(screen.getByText('Administradora · demonstração')).toBeTruthy()
+    expect(screen.getAllByText('Ana Silva')[0]).toBeTruthy()
+    expect(screen.getByText('Entidade', { exact: true })).toBeTruthy()
 
     // Interação com o menu de perfil do usuário
     const botaoPerfil = screen.getByRole('button', {
@@ -114,7 +112,7 @@ describe('Layout e componentes compartilhados', () => {
 
     await user.click(botaoPerfil)
     expect(botaoPerfil.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByRole('menuitem', { name: 'Perfil da entidade' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Minha conta' })).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: 'Sair da conta' })).toBeTruthy()
 
     // Fecha menu com tecla Escape
@@ -141,17 +139,15 @@ describe('Layout e componentes compartilhados', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Minhas doações' })).toBeTruthy()
   })
 
-  it('navega pelo menu de perfil com teclado e nomeia o diálogo de notificações', async () => {
+  it('navega pelo menu de perfil com teclado e devolve o foco ao botão', async () => {
     const user = await abrir('/dashboard')
     await user.click(screen.getByRole('button', { name: 'Perfil do usuário e ações comuns' }))
-    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Perfil da entidade' }))
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Minha conta' }))
     await user.keyboard('{End}')
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Sair da conta' }))
     await user.keyboard('{ArrowUp}')
-    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Gerenciar equipe' }))
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Minha conta' }))
     await user.keyboard('{Escape}')
-    await user.click(screen.getByRole('button', { name: 'Notificações da entidade' }))
-    expect(screen.getByRole('dialog', { name: 'Notificações da entidade' })).toBeTruthy()
-    expect(screen.getByText('Nenhuma notificação nesta demonstração.')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Perfil do usuário e ações comuns' }))
   })
 })

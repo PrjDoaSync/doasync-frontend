@@ -4,7 +4,6 @@ import { Aviso, Botao, Etapas, Secao } from '../components/Ui'
 import PageHeader from '../components/PageHeader'
 import CamposCampanha from '../components/CamposCampanha'
 import { useAuth } from '../hooks/useAuth'
-import { useDemo } from '../hooks/useDemo'
 import { campanhasService } from '../services/campanhasService'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { CAMPANHA_VAZIA, IMAGENS_CAMPANHA, corpoCampanha, validarCampanha } from '../utils/criarCampanha'
@@ -18,7 +17,6 @@ const hojeISO = () => new Date().toISOString().slice(0, 10)
 // galeria e upload de imagem (a capa é uma URL).
 export default function CriarCampanha() {
   const { usuario } = useAuth()
-  const { notificar } = useDemo()
   const navigate = useNavigate()
   const [etapa, setEtapa] = useState(0),
     [f, setF] = useState({ ...CAMPANHA_VAZIA, imagemUrl: IMAGENS_CAMPANHA[0].arquivo }),
@@ -53,14 +51,12 @@ export default function CriarCampanha() {
     setSalvando(true)
     try {
       const criada = await campanhasService.criar(corpoCampanha(f), rascunho)
-      notificar(
-        rascunho
-          ? 'Rascunho salvo.'
-          : criada.status === 'Agendada'
-            ? `Campanha agendada para ${formatarData(criada.iniciaEm)}.`
-            : 'Campanha publicada.',
-      )
-      navigate('/campanhas')
+      const aviso = rascunho
+        ? 'Rascunho salvo.'
+        : criada.status === 'Agendada'
+          ? `Campanha agendada para ${formatarData(criada.iniciaEm)}.`
+          : 'Campanha publicada.'
+      navigate('/campanhas', { state: { aviso } })
     } catch (falha) {
       if (falha?.campos) setErros(falha.campos)
       setErro(falha?.campos ? 'Revise os campos destacados.' : (falha?.message ?? 'Não foi possível salvar.'))

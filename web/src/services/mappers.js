@@ -38,6 +38,8 @@ export function mapCampanha(api) {
     encerraEm: api.dataFim ?? '',
     criadaEm: dataISO(api.createdAt),
     imagem: api.imagemUrl || IMAGEM_PADRAO,
+    imagemUrl: api.imagemUrl ?? '',
+    versao: api.versao ?? null,
     motivoDesativacao: api.motivoDesativacao ?? null,
     // Campos de demonstração sem equivalente na API (doação de itens, localização).
     cidade: '',

@@ -16,7 +16,7 @@ export default function PublicHeader() {
       !pathname.includes('/prestacao-de-contas')) ||
     pathname.startsWith('/doar/')
 
-  const isEntidadesActive = pathname === '/cadastro-entidade'
+  const isEntidadesActive = pathname === '/entidades-publicas' || pathname === '/cadastro-entidade'
 
   return (
     <header className="public-header" role="banner">
@@ -44,7 +44,7 @@ export default function PublicHeader() {
           </NavLink>
 
           <NavLink
-            to="/cadastro-entidade"
+            to="/entidades-publicas"
             className={`public-header__link ${isEntidadesActive ? 'active' : ''}`}
           >
             Entidades
@@ -62,7 +62,7 @@ export default function PublicHeader() {
                   Área de gestão
                 </Link>
               )}
-              <span className="public-header__usuario">Olá, {usuario.nome.split(' ')[0]}</span>
+              <Link to="/perfil-usuario" className="public-header__usuario">Minha conta</Link>
               <Botao secundario className="public-header__btn-entrar" onClick={sair}>
                 Sair
               </Botao>

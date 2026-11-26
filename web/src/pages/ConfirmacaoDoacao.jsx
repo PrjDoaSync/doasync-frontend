@@ -14,6 +14,7 @@ const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit
 export default function ConfirmacaoDoacao({ historico = false }) {
   const { usuario } = useAuth()
   const { pathname } = useLocation()
+  const { doacaoId } = useParams()
   if (!usuario)
     return (
       <Vazio principal titulo="Entre para ver o comprovante">
@@ -21,11 +22,10 @@ export default function ConfirmacaoDoacao({ historico = false }) {
         <Link to="/login" state={{ de: pathname }}>Entrar</Link>
       </Vazio>
     )
-  return <Comprovante historico={historico} />
+  return <Comprovante key={doacaoId} doacaoId={doacaoId} historico={historico} gestao={usuario.tipo === 'ENTIDADE' || usuario.tipo === 'ADMIN'} />
 }
 
-function Comprovante({ historico }) {
-  const { doacaoId } = useParams()
+function Comprovante({ doacaoId, historico, gestao }) {
   const request = useDoacao(doacaoId)
   if (!request.loading && !request.error && !request.data)
     return (
@@ -33,16 +33,16 @@ function Comprovante({ historico }) {
         Verifique o endereço ou consulte suas doações. <Link to="/minhas-doacoes">Minhas doações</Link>
       </Vazio>
     )
-  return <RequestState {...request}>{(d) => <ComprovanteConteudo d={d} historico={historico} />}</RequestState>
+  return <RequestState {...request}>{(d) => <ComprovanteConteudo d={d} historico={historico} gestao={gestao} />}</RequestState>
 }
 
-function ComprovanteConteudo({ d, historico }) {
+function ComprovanteConteudo({ d, historico, gestao }) {
   const confirmada = d.status === 'Confirmada'
   return (
     <section className="public-section doacao-fluxo confirmacao">
       {historico ? (
         <div className="breadcrumb">
-          <Link to="/">Início</Link><span>/</span><Link to="/minhas-doacoes">Minhas doações</Link><span>/</span>{d.comprovante}
+          <Link to="/">Início</Link><span>/</span><Link to={gestao ? "/doacoes" : "/minhas-doacoes"}>{gestao ? "Doações recebidas" : "Minhas doações"}</Link><span>/</span>{d.comprovante}
         </div>
       ) : (
         <div className="breadcrumb">
@@ -60,7 +60,7 @@ function ComprovanteConteudo({ d, historico }) {
         </h1>
         <p>
           {confirmada
-            ? `Sua contribuição de ${formatarMoeda(d.valor)} já conta para ${d.campanha || d.entidade}.`
+            ? `O registro de ${formatarMoeda(d.valor)} está vinculado a ${d.campanha || d.entidade}.`
             : 'Acompanhe a situação desta doação em Minhas doações.'}
         </p>
       </div>
@@ -68,7 +68,7 @@ function ComprovanteConteudo({ d, historico }) {
       <div className={`banner-status${confirmada ? '' : ' banner-status--pendente'}`} role="status">
         <span className="banner-status__icone"><Icon nome={confirmada ? 'check' : 'relogio'} size={20} /></span>
         <div>
-          <strong>{confirmada ? `Pagamento confirmado · ${d.formaPagamento}` : `Situação: ${d.status}`}</strong>
+          <strong>{confirmada ? `Registro confirmado na plataforma · ${d.formaPagamento}` : `Situação: ${d.status}`}</strong>
           <small>{formatarData(d.data.slice(0, 10))} às {hora(d.data)} · Comprovante {d.comprovante}</small>
         </div>
         <span className="banner-status__selo">{d.status}</span>
@@ -88,10 +88,10 @@ function ComprovanteConteudo({ d, historico }) {
           <span>Valor</span>
           <strong className="numero-destaque">{formatarMoeda(d.valor)}</strong>
         </div>
-        <Aviso>O comprovante em PDF e o envio por e-mail ainda não existem na API.</Aviso>
+        <Aviso>Este registro não comprova uma transferência bancária. O download do PDF e o envio por e-mail estão indisponíveis.</Aviso>
       </Secao>
 
-      <div className="acoes acoes--entre">
+      {gestao ? <Botao para="/doacoes" secundario>Voltar às doações recebidas</Botao> : <div className="acoes acoes--entre">
         {historico ? (
           <Botao para="/minhas-doacoes" secundario><Icon nome="voltar" /> Voltar a Minhas doações</Botao>
         ) : (
@@ -102,7 +102,7 @@ function ComprovanteConteudo({ d, historico }) {
         ) : (
           <Botao para="/minhas-doacoes"><Icon nome="doacoes" /> Minhas doações</Botao>
         )}
-      </div>
+      </div>}
     </section>
   )
 }

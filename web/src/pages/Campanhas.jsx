@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import DataTable from '../components/DataTable'
 import Filtros from '../components/Filtros'
 import KpiCard from '../components/KpiCard'
@@ -20,6 +20,7 @@ const STATUS = ['Rascunho', 'Agendada', 'Ativa', 'Encerrada', 'Desativada']
 // o ADMIN vê as de todas as entidades. Os dados vêm de GET /campanhas (um status por vez).
 export default function Campanhas() {
   const { usuario } = useAuth()
+  const { state } = useLocation()
   const admin = usuario.tipo === 'ADMIN'
   const entidadeId = admin ? undefined : usuario.entidadeId
   const request = useRequest((config) => campanhasService.daGestao({ entidadeId }, config), [entidadeId])
@@ -38,6 +39,7 @@ export default function Campanhas() {
           </Botao>
         )}
       </PageHeader>
+      {state?.aviso && <Aviso>{state.aviso}</Aviso>}
       {!aprovada && <Aviso>Sua entidade ainda não foi aprovada: a criação de campanhas fica disponível após a aprovação.</Aviso>}
       <RequestState {...request}>{(campanhas) => <Lista campanhas={campanhas} admin={admin} />}</RequestState>
     </div>

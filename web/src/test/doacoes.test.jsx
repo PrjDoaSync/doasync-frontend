@@ -59,7 +59,7 @@ describe('tela Minhas doações', () => {
     }
     const user = await abrir('/minhas-doacoes')
     expect(await screen.findByText('DS-0000EXISTE')).toBeTruthy()
-    expect(chamadas.find((c) => c.url === '/usuarios/me/doacoes').params).toEqual({ limit: 50 })
+    expect(chamadas.find((c) => c.url === '/usuarios/me/doacoes').params).toEqual({ page: 1, limit: 50 })
     expect(screen.getByText('Olá, Maria. Acompanhe as contribuições feitas com a sua conta.')).toBeTruthy()
     await user.click(screen.getAllByRole('link', { name: /Ver detalhe/ })[0])
     expect(await screen.findByRole('heading', { level: 1, name: /^Doação DS-/ })).toBeTruthy()

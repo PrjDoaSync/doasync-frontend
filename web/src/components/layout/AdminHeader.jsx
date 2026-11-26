@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Icon, Modal } from '../Ui'
+import { Icon } from '../Ui'
 import { useAuth } from '../../hooks/useAuth'
 
 const TITULOS_ROTAS = [
@@ -23,9 +23,9 @@ const TITULOS_ROTAS = [
 
 export default function AdminHeader() {
   const { pathname } = useLocation()
-  const { sair } = useAuth()
+  const { usuario, sair } = useAuth()
+  const iniciais = usuario.nome.trim().split(/\s+/).slice(0, 2).map((nome) => nome[0]).join('').toUpperCase()
   const [menuAberto, setMenuAberto] = useState(false)
-  const [notificacoes, setNotificacoes] = useState(false)
   const menuRef = useRef(null)
   const botaoRef = useRef(null)
 
@@ -86,16 +86,6 @@ export default function AdminHeader() {
       <span className="topo__titulo">{titulo}</span>
 
       <div className="topo__acoes">
-        <button
-          type="button"
-          className="topo__notificacao"
-          aria-label="Notificações da entidade"
-          title="Notificações"
-          onClick={() => setNotificacoes(true)}
-        >
-          <Icon nome="sino" size={18} />
-        </button>
-
         <div className="topo__perfil-container">
           <button
             ref={botaoRef}
@@ -114,11 +104,11 @@ export default function AdminHeader() {
             aria-label="Perfil do usuário e ações comuns"
           >
             <span className="topo__avatar" aria-hidden="true">
-              AS
+              {iniciais}
             </span>
             <span className="topo__usuario-info">
-              <strong>Ana Silva</strong>
-              <small>Administradora · demonstração</small>
+              <strong>{usuario.nome}</strong>
+              <small>{usuario.tipo === 'ADMIN' ? 'Administrador' : 'Entidade'}</small>
             </span>
             <Icon
               nome="seta"
@@ -137,29 +127,19 @@ export default function AdminHeader() {
               aria-label="Opções do perfil"
             >
               <div className="topo__menu-cabecalho">
-                <strong>Ana Silva</strong>
-                <small>ana.silva@redeesperanca.org.br</small>
+                <strong>{usuario.nome}</strong>
+                <small>{usuario.email}</small>
               </div>
               <hr className="topo__menu-divisor" />
               <Link
-                to="/configuracoes"
+                to="/perfil-usuario"
                 role="menuitem"
                 tabIndex={-1}
                 className="topo__menu-item"
                 onClick={() => setMenuAberto(false)}
               >
                 <Icon nome="configuracoes" size={16} />
-                <span>Perfil da entidade</span>
-              </Link>
-              <Link
-                to="/configuracoes/usuarios"
-                role="menuitem"
-                tabIndex={-1}
-                className="topo__menu-item"
-                onClick={() => setMenuAberto(false)}
-              >
-                <Icon nome="doadores" size={16} />
-                <span>Gerenciar equipe</span>
+                <span>Minha conta</span>
               </Link>
               <hr className="topo__menu-divisor" />
               <Link
@@ -179,12 +159,6 @@ export default function AdminHeader() {
           )}
         </div>
       </div>
-      {notificacoes && (
-        <Modal titulo="Notificações da entidade" fechar={() => setNotificacoes(false)}>
-          <p role="status">Nenhuma notificação nesta demonstração.</p>
-          <p>As alterações ficam nesta sessão. Não são enviados avisos ou mensagens reais.</p>
-        </Modal>
-      )}
     </header>
   )
 }
