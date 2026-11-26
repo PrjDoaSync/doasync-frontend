@@ -1,0 +1,57 @@
+name: doasync
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: doasync
+      POSTGRES_USER: doasync
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U doasync -d doasync"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build: ${DOASYNC_BACKEND_DIR:-../doasync-backend/backend}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/doasync
+      DB_USER: doasync
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      DOASYNC_JWT_SEGREDO: ${DOASYNC_JWT_SEGREDO:?Defina DOASYNC_JWT_SEGREDO no .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@doasync.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD no .env}
+      DOASYNC_CORS_ORIGINS: ${DOASYNC_CORS_ORIGINS:-http://localhost:${DOASYNC_PORT:-8080},http://127.0.0.1:${DOASYNC_PORT:-8080}}
+      SWAGGER_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "4", "--output", "/dev/null", "http://127.0.0.1:8080/api/v1/campanhas?limit=1"]
+      start_period: 45s
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+
+  frontend:
+    build: ./web
+    ports:
+      - "${DOASYNC_BIND:-127.0.0.1}:${DOASYNC_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
