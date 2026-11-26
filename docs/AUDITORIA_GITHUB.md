@@ -2,7 +2,7 @@
 
 Em 26/11/2026 o GitHub CLI autenticado retornou quatro repositórios na organização. A navegação pública renderizou a página do frontend. O canal nativo do navegador integrado do VS Code estava indisponível, então as consultas de histórico, branches, PRs e arquivos usaram Git e GitHub CLI.
 
-| Repositório | Papel | Revisão observada | PRs abertos |
+| Repositório | Papel | Revisão observada | PRs abertos no levantamento |
 |---|---|---|---|
 | [doasync-frontend](https://github.com/PrjDoaSync/doasync-frontend) | SPA React/Vite, serviços Axios, testes Vitest | `main` em `e73ad24`, `develop` em `1c8eaa8` | 0 |
 | [doasync-backend](https://github.com/PrjDoaSync/doasync-backend) | API Spring, persistência, JWT, CORS e testes de contrato | `main` em `3c911d7`, `feat/campanha-versao` em `014bbc6` | 12 |
@@ -20,11 +20,18 @@ Em 26/11/2026 o GitHub CLI autenticado retornou quatro repositórios na organiza
 
 Foi feito fetch do histórico e das 30 referências de branches remotas. A busca em anotações de controladores Java procurou estoque, prestação de contas, movimentação, agendamento de doação e recuperação. A referência de contrato enumera 22 rotas e concorda com a ausência dessas operações.
 
-| PRs abertos | Escopo | Decisão |
+| PRs abertos no levantamento | Escopo | Decisão |
 |---|---|---|
 | #49–#55 | Pilha de campanha para gestão, filtros, permissões, desativação, progresso, imagens e regressão | A pilha tem bases intermediárias. O material fica pendente de revisão e integração pelos mantenedores |
 | #56, #57, #66 | Cadastro e aprovação de entidades | A API oficial oferece cadastro e mudança de status. Os PRs permanecem pendentes de revisão |
 | #68, #69 | Testes de escrita e vitrine | Permanecem abertos |
 | Branch `feat/campanha-versao` | Versão persistida no detalhe para a trava otimista | `014bbc6` é filho direto de `3c911d7`, com um commit exclusivo. A base da validação local incorpora a branch. A publicação na `main` continua pendente |
 
-O backend local de validação usa a branch `codex/doasync-versao-postgres` em `a981d18`. A cópia local `doasync-backend-validacao` está pronta para revisão. Os PRs de documentação e os PRs pendentes acima continuam disponíveis para revisão no GitHub.
+O backend local de validação usa a branch `codex/doasync-versao-postgres` em `de5d079`. A cópia local `doasync-backend-validacao` está pronta para revisão. Os PRs de documentação e os PRs pendentes acima continuam disponíveis para revisão no GitHub.
+
+## Publicação para revisão
+
+A conta autenticada `LucasIanovski` publicou as duas branches de trabalho, com a autoria histórica dos colaboradores preservada. Os números de PRs no inventário acima correspondem ao levantamento anterior à publicação. Ambos os PRs desta entrega usam `main` como destino, de acordo com o histórico recente de integração.
+
+- Frontend `codex/finalizacao-doasync`. [PR #146](https://github.com/PrjDoaSync/doasync-frontend/pull/146)
+- Backend `codex/doasync-versao-postgres`. [PR #71](https://github.com/PrjDoaSync/doasync-backend/pull/71) · [Check do backend](https://github.com/PrjDoaSync/doasync-backend/actions/runs/45879644353)
