@@ -96,7 +96,7 @@ describe('tela de cadastro de doador', () => {
     const user = await abrir('/cadastro-doador', { de: doacao })
     await preencherPf(user)
     await user.click(screen.getByRole('button', { name: 'Criar conta' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Como você quer ajudar?' })).toBeTruthy()
     const cadastro = chamadas.find((c) => c.url === '/doadores')
     expect(JSON.parse(cadastro.data)).toEqual({
       tipo: 'PESSOA_FISICA',
@@ -145,6 +145,7 @@ describe('tela de cadastro de doador', () => {
   it('a identificação da doação e o login levam ao cadastro', async () => {
     simularApi()
     const user = await abrir(`/doar/${campanhasApi[0].id}`)
+    await user.click(screen.getByRole('button', { name: /Continuar com doação financeira/ }))
     await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
     await user.click(screen.getByRole('button', { name: /Continuar/ }))
     await user.click(screen.getByRole('link', { name: 'Criar conta de doador' }))

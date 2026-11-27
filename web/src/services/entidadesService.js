@@ -9,6 +9,18 @@ export const entidadesService = {
   // GET /entidades: só APROVADA (inclusive para o ADMIN). Usado para o ADMIN escolher a entidade.
   aprovadas: (config) =>
     api.get('/entidades', { params: { limit: 50 }, ...config }).then((r) => (r.data?.data ?? []).map(mapEntidade)),
+  // Perfil público (GET /entidades/{id}): só entidade APROVADA; 404 ou outro status viram null.
+  buscarPublica: (id, config) =>
+    api
+      .get(`/entidades/${id}`, config)
+      .then((r) => {
+        const entidade = mapEntidade(r.data.data)
+        return entidade.status === 'Aprovada' ? entidade : null
+      })
+      .catch((erro) => {
+        if (erro?.status === 404) return null
+        throw erro
+      }),
   // PATCH /entidades/{id}/status (ADMIN): APROVADA | REPROVADA (motivo obrigatório) | INATIVA | PENDENTE.
   alterarStatus: (id, status, motivo) =>
     api

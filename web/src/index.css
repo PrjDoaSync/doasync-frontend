@@ -649,6 +649,19 @@ small {
 .aviso--erro > span {
   color: inherit;
 }
+/* Funcionalidade que depende de rota ainda inexistente no backend (AvisoIndisponivel). */
+.aviso--pendente {
+  background: var(--alerta-bg);
+  color: #7a4b00;
+  margin-bottom: 16px;
+}
+.aviso--pendente > span {
+  color: inherit;
+}
+.link-botao:disabled {
+  color: var(--texto-suave);
+  cursor: not-allowed;
+}
 .toast {
   position: fixed;
   bottom: 24px;
@@ -1886,6 +1899,11 @@ small {
   font-size: 14px;
   font-weight: 500;
   color: #0f172a;
+  text-decoration: none;
+}
+a.public-header__usuario:hover {
+  color: var(--azul);
+  text-decoration: underline;
 }
 
 .public-header__btn-entrar {

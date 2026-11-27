@@ -1,4 +1,5 @@
 import api from './api'
+import { recursoIndisponivel } from './indisponivel'
 import { mapDoacao, mapPaginado } from './mappers'
 
 // Chave de idempotência por tentativa de doação: reenviar com a mesma chave
@@ -49,13 +50,24 @@ export const doacoesService = {
         throw erro
       }),
   // POST /doacoes (doador PF/PJ autenticado). A API só aceita PIX e exige exatamente
-  // um destino: campanhaId OU entidadeId.
-  registrar: ({ campanhaId, valor, anonima, observacao }, chave) =>
+  // um destino: campanhaId OU entidadeId (doação direta à entidade).
+  registrar: ({ campanhaId, entidadeId, valor, anonima, observacao }, chave) =>
     api
       .post(
         '/doacoes',
-        { campanhaId, valor, formaPagamento: 'PIX', anonima, observacao: observacao || undefined },
+        {
+          ...(campanhaId ? { campanhaId } : { entidadeId }),
+          valor,
+          formaPagamento: 'PIX',
+          anonima,
+          observacao: observacao || undefined,
+        },
         { headers: { 'Idempotency-Key': chave } },
       )
       .then((r) => mapDoacao(r.data.data)),
+  // SEM ROTA NO BACKEND (services/indisponivel.js): nada é enviado. Os dados do cartão
+  // nunca são repassados; quando houver provedor, ele recebe o cartão diretamente.
+  pagarComCartao: () => recursoIndisponivel('cartao'),
+  gerarBoleto: () => recursoIndisponivel('boleto'),
+  registrarItens: () => recursoIndisponivel('doacaoItens'),
 }

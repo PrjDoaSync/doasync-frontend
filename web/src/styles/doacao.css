@@ -11,3 +11,36 @@
 @media (max-width: 760px) {
   .doacao-fluxo .detalhe-grid { grid-template-columns: 1fr; }
 }
+
+/* Tipo de doação, itens, agendamento e pagamentos (DOA-01, DOA-04 a DOA-07). */
+.doacao-fluxo .opcao-card { align-content: start; min-width: 0; }
+.doacao-fluxo .opcoes-doacao { border: 0; padding: 0; margin: 0 0 8px; }
+.doacao-fluxo .metodos label strong { font-size: 14px; }
+.pix { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; margin: 16px 0; }
+.pix__qr { display: grid; place-content: center; justify-items: center; gap: 8px; width: 200px; height: 200px; border: 2px dashed var(--borda); border-radius: 12px; color: var(--texto-suave); background: var(--fundo); text-align: center; }
+.pix__passos { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.acoes--inicio { justify-content: flex-start; align-items: center; gap: 12px; }
+.boleto { display: flex; flex-wrap: wrap; gap: 32px; margin: 16px 0 14px; }
+.boleto dt { font-size: 12px; color: var(--texto-suave); }
+.boleto dd { margin: 2px 0 0; font-weight: 600; }
+.erro-campo { color: var(--perigo); display: block; margin-top: 4px; font-size: 12px; }
+.itens-doacao { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 10px; }
+.itens-doacao li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 14px; border: 1px solid var(--borda); border-radius: 10px; }
+.itens-doacao li > div { min-width: 0; flex: 1; }
+.itens-doacao li.selecionado { border-color: var(--azul); background: var(--azul-claro); }
+.itens-doacao small { display: block; color: var(--texto-suave); }
+.itens-doacao input[type='number'] { width: 96px; height: 38px; padding: 0 10px; border: 1px solid var(--borda); border-radius: 8px; font: inherit; }
+.itens-doacao progress { display: block; width: 100%; height: 6px; margin-top: 8px; accent-color: var(--azul); }
+.item-escolha { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.item-escolha input { width: 17px; height: 17px; accent-color: var(--azul); }
+.opcoes-agendamento { border: 0; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.opcoes-agendamento legend { font-weight: 600; margin-bottom: 8px; }
+.opcoes-agendamento label { display: grid; gap: 4px; padding: 14px; border: 1px solid var(--borda); border-radius: 10px; cursor: pointer; }
+.opcoes-agendamento label.selecionado { border-color: var(--azul); background: var(--azul-claro); }
+@media (max-width: 760px) {
+  .pix { grid-template-columns: 1fr; }
+  .pix__qr { width: 100%; }
+  .opcoes-agendamento { grid-template-columns: 1fr; }
+  .doacao-fluxo .opcoes-doacao { grid-template-columns: 1fr; }
+  .itens-doacao li { flex-wrap: wrap; }
+}

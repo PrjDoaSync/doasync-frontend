@@ -41,8 +41,13 @@ function espionarApi(respostaDoacao) {
   return chamadas
 }
 
+// A primeira etapa escolhe o tipo de doação (DOA-01); a financeira é a opção padrão.
+async function ateValor(user) {
+  await user.click(screen.getByRole('button', { name: /Continuar com doação financeira/ }))
+}
 // formatarMoeda usa espaço não separável: "R$ 50,00".
 async function ateIdentificacao(user) {
+  await ateValor(user)
   await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
   await user.click(screen.getByRole('button', { name: /Continuar/ }))
 }
@@ -52,13 +57,19 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
     salvarSessao(DOADORA)
     const chamadas = espionarApi()
     const user = await abrir(`/doar/${CAMPANHA.id}`)
+    expect(screen.getByRole('heading', { level: 1, name: 'Como você quer ajudar?' })).toBeTruthy()
+    await ateValor(user)
     expect(screen.getByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
-    await ateIdentificacao(user)
+    await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
+    await user.click(screen.getByRole('button', { name: /Continuar/ }))
     expect(screen.getByText('Maria Souza')).toBeTruthy()
     await user.click(screen.getByRole('checkbox', { name: /Doação anônima/ }))
     await user.type(screen.getByLabelText(/Mensagem para a entidade/), 'Força!')
     await user.click(screen.getByRole('button', { name: /Revisar doação/ }))
-    expect(screen.getByRole('heading', { level: 1, name: 'Confira e confirme sua doação' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Finalize sua doação' })).toBeTruthy()
+    // Sem provedor PIX: a tela não mostra código fictício e avisa que nada é cobrado.
+    expect(screen.getByRole('img', { name: /QR Code PIX indisponível/ })).toBeTruthy()
+    expect(screen.getByText(/nenhum valor é cobrado/)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Confirmar doação' }))
 
     // Ao confirmar, vai para o comprovante, que lê GET /doacoes/{id}.
@@ -83,6 +94,7 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
   it('não avança com valor inválido', async () => {
     salvarSessao(DOADORA)
     const user = await abrir(`/doar/${CAMPANHA.id}`)
+    await ateValor(user)
     const valor = screen.getByLabelText(/Outro valor/)
     await user.clear(valor)
     await user.type(valor, '0')
@@ -137,7 +149,7 @@ describe('doação financeira via PIX (POST /doacoes)', () => {
   it('o detalhe da campanha leva ao fluxo de doação', async () => {
     const user = await abrir(`/campanhas/${CAMPANHA.id}`)
     await user.click(screen.getByRole('link', { name: /Quero doar/ }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Qual o valor da sua doação?' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Como você quer ajudar?' })).toBeTruthy()
   })
 })
 
