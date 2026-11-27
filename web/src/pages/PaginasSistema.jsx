@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 
 function Acoes({ children }) {
   return (
-    <div className="acoes" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 16 }}>
+    <div className="acoes acoes--centro">
       {children}
     </div>
   )

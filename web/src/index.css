@@ -618,6 +618,10 @@ small {
 .acoes--fim {
   margin: 24px 0;
 }
+.acoes--centro {
+  justify-content: center;
+  margin-top: 16px;
+}
 .pilha {
   display: flex;
   flex-direction: column;

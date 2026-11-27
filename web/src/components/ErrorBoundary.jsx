@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component {
           <h1>Algo deu errado</h1>
           <p>Ocorreu um erro inesperado ao exibir esta página. Você pode tentar novamente ou voltar ao início.</p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 16 }}>
+        <div className="acoes acoes--centro">
           <button type="button" className="botao" onClick={() => this.setState({ erro: null })}>
             Tentar novamente
           </button>
