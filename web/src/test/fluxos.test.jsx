@@ -104,8 +104,7 @@ describe('campanhas públicas e navegação', () => {
     expect(
       await screen.findByRole('heading', { name: 'Gestão de campanhas' }),
     ).toBeTruthy()
-    expect(screen.getByText('Uma nova causa')).toBeTruthy()
-    const linha = screen.getByText('Uma nova causa').closest('tr')
+    const linha = (await screen.findByText('Uma nova causa')).closest('tr')
     expect(linha.textContent).toContain('Rascunho')
   })
 })

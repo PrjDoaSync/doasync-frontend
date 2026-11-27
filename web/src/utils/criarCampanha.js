@@ -73,3 +73,30 @@ export function montarCampanha({ id, basicos, meta, itens, imagem, entidade, sta
     itensRecebidos: 0,
   }
 }
+
+// Data de hoje (AAAA-MM-DD) no fuso do navegador, para validar a publicação.
+export function hojeISO(agora = new Date()) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${agora.getFullYear()}-${p(agora.getMonth() + 1)}-${p(agora.getDate())}`
+}
+
+// Corpo de POST /campanhas (contrato do backend). Itens necessários, localização e
+// imagens ainda não têm campo na API e ficam de fora até o backend suportá-los.
+export function corpoCriacaoApi(basicos, { rascunho }) {
+  return {
+    titulo: basicos.nome.trim(),
+    descricao: basicos.descricao.trim(),
+    metaValor: Number(basicos.meta),
+    dataInicio: basicos.inicio,
+    dataFim: basicos.encerraEm,
+    ...(basicos.categoria && { categoria: basicos.categoria }),
+    rascunho,
+  }
+}
+
+// Mensagem de sucesso conforme o status calculado pelo servidor.
+export function mensagemCriacao(status) {
+  if (status === 'Rascunho') return 'Rascunho salvo.'
+  if (status === 'Agendada') return 'Campanha agendada: ela começa a receber doações na data de início.'
+  return 'Campanha publicada.'
+}

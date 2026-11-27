@@ -114,8 +114,8 @@ npm run dev                      # http://localhost:5173
 | **Fase 4** | **Gestão da entidade** (hoje: telas protegidas, mas com dados de demonstração) | |
 | 16 | Cadastro de entidade (`/cadastro-entidade` → `POST /entidades`, status inicial `PENDENTE`) | ⏳ |
 | 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`, id vem de `usuario.entidadeId`) | ⏳ |
-| 18 | Minhas campanhas (`/campanhas` → `GET /campanhas?entidadeId=...` com token, inclui `RASCUNHO`/`ENCERRADA`/`DESATIVADA`) | ⏳ |
-| 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho) | ⏳ |
+| 18 | Minhas campanhas (`/campanhas` → `GET /campanhas?entidadeId=...&status=...` com token, um pedido por status; #91) | 🟡 feito, aguardando teste com o backend |
+| 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`, `rascunho: true` para rascunho; #89, #90) | 🟡 feito, aguardando teste com o backend |
 | 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
 | 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | ⏳ |
 | 22 | Doações recebidas (`/doacoes` → `GET /entidades/{id}/doacoes`) e arrecadação (`GET /entidades/{id}/arrecadacao`) no dashboard | ⏳ |
@@ -123,6 +123,15 @@ npm run dev                      # http://localhost:5173
 | 23 | Dashboard do ADMIN (`GET /dashboard/kpis`) | ⏳ |
 | 24 | Usuários (`GET /usuarios`, `PATCH /usuarios/{id}/status`) | ⏳ |
 | 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
+
+### Passos 18 e 19 (Gustavo Ribas Silestrino, 2026-11-26)
+- **Minhas campanhas:** sem `status`, `GET /campanhas` aplica o filtro público e só devolve `ATIVA`. Por isso `campanhasService.listarDaEntidade` faz um pedido por status (`RASCUNHO`, `AGENDADA`, `ATIVA`, `ENCERRADA`, `DESATIVADA`) com `entidadeId` da sessão e junta tudo, mais recente primeiro. Limite de 50 por status (máximo da API); paginação fica para quando alguma entidade passar disso.
+- O nome da campanha na lista leva ao detalhe da API (`/campanhas/:id`), que mostra também rascunho e desativada para a dona.
+- **Limitação conhecida:** os links Acompanhar, Editar e Prestar contas apontam para telas que ainda leem os mocks (passos 20, 21 e prestação sem API) e mostram "Campanha não encontrada" para ids da API, até essas telas serem integradas.
+- **Criar campanha:** envia `titulo, descricao, metaValor, dataInicio, dataFim, categoria, rascunho` (`utils/criarCampanha.js` → `corpoCriacaoApi`). O status vem do servidor (`RASCUNHO`, `AGENDADA` com início no futuro, ou `ATIVA`) e define a mensagem de sucesso. Localização, itens necessários e imagens continuam no assistente, mas **não são enviados** (a API não tem esses campos); os avisos da tela dizem isso. Erros 409 (entidade não aprovada) e 422 mostram a mensagem da API no formulário.
+- A validação de publicação usa a data de hoje (`hojeISO`) no lugar de `HOJE_DEMO`.
+- Testes: `campanhasGestao.test.jsx` (pedidos por status com token, lista, filtros, vazio, erro e nova tentativa) e `criarCampanha.test.jsx` (corpo enviado, agendada, 409). Fixtures em `test/fixtures/apiCampanhas.js` (`campanhasPrivadasApi`, POST simulado).
+- **Para testar com o backend:** subir o backend, rodar `node scripts/popular-api.mjs`, entrar como `apae@doasync.local`, abrir `/campanhas` (deve listar também o rascunho do seed), criar uma campanha em `/campanhas/nova` e conferir que ela aparece na lista.
 
 ### Próximo passo
 **Passo 16** (início da Fase 4) — integrar o cadastro de entidade (`src/pages/CadastroEntidade.jsx`, rota pública `/cadastro-entidade`) com `POST /entidades`.

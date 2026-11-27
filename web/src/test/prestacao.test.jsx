@@ -33,9 +33,10 @@ describe('regras da prestação de contas (#94)', () => {
 })
 
 describe('tela de prestação de contas (#94)', () => {
-  it('chega à tela pelo link "Prestar contas" da lista de campanhas', async () => {
-    const user = await abrir('/campanhas')
-    await user.click(await screen.findByRole('link', { name: /Prestar contas/ }))
+  // A lista (já integrada à API) aponta para esta rota; o teste do link fica em campanhasGestao.
+  // Esta tela ainda lê os dados de demonstração, então abre pela campanha encerrada do mock.
+  it('abre a tela pela rota de uma campanha encerrada', async () => {
+    await abrir('/campanhas/7/prestacao-de-contas')
     expect(await screen.findByRole('heading', { level: 1, name: /Encerramento e prestação de contas/ })).toBeTruthy()
   })
   it('só permite prestar contas de campanha encerrada', async () => {
