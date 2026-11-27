@@ -105,6 +105,12 @@ function Lista({ campanhas, admin }) {
               <Link to={`/campanhas/${c.id}/editar`}>Editar</Link>
             </>
           )}
+          {c.status === 'Encerrada' && (
+            <>
+              {' · '}
+              <Link to={`/campanhas/${c.id}/prestacao-de-contas`}>Prestar contas</Link>
+            </>
+          )}
         </>
       ),
     },

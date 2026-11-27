@@ -100,7 +100,9 @@ describe('gestão de campanhas', () => {
     expect(encerrada.queryByRole('link', { name: 'Editar' })).toBeNull()
     expect(encerrada.getByRole('img', { name: '100% da meta' })).toBeTruthy()
     expect(encerrada.getByRole('link', { name: 'Acompanhar' }).getAttribute('href')).toBe(`/campanhas/${campanhasPrivadasApi[0].id}/acompanhamento`)
-    expect(screen.queryByRole('link', { name: 'Prestar contas' })).toBeNull()
+    // Só a encerrada oferece a prestação de contas.
+    expect(screen.getAllByRole('link', { name: 'Prestar contas' })).toHaveLength(1)
+    expect(encerrada.getByRole('link', { name: 'Prestar contas' }).getAttribute('href')).toBe(`/campanhas/${campanhasPrivadasApi[0].id}/prestacao-de-contas`)
   })
 
   it('filtra por status e por texto', async () => {

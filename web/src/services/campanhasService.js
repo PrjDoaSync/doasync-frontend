@@ -1,4 +1,5 @@
 import api from './api'
+import { recursoIndisponivel } from './indisponivel'
 import { mapCampanha, mapPaginado } from './mappers'
 
 // A vitrine pública da API devolve no máximo 50 itens por página (contrato do backend).
@@ -48,6 +49,8 @@ export const campanhasService = {
     api
       .patch(`/campanhas/${id}/status`, { status, ...(motivo?.trim() && { motivo: motivo.trim() }) })
       .then((r) => r.data),
+  // SEM ROTA NO BACKEND (services/indisponivel.js): publicar a prestação de contas.
+  publicarPrestacaoContas: () => recursoIndisponivel('prestacaoContas'),
   // Detalhe público; 404 (inexistente, rascunho ou sem acesso) vira null.
   buscarPublica: (id, config) =>
     api

@@ -127,5 +127,5 @@ export function agruparDoadores(doacoes) {
 
 // Telas da gestão que ainda usam dados de demonstração (sem contrato na API): só nelas a
 // faixa "Ambiente de demonstração" aparece.
-const ROTAS_DEMONSTRACAO = [/^\/itens/, /^\/relatorios/, /^\/configuracoes\/usuarios/, /\/prestacao-de-contas$/]
+const ROTAS_DEMONSTRACAO = [/^\/itens/, /^\/relatorios/, /^\/configuracoes\/usuarios/]
 export const emDemonstracao = (pathname) => ROTAS_DEMONSTRACAO.some((r) => r.test(pathname))

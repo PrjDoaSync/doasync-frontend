@@ -63,6 +63,11 @@ function Acompanhamento({ campanha: c, recarregar }) {
               <Icon nome="editar" size={16} /> Editar
             </Botao>
           )}
+          {c.status === 'Encerrada' && (
+            <Botao para={`/campanhas/${c.id}/prestacao-de-contas`} secundario>
+              <Icon nome="arquivo" size={16} /> Prestar contas
+            </Botao>
+          )}
           {c.recebendoDoacoes && (
             <Botao para={`/campanhas/${c.id}`} secundario>
               <Icon nome="externo" size={16} /> Ver campanha
