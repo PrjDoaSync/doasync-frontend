@@ -14,6 +14,30 @@ export const doacoesService = {
     api
       .get('/usuarios/me/doacoes', { params: { limit: 50 }, ...config })
       .then((r) => mapPaginado(r.data, mapDoacao)),
+  // GET /entidades/{id}/doacoes (dona ou ADMIN), opcionalmente de uma campanha. Doação anônima
+  // chega com `doador: null` para a entidade. Lê todas as páginas (limit máximo 50) para que
+  // busca, filtros e totais da tela usem o conjunto completo.
+  recebidas: async (entidadeId, { campanhaId } = {}, config) => {
+    const pagina = (page) =>
+      api
+        .get(`/entidades/${entidadeId}/doacoes`, {
+          ...config,
+          params: { page, limit: 50, ...(campanhaId && { campanhaId }) },
+        })
+        .then((r) => mapPaginado(r.data, mapDoacao))
+    const primeira = await pagina(1)
+    const itens = [...primeira.itens]
+    for (let page = 2; page <= primeira.totalPaginas; page++) itens.push(...(await pagina(page)).itens)
+    return itens
+  },
+  // GET /entidades/{id}/arrecadacao: total de doações CONFIRMADA no período, por campanha.
+  arrecadacao: (entidadeId, { inicio, fim } = {}, config) =>
+    api
+      .get(`/entidades/${entidadeId}/arrecadacao`, {
+        ...config,
+        params: { ...(inicio && { inicio }), ...(fim && { fim }) },
+      })
+      .then((r) => r.data.data),
   // GET /doacoes/{id} (autenticado: doador, entidade dona ou ADMIN); 404 vira null.
   buscar: (id, config) =>
     api

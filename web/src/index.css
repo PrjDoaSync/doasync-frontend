@@ -506,6 +506,24 @@ small {
   background: #f1f5fb;
   color: #1d4ed8;
 }
+.botao--perigo {
+  background: white;
+  border-color: var(--perigo);
+  color: var(--perigo);
+}
+.botao--perigo:hover {
+  background: var(--perigo-bg);
+  color: var(--perigo);
+}
+.botao:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.acoes-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .icone-botao {
   border: 0;
   background: transparent;
@@ -2380,3 +2398,12 @@ small {
 .historico__rodape { margin: 0; padding: 18px 20px; }
 .pagina-atual { padding: 5px 10px; }
 .public-section > .acoes--entre { margin-top: 22px; }
+
+/* Seletor de entidade do ADMIN nas telas de gestão. */
+.seletor-entidade {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+  font-size: 13px;
+  font-weight: 600;
+}

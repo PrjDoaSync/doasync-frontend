@@ -24,6 +24,7 @@ import CadastroDoador from './pages/CadastroDoador'
 import Doadores from './pages/Doadores'
 import Itens from './pages/Itens'
 import Usuarios from './pages/Usuarios'
+import UsuariosPlataforma from './pages/UsuariosPlataforma'
 import Informacoes from './pages/Informacoes'
 import { Vazio } from './components/Ui'
 
@@ -91,6 +92,7 @@ export default function App() {
               <Route path="campanhas/:id/prestacao-de-contas" element={<PrestacaoContas />} />
               <Route path="doacoes" element={<Doacoes />} />
               <Route path="entidades" element={<Entidades />} />
+              <Route path="usuarios" element={<UsuariosPlataforma />} />
               <Route path="doadores" element={<Doadores />} />
               <Route path="itens" element={<Itens />} />
               <Route path="relatorios" element={<Relatorios />} />

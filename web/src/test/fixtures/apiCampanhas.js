@@ -99,6 +99,48 @@ const entidadesApi = new Map()
 export const entidadeDaSessao = () => entidadesApi.get(REDE.id)
 export const definirEntidadeApi = (dados) => entidadesApi.set(dados.id, { ...entidadesApi.get(dados.id), ...dados })
 
+// Doações recebidas (GET /entidades/{id}/doacoes, rota 11): anônimas chegam com doador null.
+const recebida = (n, campanhaIdx, valor, dataDoacao, doador, extra = {}) => {
+  const c = campanhasApi[campanhaIdx]
+  return {
+    id: `d1000000-0000-4000-8000-00000000000${n}`,
+    codigoComprovante: `DS-RECEBIDA000${n}`,
+    valor,
+    formaPagamento: 'PIX',
+    status: 'CONFIRMADA',
+    anonima: doador == null,
+    observacao: null,
+    dataDoacao,
+    campanha: { id: c.id, titulo: c.titulo },
+    entidade: c.entidade,
+    doador,
+    ...extra,
+  }
+}
+const ANA = { id: 'u0000000-0000-4000-8000-000000000010', nome: 'Ana Oliveira' }
+const BRUNO = { id: 'u0000000-0000-4000-8000-000000000011', nome: 'Bruno Lima' }
+export const doacoesRecebidasApi = [
+  recebida(1, 0, 150, '2026-10-07T14:30:00Z', ANA),
+  recebida(2, 0, 50, '2026-10-06T09:00:00Z', null),
+  recebida(3, 1, 300, '2026-10-05T18:00:00Z', BRUNO),
+  recebida(4, 0, 80, '2026-10-04T10:00:00Z', ANA),
+  recebida(5, 1, 20, '2026-10-03T08:00:00Z', null, { status: 'PENDENTE' }),
+]
+
+// GET /dashboard/kpis (rota 20, ADMIN).
+export const kpisApi = {
+  totalArrecadado: 125430.5, valorArrecadadoMes: 4200, doacoesMes: 87, totalDoacoes: 900,
+  totalDoadores: 300, totalEntidades: 12, campanhasAtivas: 6, usuariosAtivos: 320,
+}
+
+// GET /usuarios (rota 21, ADMIN): contas de entidade trazem entidadeId e statusEntidade.
+const usuarioApi = (n, nome, tipo, extra = {}) => ({
+  id: `u2000000-0000-4000-8000-00000000000${n}`, nome, email: `${nome.split(' ')[0].toLowerCase()}@exemplo.org`,
+  tipo, status: 'ATIVO', telefone: null, dataCadastro: `2026-10-0${n}T12:00:00Z`, cpf: null, dataNascimento: null,
+  cnpj: null, razaoSocial: null, entidadeId: null, statusEntidade: null, ...extra,
+})
+const usuariosStore = new Map()
+
 export function resetarApiSimulada() {
   entidadesApi.clear()
   for (const e of [REDE, AMOR, MAOS]) entidadesApi.set(e.id, entidadeApi(e))
@@ -106,6 +148,14 @@ export function resetarApiSimulada() {
   versoes.clear()
   proximaCampanha = 1
   for (const c of [...campanhasApi, ...campanhasPrivadasApi]) campanhasStore.set(c.id, structuredClone(c))
+  usuariosStore.clear()
+  for (const u of [
+    usuarioApi(1, 'Maria Souza', 'PESSOA_FISICA'),
+    usuarioApi(2, 'Rede Esperança', 'ENTIDADE', { entidadeId: REDE.id, statusEntidade: 'APROVADA', cnpj: '11.222.333/0001-81', razaoSocial: REDE.razaoSocial }),
+    usuarioApi(3, 'Casa Nova', 'ENTIDADE', { entidadeId: 'e0000000-0000-4000-8000-000000000009', statusEntidade: 'PENDENTE', cnpj: '22.333.444/0001-55', razaoSocial: 'Casa Nova' }),
+    usuarioApi(4, 'Admin DoaSync', 'ADMIN'),
+  ]) usuariosStore.set(u.id, u)
+  entidadesApi.set('e0000000-0000-4000-8000-000000000009', entidadeApi(entidade('e0000000-0000-4000-8000-000000000009', 'Casa Nova'), 'PENDENTE'))
   doacoesCriadas.clear()
   doacoesCriadas.set(DOACAO_EXISTENTE_ID, {
     ...doacaoCriadaApi({ campanhaId: campanhasApi[0].id, valor: 150, anonima: false, observacao: 'Força!' }),
@@ -124,7 +174,8 @@ const resposta = (config, status, data) =>
 const paginado = (lista) => ({ data: lista, meta: { total: lista.length, page: 1, limit: 50, totalPages: 1 } })
 
 // Transições aceitas por PATCH /campanhas/{id}/status (Campanha.trocarStatus no backend).
-const TRANSICOES = { RASCUNHO: ['AGENDADA', 'ATIVA', 'DESATIVADA'], AGENDADA: ['ATIVA', 'DESATIVADA'], ATIVA: ['ENCERRADA', 'DESATIVADA'] }
+// DESATIVADA → ATIVA/ENCERRADA: reativação e encerramento pelo ADMIN (contrato, rota 17).
+const TRANSICOES = { RASCUNHO: ['AGENDADA', 'ATIVA', 'DESATIVADA'], AGENDADA: ['ATIVA', 'DESATIVADA'], ATIVA: ['ENCERRADA', 'DESATIVADA'], DESATIVADA: ['ATIVA', 'ENCERRADA'] }
 
 function rotasCampanhas(config) {
   const { method, url } = config
@@ -182,6 +233,51 @@ function rotasCampanhas(config) {
 }
 
 function rotasEntidades(config) {
+  // GET /entidades: só APROVADA (rota 6).
+  if (config.method === 'get' && config.url === '/entidades') {
+    return resposta(config, 200, paginado([...entidadesApi.values()].filter((e) => e.statusAprovacao === 'APROVADA')))
+  }
+  const doacoesRota = config.method === 'get' && /^\/entidades\/([^/]+)\/doacoes$/.exec(config.url)
+  if (doacoesRota) {
+    const { campanhaId } = config.params ?? {}
+    const lista = doacoesRecebidasApi.filter(
+      (d) => d.entidade.id === doacoesRota[1] && (!campanhaId || d.campanha?.id === campanhaId),
+    )
+    return resposta(config, 200, paginado(lista))
+  }
+  const arrecadacaoRota = config.method === 'get' && /^\/entidades\/([^/]+)\/arrecadacao$/.exec(config.url)
+  if (arrecadacaoRota) {
+    const { inicio, fim } = config.params ?? {}
+    if (inicio && fim && fim < inicio) return resposta(config, 422, { erros: { fim: 'A data final deve ser igual ou posterior à inicial.' } })
+    const confirmadas = doacoesRecebidasApi.filter(
+      (d) => d.entidade.id === arrecadacaoRota[1] && d.status === 'CONFIRMADA' &&
+        (!inicio || d.dataDoacao.slice(0, 10) >= inicio) && (!fim || d.dataDoacao.slice(0, 10) <= fim),
+    )
+    const porCampanha = new Map()
+    for (const d of confirmadas) {
+      const atual = porCampanha.get(d.campanha.id) ?? { campanhaId: d.campanha.id, titulo: d.campanha.titulo, total: 0, quantidade: 0 }
+      porCampanha.set(d.campanha.id, { ...atual, total: atual.total + d.valor, quantidade: atual.quantidade + 1 })
+    }
+    return resposta(config, 200, {
+      data: {
+        inicio: inicio ?? null, fim: fim ?? '2026-11-26',
+        totalArrecadado: confirmadas.reduce((soma, d) => soma + d.valor, 0),
+        quantidadeDoacoes: confirmadas.length,
+        porCampanha: [...porCampanha.values()],
+      },
+    })
+  }
+  const statusEntidade = config.method === 'patch' && /^\/entidades\/([^/]+)\/status$/.exec(config.url)
+  if (statusEntidade) {
+    const atual = entidadesApi.get(statusEntidade[1])
+    if (!atual) return resposta(config, 404, { error: 'Entidade não encontrada.' })
+    const { status, motivo } = JSON.parse(config.data)
+    if (status === 'REPROVADA' && !motivo?.trim()) return resposta(config, 422, { erros: { motivo: 'Motivo de reprovação é obrigatório.' } })
+    entidadesApi.set(atual.id, { ...atual, statusAprovacao: status, motivoReprovacao: status === 'REPROVADA' ? motivo : null })
+    for (const u of usuariosStore.values()) if (u.entidadeId === atual.id) usuariosStore.set(u.id, { ...u, statusEntidade: status })
+    const mensagens = { APROVADA: 'Entidade aprovada com sucesso.', REPROVADA: 'Entidade reprovada.', INATIVA: 'Entidade desativada.', PENDENTE: 'Entidade recolocada como pendente.' }
+    return resposta(config, 200, { message: mensagens[status], data: { id: atual.id, statusAprovacao: status, motivoReprovacao: status === 'REPROVADA' ? motivo : null } })
+  }
   const entidadeRota = /^\/entidades\/([^/]+)$/.exec(config.url)
   if (entidadeRota && (config.method === 'get' || config.method === 'patch')) {
     const atual = entidadesApi.get(entidadeRota[1])
@@ -216,12 +312,31 @@ function rotasDoacoes(config) {
   return null
 }
 
+function rotasAdministracao(config) {
+  if (config.method === 'get' && config.url === '/dashboard/kpis') return resposta(config, 200, { data: kpisApi })
+  if (config.method === 'get' && config.url === '/usuarios') {
+    const { tipo, status } = config.params ?? {}
+    const lista = [...usuariosStore.values()].filter((u) => (!tipo || u.tipo === tipo) && (!status || u.status === status))
+    return resposta(config, 200, paginado(lista))
+  }
+  const statusUsuario = config.method === 'patch' && /^\/usuarios\/([^/]+)\/status$/.exec(config.url)
+  if (statusUsuario) {
+    const u = usuariosStore.get(statusUsuario[1])
+    if (!u) return resposta(config, 404, { error: 'Usuário não encontrado.' })
+    const { status } = JSON.parse(config.data)
+    usuariosStore.set(u.id, { ...u, status })
+    return resposta(config, 200, { message: status === 'ATIVO' ? 'Usuário ativado.' : 'Usuário desativado.', data: { id: u.id, status } })
+  }
+  return null
+}
+
 // Adaptador Axios que responde como o backend.
 export function adaptadorApiPadrao(config) {
   return (
     rotasCampanhas(config) ??
     rotasEntidades(config) ??
     rotasDoacoes(config) ??
+    rotasAdministracao(config) ??
     resposta(config, 404, { error: 'Endpoint não simulado nos testes.' })
   )
 }

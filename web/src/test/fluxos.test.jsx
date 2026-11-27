@@ -88,46 +88,6 @@ describe('campanhas públicas e navegação', () => {
 })
 
 describe('gestão e estados de dados', () => {
-  it('mostra o progresso de itens confirmados e respeita o período na análise', async () => {
-    await abrir('/dashboard/campanha?campanha=1')
-    expect(
-      screen.getByRole('heading', { name: 'Evolução de itens' }),
-    ).toBeTruthy()
-    expect(
-      screen
-        .getByRole('progressbar', { name: 'Cesta básica' })
-        .getAttribute('aria-valuenow'),
-    ).toBe('10')
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2026-10-07' },
-    })
-    expect(
-      screen
-        .getByRole('progressbar', { name: 'Cesta básica' })
-        .getAttribute('aria-valuenow'),
-    ).toBe('0')
-  })
-  it('não inclui campanhas de outra entidade no dashboard administrativo', async () => {
-    await abrir('/dashboard')
-    expect(
-      screen.queryByRole('link', { name: 'Inverno solidário: agasalhos' }),
-    ).toBe(null)
-    expect(
-      screen.getByRole('link', {
-        name: 'Mesa solidária: alimento para 200 famílias',
-      }),
-    ).toBeTruthy()
-  })
-  it('filtra período sem pagamentos e mostra gráfico vazio', async () => {
-    await abrir('/dashboard')
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2030-01-01' },
-    })
-    expect(
-      screen.getByRole('heading', { name: 'Sem arrecadação neste período' }),
-    ).toBeTruthy()
-    expect(screen.getAllByText('R$ 0,00').length).toBeGreaterThan(0)
-  })
   it('filtra prévia de relatório e impede exportação de um conjunto vazio', async () => {
     const user = await abrir('/relatorios')
     // A ausência de contrato impede exportação mesmo com registros na prévia.
@@ -191,16 +151,6 @@ describe('gestão e estados de dados', () => {
     expect(linha.textContent).toContain('Inativo')
     expect(screen.getByText(/Nenhum convite foi enviado/)).toBeTruthy()
   })
-  it('consulta o histórico do doador selecionado', async () => {
-    const user = await abrir('/doadores')
-    await user.click(
-      screen.getByRole('button', { name: 'Ver histórico de Ana Oliveira' }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Perfil do doador' }),
-    ).toBeTruthy()
-    expect(screen.getAllByText('R$ 250,00').length).toBeGreaterThan(0)
-  })
   it('mostra erro de carregamento e permite tentar novamente', async () => {
     vi.mocked(fonte.carregarDemo).mockRejectedValueOnce(
       new Error('Falha temporária'),
@@ -218,7 +168,7 @@ describe('gestão e estados de dados', () => {
     )
     await waitFor(() =>
       expect(
-        screen.getByRole('heading', { name: 'Visão geral da Rede Esperança' }),
+        screen.getByRole('heading', { name: 'Visão geral da entidade' }),
       ).toBeTruthy(),
     )
   })

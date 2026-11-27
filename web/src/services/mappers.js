@@ -38,7 +38,10 @@ export function mapCampanha(api) {
     encerraEm: api.dataFim ?? '',
     criadaEm: dataISO(api.createdAt),
     imagem: api.imagemUrl || IMAGEM_PADRAO,
+    imagemUrl: api.imagemUrl ?? '',
     motivoDesativacao: api.motivoDesativacao ?? null,
+    // Lock otimista do PATCH /campanhas/{id}: só o detalhe devolve `versao` (null quando ausente).
+    versao: Number.isInteger(api.versao) ? api.versao : null,
     // Campos de demonstração sem equivalente na API (doação de itens, localização).
     cidade: '',
     itensMeta: 0,
@@ -71,6 +74,8 @@ export function mapDoacao(api) {
     entidadeId: api.entidade?.id ?? null,
     entidade: api.entidade?.nomeFantasia || api.entidade?.razaoSocial || '',
     doador: api.doador?.nome ?? 'Doador anônimo',
+    // Sem id quando a API omite o doador (anônima para a entidade, RN73).
+    doadorId: api.doador?.id ?? null,
   }
 }
 

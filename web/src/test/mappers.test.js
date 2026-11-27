@@ -91,7 +91,7 @@ describe('mapDoacao', () => {
     expect(mapDoacao(api)).toEqual({
       id: 'd1', comprovante: 'DS-ABC', valor: 50, formaPagamento: 'PIX', status: 'Confirmada', anonima: true,
       observacao: '', data: '2026-11-23T22:08:59Z', campanhaId: 'c1', campanha: 'Campanha',
-      entidadeId: 'e1', entidade: 'APAE Teste', doador: 'Doador anônimo',
+      entidadeId: 'e1', entidade: 'APAE Teste', doador: 'Doador anônimo', doadorId: null,
     })
   })
 })

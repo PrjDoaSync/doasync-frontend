@@ -26,6 +26,23 @@ export const campanhasService = {
   // POST /campanhas (ENTIDADE aprovada). rascunho: true → RASCUNHO; senão AGENDADA/ATIVA pela data de início.
   criar: (corpo, rascunho) =>
     api.post('/campanhas', { ...corpo, rascunho }).then((r) => mapCampanha(r.data.data)),
+  // Detalhe para a gestão (dona ou ADMIN veem qualquer status). Inclui `versao` para a edição.
+  buscarGestao: (id, config) =>
+    api
+      .get(`/campanhas/${id}`, config)
+      .then((r) => mapCampanha(r.data.data))
+      .catch((erro) => {
+        if (erro?.status === 404) return null
+        throw erro
+      }),
+  // PATCH /campanhas/{id} (entidade dona): envia a `versao` lida; versão desatualizada → 409.
+  atualizar: (id, corpo, versao) =>
+    api.patch(`/campanhas/${id}`, { ...corpo, versao }).then((r) => mapCampanha(r.data.data)),
+  // PATCH /campanhas/{id}/status: o servidor valida a transição e o perfil; `motivo` só quando informado.
+  alterarStatus: (id, status, motivo) =>
+    api
+      .patch(`/campanhas/${id}/status`, { status, ...(motivo?.trim() && { motivo: motivo.trim() }) })
+      .then((r) => r.data),
   // Detalhe público; 404 (inexistente, rascunho ou sem acesso) vira null.
   buscarPublica: (id, config) =>
     api
