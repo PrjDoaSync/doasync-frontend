@@ -55,6 +55,10 @@ export default function AdminSidebar() {
             <span>Usuários</span>
           </NavLink>
         )}
+        <NavLink className="sidebar__link" to="/perfil-usuario">
+          <Icon nome="doadores" />
+          <span>Minha conta</span>
+        </NavLink>
         <NavLink className="sidebar__link" to="/">
           <Icon nome="externo" />
           <span>Ver vitrine pública</span>
