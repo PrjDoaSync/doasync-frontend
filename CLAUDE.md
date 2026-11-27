@@ -9,7 +9,7 @@ DoaSync conecta doadores, entidades e campanhas solidárias. Projeto de extensã
 ## Fontes oficiais (ordem de autoridade por assunto)
 
 - **Requisitos e regras:** issues deste repositório e o board https://github.com/orgs/PrjDoaSync/projects/8.
-- **Visual:** Figma https://www.figma.com/design/3eBaQzgxDIRMbhxY0K2DWa/Doasync (30 frames; *node IDs* em `docs/frontend-matriz-rastreabilidade.md`) e `web/src/styles/tokens.css`.
+- **Visual:** Figma https://www.figma.com/design/JaIKR7tTkfIJ3fSk4weadC/Doasync (30 frames; *node IDs* em `docs/frontend-matriz-rastreabilidade.md`) e `web/src/styles/tokens.css`. Consulte o Figma pelo Chrome; o frontend consolidado é a referência principal.
 - **Contratos:** https://github.com/PrjDoaSync/doa-sync/blob/main/docs/backend/contrato-api.md, mais o comportamento verificado em `docs/integracao-api.md §6`.
 - **Processo:** `docs/frontend-algoritmo-mestre.md`.
 
@@ -20,9 +20,8 @@ React 19 · Vite 8 · React Router 7 · Axios · Vitest 5 + Testing Library · o
 ```bash
 npm ci
 npm run dev        # http://localhost:5173, API em http://localhost:8080/api/v1
-npm run lint       # oxlint --deny-warnings (aviso = falha)
-npm test
-npm run typecheck  # tsc --noEmit (web/tsconfig.json)
+npm run lint       # oxlint (use npx oxlint --deny-warnings: aviso = falha)
+npm test           # no Windows, rode a partir de C:\ (unidade em maiúscula) ou o Vitest não encontra o runner
 npm run build
 ```
 
@@ -33,7 +32,8 @@ A CI (`.github/workflows/frontend-qa.yml`) roda lint, testes e build em `feature
 - `src/services/`: cliente Axios (`api.js`, `normalizeError`, token e 401), um serviço por domínio e `mappers.js` (API → formato das telas). Nenhuma tela chama Axios diretamente.
 - `src/hooks/useRequest.js` (leitura com cancelamento) + `components/RequestState.jsx` (carregando/erro/vazio); `useAsyncAction` para ações.
 - `src/context/AuthContext.jsx`: sessão `{ token, expiraEm, usuario }` em `localStorage` (`doasync.sessao`); `RotaProtegida` exige `ENTIDADE` ou `ADMIN` na gestão.
-- `src/context/DemoContext.jsx` + `src/mocks/`: **apenas** telas ainda sem API (itens, relatórios, equipe, prestação de contas). A faixa de demonstração aparece só nelas (`utils/gestao.js → emDemonstracao`).
+- `src/context/DemoContext.jsx` + `src/mocks/`: **apenas** dados sem API (itens/estoque, equipe da entidade, itens de exemplo da doação e o relatório da prestação de contas na sessão). A faixa de demonstração aparece só em `/itens` e `/configuracoes/usuarios` (`utils/gestao.js → emDemonstracao`).
+- `src/services/indisponivel.js` (`RECURSOS_PENDENTES`) + `components/AvisoIndisponivel.jsx`: recursos sem rota no backend. Os serviços expõem funções nomeadas que rejeitam com `RecursoIndisponivelError`; ao integrar, troque só a implementação do serviço.
 - Testes: `src/test/setup.js` instala o simulador de contrato `src/test/fixtures/apiCampanhas.js` como adaptador Axios e uma sessão de entidade aprovada.
 
 ## Regras
@@ -48,4 +48,4 @@ A CI (`.github/workflows/frontend-qa.yml`) roda lint, testes e build em `feature
 
 ## Estado atual
 
-Branch `feature/finalizacao-frontend`: integra editar/acompanhar campanha, troca de status, doações recebidas, dashboards, doadores, aprovação de entidades e usuários (ADMIN). **Ainda não validado** — ver `docs/frontend-estado-execucao.md §13` para a próxima atividade.
+Branch `feature/finalizacao-frontend`: as 30 telas do Figma estão implementadas (20 integradas; as demais indicam a pendência do backend), além de Minha conta, entidades públicas, doação direta e páginas de erro. Validado em 27/11/2026 (lint, 312 testes e build). Ver `docs/frontend-estado-execucao.md` e `docs/frontend-matriz-rastreabilidade.md`.
