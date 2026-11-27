@@ -247,8 +247,9 @@ function rotasEntidades(config) {
   }
   const arrecadacaoRota = config.method === 'get' && /^\/entidades\/([^/]+)\/arrecadacao$/.exec(config.url)
   if (arrecadacaoRota) {
-    const { inicio, fim } = config.params ?? {}
-    if (inicio && fim && fim < inicio) return resposta(config, 422, { erros: { fim: 'A data final deve ser igual ou posterior à inicial.' } })
+    // O backend lê dataInicio/dataFim na query e devolve inicio/fim na resposta.
+    const { dataInicio: inicio, dataFim: fim } = config.params ?? {}
+    if (inicio && fim && fim < inicio) return resposta(config, 422, { erros: { dataFim: 'Data final não pode ser anterior à data inicial.' } })
     const confirmadas = doacoesRecebidasApi.filter(
       (d) => d.entidade.id === arrecadacaoRota[1] && d.status === 'CONFIRMADA' &&
         (!inicio || d.dataDoacao.slice(0, 10) >= inicio) && (!fim || d.dataDoacao.slice(0, 10) <= fim),

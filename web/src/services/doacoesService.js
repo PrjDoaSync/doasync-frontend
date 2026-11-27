@@ -30,12 +30,13 @@ export const doacoesService = {
     for (let page = 2; page <= primeira.totalPaginas; page++) itens.push(...(await pagina(page)).itens)
     return itens
   },
-  // GET /entidades/{id}/arrecadacao: total de doações CONFIRMADA no período, por campanha.
+  // GET /entidades/{id}/arrecadacao?dataInicio&dataFim: total de doações CONFIRMADA no período,
+  // por campanha (o backend lê dataInicio/dataFim; o contrato do doa-sync cita inicio/fim).
   arrecadacao: (entidadeId, { inicio, fim } = {}, config) =>
     api
       .get(`/entidades/${entidadeId}/arrecadacao`, {
         ...config,
-        params: { ...(inicio && { inicio }), ...(fim && { fim }) },
+        params: { ...(inicio && { dataInicio: inicio }), ...(fim && { dataFim: fim }) },
       })
       .then((r) => r.data.data),
   // GET /doacoes/{id} (autenticado: doador, entidade dona ou ADMIN); 404 vira null.
