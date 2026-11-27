@@ -11,6 +11,11 @@ import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import * as fonte from '../mocks/gestao'
 import { diasRestantes } from '../utils/campanhas'
 import { formatarMoeda } from '../utils/format'
+import axios from 'axios'
+import api from '../services/api'
+import { STATUS_DA_ENTIDADE } from '../services/campanhasService'
+import { adaptadorApiPadrao, campanhasApi, campanhasPrivadasApi } from './fixtures/apiCampanhas'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() =>
   vi
@@ -86,70 +91,112 @@ describe('Progresso e CampanhaCard', () => {
   })
 })
 
-describe('Gestão de campanhas (DEV-CAM-07)', () => {
-  it('lista só as campanhas da entidade e resume os indicadores do conjunto', async () => {
-    await abrir('/campanhas')
-    const dados = fonte.criarDadosDemo()
-    const minhas = dados.campanhas.filter((c) => c.entidadeId === dados.entidade.id)
-    expect(linhasDaTabela()).toHaveLength(minhas.length)
+describe('Minhas campanhas via API (DEV-CAM-07, #91)', () => {
+  // Rede Esperança (sessão de teste): 2 ativas na vitrine + encerrada, rascunho e agendada.
+  const MESA = campanhasApi[0].id
+  const INVERNO = campanhasPrivadasApi[0].id
+  async function abrirLista() {
+    const user = await abrir('/campanhas')
+    await screen.findByText('Mesa solidária: alimento para 200 famílias')
+    return user
+  }
+
+  it('pede cada status da entidade logada com o token e junta o resultado', async () => {
+    const chamadas = []
+    api.defaults.adapter = (config) => {
+      chamadas.push(config)
+      return adaptadorApiPadrao(config)
+    }
+    await abrirLista()
+    const daLista = chamadas.filter((c) => c.url === '/campanhas' && c.params?.status)
+    expect(daLista.map((c) => c.params.status).sort()).toEqual([...STATUS_DA_ENTIDADE].sort())
+    for (const c of daLista) {
+      expect(c.params).toMatchObject({ entidadeId: SESSAO_ENTIDADE_TESTE.usuario.entidadeId, limit: 50 })
+      expect(c.headers.Authorization).toBe(`Bearer ${SESSAO_ENTIDADE_TESTE.token}`)
+    }
+  })
+  it('lista só as campanhas da entidade, em todos os status, e resume os indicadores', async () => {
+    await abrirLista()
+    expect(linhasDaTabela()).toHaveLength(5)
     expect(screen.queryByText('Cesta básica mensal')).toBe(null)
-    expect(screen.queryByText('Reforma do abrigo')).toBe(null)
-    expect(kpi('Campanhas ativas').textContent).toContain(
-      String(minhas.filter((c) => c.status === 'Ativa').length),
-    )
-    expect(kpi('Arrecadado').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.arrecadado, 0)),
-    )
-    expect(kpi('Meta total').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.meta, 0)),
-    )
+    expect(screen.queryByText('Higiene para todos')).toBe(null)
+    expect(within(linhaDe('Biblioteca comunitária')).getByText('Rascunho')).toBeTruthy()
+    expect(within(linhaDe('Natal das crianças')).getByText('Agendada')).toBeTruthy()
+    expect(kpi('Campanhas ativas').textContent).toContain('2')
+    expect(kpi('Arrecadado').textContent).toContain(formatarMoeda(18400 + 9600 + 8000))
+    expect(kpi('Meta total').textContent).toContain(formatarMoeda(30000 + 12000 + 8000 + 5000 + 4000))
     expect(
       screen.getByRole('link', { name: /Criar campanha/ }).getAttribute('href'),
     ).toBe('/campanhas/nova')
   })
   it('mostra o progresso da meta e só oferece as ações permitidas para cada status', async () => {
-    await abrir('/campanhas')
+    await abrirLista()
     const ativa = within(linhaDe('Mesa solidária: alimento para 200 famílias'))
     expect(ativa.getByRole('img', { name: '61% da meta' })).toBeTruthy()
+    expect(ativa.getByRole('link', { name: /Mesa solidária/ }).getAttribute('href')).toBe(`/campanhas/${MESA}`)
     expect(ativa.getByRole('link', { name: 'Acompanhar' }).getAttribute('href')).toBe(
-      '/campanhas/1/acompanhamento',
+      `/campanhas/${MESA}/acompanhamento`,
     )
-    expect(ativa.getByRole('link', { name: 'Editar' }).getAttribute('href')).toBe(
-      '/campanhas/1/editar',
-    )
+    expect(ativa.getByRole('link', { name: 'Editar' }).getAttribute('href')).toBe(`/campanhas/${MESA}/editar`)
     expect(ativa.queryByRole('link', { name: 'Prestar contas' })).toBe(null)
     const encerrada = within(linhaDe('Inverno com acolhimento'))
     expect(encerrada.getByRole('link', { name: 'Prestar contas' }).getAttribute('href')).toBe(
-      '/campanhas/7/prestacao-de-contas',
+      `/campanhas/${INVERNO}/prestacao-de-contas`,
     )
     expect(encerrada.queryByRole('link', { name: 'Editar' })).toBe(null)
     expect(encerrada.getByRole('img', { name: '100% da meta' })).toBeTruthy()
   })
   it('filtra por status e por texto, combinando os dois', async () => {
-    const user = await abrir('/campanhas')
+    const user = await abrirLista()
     const status = screen.getByRole('combobox', { name: 'Todos os status' })
     await user.selectOptions(status, 'Encerrada')
     expect(linhasDaTabela()).toHaveLength(1)
     expect(within(linhasDaTabela()[0]).getByText('Inverno com acolhimento')).toBeTruthy()
+    await user.selectOptions(status, 'Agendada')
+    expect(within(linhasDaTabela()[0]).getByText('Natal das crianças')).toBeTruthy()
     await user.selectOptions(status, '')
     const busca = screen.getByRole('searchbox', {
       name: 'Busque por campanha, entidade ou categoria',
     })
     await user.type(busca, 'EDUCAÇÃO')
+    expect(linhasDaTabela()).toHaveLength(2)
+    await user.selectOptions(status, 'Rascunho')
     expect(linhasDaTabela()).toHaveLength(1)
-    expect(screen.getByText('Volta às aulas: kits escolares')).toBeTruthy()
+    expect(screen.getByText('Biblioteca comunitária')).toBeTruthy()
     await user.selectOptions(status, 'Encerrada')
     expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
     expect(screen.queryByRole('table')).toBe(null)
   })
   it('mantém os indicadores quando o filtro não encontra nada', async () => {
-    const user = await abrir('/campanhas')
+    const user = await abrirLista()
     await user.type(
       screen.getByRole('searchbox', { name: /Busque por campanha/ }),
       'zzz',
     )
     expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
     expect(kpi('Campanhas ativas')).toBeTruthy()
+  })
+  it('entidade sem campanhas vê a lista vazia com indicadores zerados', async () => {
+    api.defaults.adapter = (config) =>
+      config.url === '/campanhas' && config.params?.status
+        ? Promise.resolve({ data: { data: [], meta: { total: 0 } }, status: 200, headers: {}, config })
+        : adaptadorApiPadrao(config)
+    await abrir('/campanhas')
+    expect(await screen.findByText('Nenhuma campanha encontrada.')).toBeTruthy()
+    expect(kpi('Campanhas ativas').textContent).toContain('0')
+  })
+  it('falha da API mostra o erro e "Tentar novamente" recarrega a lista', async () => {
+    let falhar = true
+    api.defaults.adapter = (config) =>
+      falhar && config.url === '/campanhas' && config.params?.status
+        ? Promise.reject(new axios.AxiosError('Network Error', 'ERR_NETWORK', config))
+        : adaptadorApiPadrao(config)
+    const user = await abrir('/campanhas')
+    expect(await screen.findByText('Não foi possível conectar ao servidor.')).toBeTruthy()
+    expect(screen.queryByRole('table')).toBe(null)
+    falhar = false
+    await user.click(screen.getByRole('button', { name: /Tentar novamente/ }))
+    expect(await screen.findByText('Mesa solidária: alimento para 200 famílias')).toBeTruthy()
   })
 })
 

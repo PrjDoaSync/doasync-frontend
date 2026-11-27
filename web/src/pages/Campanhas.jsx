@@ -5,21 +5,19 @@ import KpiCard from '../components/KpiCard'
 import PageHeader from '../components/PageHeader'
 import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { useDemo } from '../hooks/useDemo'
+import { useAuth } from '../hooks/useAuth'
+import { useCampanhasDaEntidade } from '../hooks/useCampanhasPublicas'
 import { Link } from 'react-router-dom'
 import { Botao, Icon } from '../components/Ui'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
 import '../styles/cam-publico.css'
 
-const STATUS = ['Ativa', 'Encerrada', 'Rascunho']
+const STATUS = ['Ativa', 'Agendada', 'Rascunho', 'Encerrada', 'Desativada']
 
+// Minhas campanhas (#91): GET /campanhas?entidadeId=...&status=... com o token da entidade.
 export default function Campanhas() {
-  const { dados } = useDemo()
-  const requisicao = {
-    data: dados.campanhas.filter((c) => c.entidadeId === dados.entidade.id),
-    loading: false,
-    error: null,
-  }
+  const { usuario } = useAuth()
+  const requisicao = useCampanhasDaEntidade(usuario?.entidadeId)
   const [busca, setBusca] = useState('')
   const [status, setStatus] = useState('')
 
@@ -41,7 +39,8 @@ export default function Campanhas() {
       titulo: 'Campanha',
       render: (c) => (
         <>
-          <Link to={`/dashboard/campanha?campanha=${c.id}`}>
+          {/* Detalhe vindo da API; a entidade dona também vê rascunhos e desativadas. */}
+          <Link to={`/campanhas/${c.id}`}>
             <img className="cam-miniatura" src={c.imagem} alt="" loading="lazy" />
             <strong>{c.nome}</strong>
           </Link>

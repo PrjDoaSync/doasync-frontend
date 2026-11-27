@@ -10,3 +10,8 @@ export function useCampanhasPublicas() {
 export function useCampanhaPublica(id) {
   return useRequest((config) => campanhasService.buscarPublica(id, config), [id])
 }
+
+// Campanhas da entidade logada em todos os status (Minhas campanhas, #91).
+export function useCampanhasDaEntidade(entidadeId) {
+  return useRequest((config) => campanhasService.listarDaEntidade(entidadeId, config), [entidadeId])
+}
