@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useState } from 'react'
-import { useDemo } from '../../hooks/useDemo'
+import { useAuth } from '../../hooks/useAuth'
 import { Icon, Marca } from '../Ui'
 
 const menu = [
@@ -14,7 +14,8 @@ const menu = [
 ]
 
 export default function AdminSidebar() {
-  const { dados } = useDemo()
+  const { usuario, sair } = useAuth()
+  const admin = usuario?.tipo === 'ADMIN'
   const [aberto, setAberto] = useState(false)
 
   return (
@@ -24,8 +25,8 @@ export default function AdminSidebar() {
         {aberto ? 'Fechar menu' : 'Abrir menu'}
       </button>
       <div className="sidebar__entidade">
-        <small>ÁREA DA ENTIDADE</small>
-        <strong>{dados.entidade.nome}</strong>
+        <small>{admin ? 'ADMINISTRAÇÃO' : 'ÁREA DA ENTIDADE'}</small>
+        <strong>{usuario?.nome}</strong>
       </div>
       <nav id="menu-administrativo" aria-label="Navegação administrativa" onClick={() => setAberto(false)}>
         {menu.map(([icone, nome, para]) => (
@@ -42,17 +43,25 @@ export default function AdminSidebar() {
         ))}
       </nav>
       <div className="sidebar__rodape">
-        <NavLink className="sidebar__link" to="/entidades">
-          <Icon nome="doadores" />
-          <span>Entidades</span>
-        </NavLink>
+        {admin && (
+          <NavLink className="sidebar__link" to="/entidades">
+            <Icon nome="doadores" />
+            <span>Entidades</span>
+          </NavLink>
+        )}
+        {admin && (
+          <NavLink className="sidebar__link" to="/usuarios">
+            <Icon nome="configuracoes" />
+            <span>Usuários</span>
+          </NavLink>
+        )}
         <NavLink className="sidebar__link" to="/">
           <Icon nome="externo" />
           <span>Ver vitrine pública</span>
         </NavLink>
-        <NavLink className="sidebar__link" to="/login">
+        <NavLink className="sidebar__link" to="/login" onClick={sair}>
           <Icon nome="sair" />
-          <span>Acesso da entidade</span>
+          <span>Sair</span>
         </NavLink>
       </div>
     </aside>

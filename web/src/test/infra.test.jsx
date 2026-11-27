@@ -17,6 +17,7 @@ import axios from 'axios'
 import api, { normalizeError } from '../services/api'
 import { API_URL } from '../services/config'
 import { limparSessao, obterToken, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
@@ -837,12 +838,20 @@ describe('DemoProvider e layouts', () => {
     ])
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('aria-current')).toBe('page')
     expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de campanhas')
-    expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(
-      fonte.criarDadosDemo().entidade.nome,
-    )
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    // O menu mostra a conta da sessão; a faixa de demonstração só aparece nas telas sem API.
+    expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(SESSAO_ENTIDADE_TESTE.usuario.nome)
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBe(null)
     expect(screen.getByRole('link', { name: 'Pular para o conteúdo' }).getAttribute('href')).toBe('#conteudo')
     expect(document.querySelector('main#conteudo')).toBeTruthy()
+  })
+  it('layout de gestão: faixa de demonstração só nas telas sem contrato de API', async () => {
+    const { unmount } = montarAdmin('/itens')
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    unmount()
+    montarAdmin('/doacoes')
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBe(null)
   })
   it('layout de gestão: título de rotas fora do menu', async () => {
     const { unmount } = montarAdmin('/cadastro-entidade')

@@ -1,10 +1,13 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import AdminSidebar from './AdminSidebar'
 import AdminHeader from './AdminHeader'
 import ContentArea from './ContentArea'
 import { DemoBanner, Toast } from './AppLayouts'
+import { emDemonstracao } from '../../utils/gestao'
+
 
 export default function AdminLayout() {
+  const { pathname } = useLocation()
   return (
     <>
       <a className="pular" href="#conteudo">
@@ -14,7 +17,7 @@ export default function AdminLayout() {
         <AdminSidebar />
         <div className="layout__principal">
           <AdminHeader />
-          <DemoBanner />
+          {emDemonstracao(pathname) && <DemoBanner />}
           <ContentArea>
             <Outlet />
           </ContentArea>

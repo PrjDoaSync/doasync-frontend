@@ -103,8 +103,8 @@ describe('Layout e componentes compartilhados', () => {
     ).toBe(null)
 
     // Topo administrativo com informações do perfil
-    expect(screen.getByText('Ana Silva')).toBeTruthy()
-    expect(screen.getByText('Administradora · demonstração')).toBeTruthy()
+    expect(screen.getAllByText('Ana Silva').length).toBeGreaterThan(0)
+    expect(screen.getByText('Conta da entidade')).toBeTruthy()
 
     // Interação com o menu de perfil do usuário
     const botaoPerfil = screen.getByRole('button', {
@@ -152,6 +152,6 @@ describe('Layout e componentes compartilhados', () => {
     await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: 'Notificações da entidade' }))
     expect(screen.getByRole('dialog', { name: 'Notificações da entidade' })).toBeTruthy()
-    expect(screen.getByText('Nenhuma notificação nesta demonstração.')).toBeTruthy()
+    expect(screen.getByText('Nenhuma notificação.')).toBeTruthy()
   })
 })
