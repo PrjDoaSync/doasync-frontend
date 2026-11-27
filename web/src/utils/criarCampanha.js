@@ -1,9 +1,9 @@
-// Regras do assistente "Criar campanha" (#89 e #90). Funções puras para facilitar os testes.
+// Regras do formulário de campanha (POST /campanhas e PATCH /campanhas/{id}). Funções puras.
+// Espelham o backend: título ≤ 200, descrição ≤ 10.000, meta ≥ 0,01 com até 2 casas,
+// dataFim ≥ dataInicio, categoria ≤ 200 e imagem só por URL http(s) ≤ 2.048.
 import { validarPeriodo } from './gestao'
 
-export const MAX_ITENS = 10
-
-// Imagens locais de demonstração; o envio de arquivos depende da integração.
+// Capas disponíveis no próprio site. A API guarda a imagem como URL: enviamos a URL absoluta.
 export const IMAGENS_CAMPANHA = [
   { arquivo: '/images/alimentos.jpg', rotulo: 'Alimentos' },
   { arquivo: '/images/cestas.jpg', rotulo: 'Cestas básicas' },
@@ -13,63 +13,74 @@ export const IMAGENS_CAMPANHA = [
   { arquivo: '/images/abrigo.jpg', rotulo: 'Abrigo' },
 ]
 
-// Etapa 1: dados básicos. Devolve a mensagem de erro, ou '' se estiver tudo certo.
-export function validarBasicos(f) {
-  const periodo = validarPeriodo(f.inicio, f.encerraEm)
-  if (periodo) return periodo
-  if (!String(f.nome ?? '').trim() || !String(f.descricao ?? '').trim()) {
-    return 'Informe o nome e a descrição da campanha.'
+// Sugestões para o campo de categoria (a API aceita texto livre).
+export const CATEGORIAS_SUGERIDAS = ['Alimentação', 'Assistência social', 'Educação', 'Higiene', 'Infraestrutura', 'Saúde', 'Vestuário']
+
+export const CAMPANHA_VAZIA = { titulo: '', categoria: '', descricao: '', dataInicio: '', dataFim: '', metaValor: '', imagemUrl: '' }
+
+const ehUrlHttp = (v) => {
+  try {
+    return ['http:', 'https:'].includes(new URL(v).protocol)
+  } catch {
+    return false
   }
-  return ''
 }
 
-// Etapa 2: meta financeira e itens necessários (os itens são opcionais).
-export function validarMetas({ meta, itens }) {
-  const valor = Number(meta)
-  if (!Number.isFinite(valor) || valor <= 0) {
-    return 'Informe uma meta financeira maior que zero.'
-  }
-  if (itens.length > MAX_ITENS) return `Informe no máximo ${MAX_ITENS} itens.`
-  return ''
+// Caminho local (/images/...) vira URL absoluta do site; URLs completas passam como estão.
+export const urlDaImagem = (valor, origem = globalThis.location?.origin ?? '') =>
+  valor && valor.startsWith('/') ? `${origem}${valor}` : valor
+
+// Retorna { campo: mensagem }. `publicar` exige a confirmação e encerramento a partir de hoje.
+export function validarCampanha(f, { publicar = false, confirmado = false, hoje } = {}) {
+  const erros = {}
+  if (!f.titulo.trim()) erros.titulo = 'Informe o título da campanha.'
+  else if (f.titulo.trim().length > 200) erros.titulo = 'Use até 200 caracteres.'
+  if (!f.descricao.trim()) erros.descricao = 'Informe a descrição da campanha.'
+  else if (f.descricao.trim().length > 10000) erros.descricao = 'Use até 10.000 caracteres.'
+  if (f.categoria.trim().length > 200) erros.categoria = 'Use até 200 caracteres.'
+  const meta = String(f.metaValor).replace(',', '.')
+  if (!/^\d+(\.\d{1,2})?$/.test(meta) || Number(meta) < 0.01) erros.metaValor = 'Informe uma meta maior que zero, com até duas casas decimais.'
+  if (!f.dataInicio) erros.dataInicio = 'Informe a data de início.'
+  if (!f.dataFim) erros.dataFim = 'Informe a data de encerramento.'
+  else if (validarPeriodo(f.dataInicio, f.dataFim)) erros.dataFim = 'O encerramento deve ser no mesmo dia ou depois do início.'
+  else if (publicar && hoje && f.dataFim < hoje) erros.dataFim = 'Para publicar, o encerramento deve ser hoje ou depois.'
+  const imagem = urlDaImagem(f.imagemUrl.trim())
+  if (imagem && (!ehUrlHttp(imagem) || imagem.length > 2048)) erros.imagemUrl = 'Use um endereço de imagem começando com http:// ou https://.'
+  if (publicar && !confirmado) erros.confirmado = 'Confirme que as informações estão corretas para publicar.'
+  return erros
 }
 
-// Valida um item novo contra a lista atual. Devolve a mensagem de erro, ou ''.
-export function validarNovoItem({ nome, quantidade }, itens) {
-  const limpo = String(nome ?? '').trim()
-  if (!limpo) return 'Informe o nome do item.'
-  const q = Number(quantidade)
-  if (!Number.isInteger(q) || q <= 0) return 'Informe uma quantidade inteira maior que zero.'
-  if (itens.some((i) => i.nome.toLowerCase() === limpo.toLowerCase())) {
-    return 'Esse item já está na lista.'
-  }
-  if (itens.length >= MAX_ITENS) return `Informe no máximo ${MAX_ITENS} itens.`
-  return ''
-}
-
-// Etapa 3: só publica com encerramento a partir de hoje e a confirmação marcada.
-export function validarPublicacao({ encerraEm, confirmado }, hoje) {
-  if (encerraEm < hoje) return 'Para publicar, a data de encerramento deve ser hoje ou posterior.'
-  if (!confirmado) return 'Confirme que as informações estão corretas para publicar.'
-  return ''
-}
-
-export function montarCampanha({ id, basicos, meta, itens, imagem, entidade, status }) {
+// Corpo de POST/PATCH /campanhas: omite os opcionais vazios.
+export function corpoCampanha(f) {
+  const imagem = urlDaImagem(f.imagemUrl.trim())
   return {
-    id,
-    nome: basicos.nome.trim(),
-    descricao: basicos.descricao.trim(),
-    categoria: basicos.categoria,
-    meta: Number(meta),
-    arrecadado: 0,
-    entidade: entidade.nome,
-    entidadeId: entidade.id,
-    cidade: basicos.cidade,
-    criadaEm: basicos.inicio,
-    encerraEm: basicos.encerraEm,
-    status,
-    imagem,
-    necessidades: itens.map(({ nome, meta: m }) => ({ nome, meta: m })),
-    itensMeta: itens.reduce((soma, i) => soma + i.meta, 0),
-    itensRecebidos: 0,
+    titulo: f.titulo.trim(),
+    descricao: f.descricao.trim(),
+    metaValor: Number(String(f.metaValor).replace(',', '.')),
+    dataInicio: f.dataInicio,
+    dataFim: f.dataFim,
+    ...(imagem && { imagemUrl: imagem }),
+    ...(f.categoria.trim() && { categoria: f.categoria.trim() }),
   }
+}
+
+// Campos validados em cada etapa do assistente (Dados básicos → Metas e itens → Imagens e revisão).
+export const CAMPOS_POR_ETAPA = [
+  ['titulo', 'categoria', 'descricao', 'dataInicio', 'dataFim'],
+  ['metaValor'],
+  ['imagemUrl', 'confirmado'],
+]
+
+// Primeira etapa que tem erro (ou -1). Usada para levar o usuário ao campo a corrigir.
+export const etapaDoErro = (erros) => CAMPOS_POR_ETAPA.findIndex((campos) => campos.some((c) => erros[c]))
+
+// Item necessário da campanha (só na tela: a API ainda não guarda metas por item).
+export function validarItemCampanha({ nome, quantidade }, existentes = []) {
+  const erros = {}
+  const limpo = String(nome ?? '').trim()
+  if (!limpo) erros.nome = 'Informe o nome do item.'
+  else if (existentes.some((i) => i.nome.toLocaleLowerCase('pt-BR') === limpo.toLocaleLowerCase('pt-BR')))
+    erros.nome = 'Este item já está na lista.'
+  if (!/^\d+$/.test(String(quantidade ?? '')) || Number(quantidade) < 1) erros.quantidade = 'Informe uma quantidade inteira maior que zero.'
+  return erros
 }

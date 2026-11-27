@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
+import { hojeISO } from '../utils/campanhas'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { useCampanhaPublica, useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
 import RequestState from '../components/RequestState'
 import '../styles/cam-publico.css'
 
-const hojeISO = () => new Date().toISOString().slice(0, 10)
 
 export function Home() {
   const request = useCampanhasPublicas()
@@ -165,7 +165,7 @@ function ExplorarConteudo({ todas }) {
       </div>
       <div className="public-page-title">
         <h1>Campanhas para transformar realidades</h1>
-        <p>Encontre uma causa por entidade, categoria ou localização.</p>
+        <p>Encontre uma causa por entidade, categoria{cidades.length > 0 && ' ou localização'}.</p>
       </div>
       <div className="cartao filtros-publicos">
         <Campo rotulo="Buscar campanha">
@@ -309,9 +309,9 @@ function DetalheConteudo({ campanha }) {
       <div className="breadcrumb">
         <Link to="/explorar">Campanhas</Link>
         <span>/</span>
-        {campanha.categoria}
+        {campanha.categoria || campanha.nome}
       </div>
-      <span className="badge badge--sucesso">{campanha.categoria}</span>
+      {campanha.categoria && <span className="badge badge--sucesso">{campanha.categoria}</span>}
       <div className="public-page-title">
         <h1>{campanha.nome}</h1>
         <p>

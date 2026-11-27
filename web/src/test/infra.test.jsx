@@ -16,13 +16,12 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import axios from 'axios'
 import api, { normalizeError } from '../services/api'
 import { API_URL } from '../services/config'
-import { limparToken, obterToken, salvarToken } from '../services/token'
+import { limparSessao, obterToken, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
-import * as mocks from '../mocks'
 import * as fonte from '../mocks/gestao'
-import { campanhas as campanhasMock } from '../mocks/dados'
 import { useRequest } from '../hooks/useRequest'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import ErrorMessage from '../components/ErrorMessage'
@@ -46,6 +45,7 @@ import {
 } from '../components/Ui'
 import AppLayout, { PublicLayout } from '../components/layout/AppLayouts'
 import { DemoProvider } from '../context/DemoContext'
+import { AuthProvider } from '../context/AuthContext'
 import { useDemo } from '../hooks/useDemo'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
 
@@ -428,14 +428,14 @@ describe('cliente HTTP (services/api.js)', () => {
       chamadas.push(config)
       return Promise.resolve({ data: {}, status: 200, statusText: 'OK', headers: {}, config })
     }
-    limparToken()
+    limparSessao()
     await api.get('/campanhas')
     expect(chamadas[0].headers.Authorization).toBeUndefined()
-    salvarToken('abc.def.ghi')
+    salvarSessao({ token: 'abc.def.ghi', expiraEm: '2999-01-01T00:00:00Z', usuario: null })
     await api.get('/usuarios/me')
     expect(chamadas[1].headers.Authorization).toBe('Bearer abc.def.ghi')
     expect(obterToken()).toBe('abc.def.ghi')
-    limparToken()
+    limparSessao()
     expect(obterToken()).toBeNull()
   })
   it('o cliente usa a URL de config.js', () => {
@@ -475,31 +475,6 @@ describe('cliente HTTP (services/api.js)', () => {
     expect(chamadas[0]).toMatchObject({ url: rota, method: 'get', params: { pagina: 2 } })
     expect(chamadas[0].signal).toBe(controller.signal)
     expect(chamadas[1].url).toBe(`${rota}/7`)
-  })
-})
-
-describe('serviços simulados (mocks/index.js)', () => {
-  beforeEach(() => vi.useFakeTimers())
-  afterEach(() => vi.useRealTimers())
-
-  it('listam com latência simulada, sem expor o dado original', async () => {
-    const promessa = mocks.campanhasService.listar()
-    let resolvida = false
-    promessa.then(() => (resolvida = true))
-    await vi.advanceTimersByTimeAsync(399)
-    expect(resolvida).toBe(false)
-    await vi.advanceTimersByTimeAsync(1)
-    const lista = await promessa
-    expect(lista).toEqual(campanhasMock)
-    lista[0].nome = 'alterado'
-    expect(campanhasMock[0].nome).not.toBe('alterado')
-  })
-  it('buscam por id (aceitando texto) e devolvem null quando não existe', async () => {
-    const achada = mocks.doacoesService.buscarPorId('3')
-    const ausente = mocks.entidadesService.buscarPorId(999)
-    await vi.advanceTimersByTimeAsync(400)
-    expect((await achada).id).toBe(3)
-    expect(await ausente).toBe(null)
   })
 })
 
@@ -811,13 +786,13 @@ describe('DemoProvider e layouts', () => {
   function montarAdmin(rota) {
     return render(
       <MemoryRouter initialEntries={[rota]}>
-        <DemoProvider>
+        <AuthProvider><DemoProvider>
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="*" element={<Sonda />} />
             </Route>
           </Routes>
-        </DemoProvider>
+        </DemoProvider></AuthProvider>
       </MemoryRouter>,
     )
   }
@@ -836,12 +811,20 @@ describe('DemoProvider e layouts', () => {
     ])
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('aria-current')).toBe('page')
     expect(document.querySelector('.topo__titulo').textContent).toBe('Gestão de campanhas')
-    expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(
-      fonte.criarDadosDemo().entidade.nome,
-    )
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    // O menu mostra a conta da sessão; a faixa de demonstração só aparece nas telas sem API.
+    expect(document.querySelector('.sidebar__entidade strong').textContent).toBe(SESSAO_ENTIDADE_TESTE.usuario.nome)
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBe(null)
     expect(screen.getByRole('link', { name: 'Pular para o conteúdo' }).getAttribute('href')).toBe('#conteudo')
     expect(document.querySelector('main#conteudo')).toBeTruthy()
+  })
+  it('layout de gestão: faixa de demonstração só nas telas sem contrato de API', async () => {
+    const { unmount } = montarAdmin('/itens')
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    unmount()
+    montarAdmin('/doacoes')
+    await screen.findByRole('navigation', { name: 'Navegação administrativa' })
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBe(null)
   })
   it('layout de gestão: título de rotas fora do menu', async () => {
     const { unmount } = montarAdmin('/cadastro-entidade')
@@ -863,23 +846,25 @@ describe('DemoProvider e layouts', () => {
     expect(document.querySelector('.toast')).toBe(null)
   })
   it('layout público: navegação, acesso da entidade e rodapé', async () => {
+    limparSessao() // visitante
     render(
       <MemoryRouter initialEntries={['/']}>
-        <DemoProvider>
+        <AuthProvider><DemoProvider>
           <Routes>
             <Route element={<PublicLayout />}>
               <Route index element={<h1>Início</h1>} />
             </Route>
           </Routes>
-        </DemoProvider>
+        </DemoProvider></AuthProvider>
       </MemoryRouter>,
     )
     await screen.findByRole('heading', { name: 'Início' })
     const nav = screen.getByRole('navigation', { name: 'Navegação pública' })
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('href')).toBe('/explorar')
-    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
     expect(screen.getByRole('link', { name: 'Entrar' }).getAttribute('href')).toBe('/login')
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    // As telas públicas usam a API: a faixa de demonstração não aparece no layout público.
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBeNull()
     expect(screen.getByText(/Projeto de extensão/)).toBeTruthy()
     expect(document.querySelector('main#conteudo')).toBeTruthy()
   })

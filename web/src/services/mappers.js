@@ -38,7 +38,10 @@ export function mapCampanha(api) {
     encerraEm: api.dataFim ?? '',
     criadaEm: dataISO(api.createdAt),
     imagem: api.imagemUrl || IMAGEM_PADRAO,
+    imagemUrl: api.imagemUrl ?? '',
     motivoDesativacao: api.motivoDesativacao ?? null,
+    // Lock otimista do PATCH /campanhas/{id}: só o detalhe devolve `versao` (null quando ausente).
+    versao: Number.isInteger(api.versao) ? api.versao : null,
     // Campos de demonstração sem equivalente na API (doação de itens, localização).
     cidade: '',
     itensMeta: 0,
@@ -50,6 +53,60 @@ export function mapCampanha(api) {
       anonima: Boolean(d.anonima),
       doador: d.nomeDoador ?? 'Doador anônimo',
     })),
+  }
+}
+
+const STATUS_DOACAO = { CONFIRMADA: 'Confirmada', PENDENTE: 'Pendente', CANCELADA: 'Cancelada' }
+
+// DoacaoResponse → doação usada nas telas. `doador.id` pode vir omitido (LGPD, RN73).
+export function mapDoacao(api) {
+  return {
+    id: api.id,
+    comprovante: api.codigoComprovante ?? '',
+    valor: numero(api.valor),
+    formaPagamento: api.formaPagamento ?? 'PIX',
+    status: STATUS_DOACAO[api.status] ?? api.status ?? '',
+    anonima: Boolean(api.anonima),
+    observacao: api.observacao ?? '',
+    data: api.dataDoacao ?? '',
+    campanhaId: api.campanha?.id ?? null,
+    campanha: api.campanha?.titulo ?? '',
+    entidadeId: api.entidade?.id ?? null,
+    entidade: api.entidade?.nomeFantasia || api.entidade?.razaoSocial || '',
+    doador: api.doador?.nome ?? 'Doador anônimo',
+    // Sem id quando a API omite o doador (anônima para a entidade, RN73).
+    doadorId: api.doador?.id ?? null,
+  }
+}
+
+const STATUS_ENTIDADE = { PENDENTE: 'Pendente', APROVADA: 'Aprovada', REPROVADA: 'Reprovada', INATIVA: 'Inativa' }
+export const mapStatusEntidade = (status) => STATUS_ENTIDADE[status] ?? status ?? ''
+
+// EntidadeResposta → entidade usada nas telas. A API não devolve o responsável (nome/CPF).
+export function mapEntidade(api) {
+  const e = api.endereco ?? null
+  return {
+    id: api.id,
+    nome: api.nomeFantasia || api.razaoSocial || '',
+    nomeFantasia: api.nomeFantasia ?? '',
+    razaoSocial: api.razaoSocial ?? '',
+    cnpj: api.cnpj ?? '',
+    descricao: api.descricao ?? '',
+    areaAtuacao: api.areaAtuacao ?? '',
+    site: api.site ?? '',
+    logoUrl: api.logoUrl ?? '',
+    status: mapStatusEntidade(api.statusAprovacao),
+    motivoReprovacao: api.motivoReprovacao ?? '',
+    dataAprovacao: api.dataAprovacao ?? '',
+    emailContato: api.emailContato ?? '',
+    telefoneContato: api.telefoneContato ?? '',
+    whatsapp: api.whatsapp ?? '',
+    endereco: e && {
+      cep: e.cep ?? '', logradouro: e.logradouro ?? '', numero: e.numero ?? '', complemento: e.complemento ?? '',
+      bairro: e.bairro ?? '', cidade: e.cidade ?? '', uf: e.uf ?? '',
+    },
+    usuario: api.usuario ?? null,
+    criadaEm: api.createdAt ?? '',
   }
 }
 

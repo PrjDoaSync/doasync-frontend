@@ -1,39 +1,46 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import AvisoIndisponivel from '../components/AvisoIndisponivel'
+import CampanhaNaoEncontrada from '../components/CampanhaNaoEncontrada'
 import DataTable from '../components/DataTable'
 import { Ico } from '../components/IconesCampanha'
 import KpiCard from '../components/KpiCard'
 import PageHeader from '../components/PageHeader'
+import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
+import { Aviso, Botao, Campo, Icon } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../hooks/useDemo'
-import { detalheCampanha } from '../mocks/campanhasDetalhe'
+import { useRequest } from '../hooks/useRequest'
+import { campanhasService } from '../services/campanhasService'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
 import { checklist, paraNumero, prestacaoInicial, totalAplicado, validarDespesa } from '../utils/prestacao'
 import '../styles/campanhas.css'
 
-// [DEV-CAM-10] Encerramento e prestação de contas (#94). Persiste só na sessão
-// de demonstração (dentro da campanha). SEM CONTRATO na API: despesas, relato,
-// comprovantes (upload) e publicação. Anexos guardam só nome e tamanho, sem envio.
+// [DEV-CAM-10] Encerramento e prestação de contas (#94). A campanha vem da API
+// (GET /campanhas/{id}); o encerramento fica no Acompanhamento (PATCH /campanhas/{id}/status).
+// SEM ROTA na API (services/indisponivel.js → prestacaoContas): despesas, relato, comprovantes
+// e publicação. O relatório fica salvo só nesta sessão e anexos guardam só nome e tamanho.
 export default function PrestacaoContas() {
   const { id } = useParams()
+  const request = useRequest((config) => campanhasService.buscarGestao(id, config), [id])
+  return (
+    <RequestState {...request} naoEncontrado={<CampanhaNaoEncontrada />}>
+      {(campanha) => <Prestacao key={campanha.id} campanha={campanha} />}
+    </RequestState>
+  )
+}
+
+function Prestacao({ campanha }) {
+  const { usuario } = useAuth()
   const { dados, atualizar } = useDemo()
-  const campanha = dados.campanhas.find((c) => c.id === Number(id))
-  const det = campanha ? detalheCampanha(campanha) : null
-  const [prestacao, setPrestacao] = useState(() => campanha?.prestacao ?? det?.prestacao ?? prestacaoInicial())
+  const [prestacao, setPrestacao] = useState(() => dados.prestacoes?.[campanha.id] ?? prestacaoInicial())
   const [abrindo, setAbrindo] = useState(false)
   const [despesa, setDespesa] = useState({ descricao: '', valor: '', comprovante: '' })
   const [erros, setErros] = useState({})
   const [declaracao, setDeclaracao] = useState(false)
   const [resultado, setResultado] = useState(null)
-
-  if (!campanha)
-    return (
-      <>
-        <Vazio titulo="Campanha não encontrada" principal>Verifique o endereço ou volte para a lista de campanhas.</Vazio>
-        <Botao para="/campanhas">Voltar para campanhas</Botao>
-      </>
-    )
+  const [publicando, setPublicando] = useState(false)
 
   const encerrada = campanha.status === 'Encerrada'
   const bloqueada = !encerrada || prestacao.publicada
@@ -42,10 +49,24 @@ export default function PrestacaoContas() {
   const itens = checklist(prestacao, declaracao)
   const pronta = itens.every((i) => i.ok)
 
+  // Guarda o relatório na sessão (DemoContext), por campanha, até a API existir.
   function persistir(proxima, texto) {
     setPrestacao(proxima)
-    atualizar('campanhas', dados.campanhas.map((c) => (c.id === campanha.id ? { ...c, prestacao: proxima } : c)))
+    atualizar('prestacoes', { ...(dados.prestacoes ?? {}), [campanha.id]: proxima })
     setResultado({ erro: false, texto })
+  }
+
+  async function publicar() {
+    persistir(prestacao, 'Relatório salvo nesta sessão.')
+    setPublicando(true)
+    try {
+      await campanhasService.publicarPrestacaoContas(campanha.id, prestacao)
+      persistir({ ...prestacao, publicada: true }, 'Prestação de contas publicada.')
+    } catch (falha) {
+      setResultado({ erro: true, texto: `${falha.message} O relatório continua salvo nesta sessão.` })
+    } finally {
+      setPublicando(false)
+    }
   }
 
   function adicionarDespesa(e) {
@@ -85,8 +106,8 @@ export default function PrestacaoContas() {
         <StatusBadge valor={campanha.status} />
         {encerrada && <span className="badge badge--neutro">Encerrada em {formatarData(campanha.encerraEm)}</span>}
         {encerrada && <span className={`badge ${prestacao.publicada ? 'badge--sucesso' : 'badge--info'}`}>Prestação de contas · {prestacao.publicada ? 'publicada' : 'em revisão'}</span>}
-        {det.relatorioSalvoEm && <span className="camp-data">Relatório salvo às {det.relatorioSalvoEm}</span>}
       </div>
+      <AvisoIndisponivel recurso="prestacaoContas">O relatório abaixo fica salvo somente nesta sessão.</AvisoIndisponivel>
       {!encerrada ? (
         <Aviso>A prestação de contas só está disponível para campanhas encerradas. Status atual: {campanha.status}.</Aviso>
       ) : prestacao.publicada ? (
@@ -132,12 +153,6 @@ export default function PrestacaoContas() {
             <Campo rotulo="Relato de aplicação dos recursos" required>
               <textarea rows={5} value={prestacao.relato} disabled={bloqueada} onChange={(e) => setPrestacao({ ...prestacao, relato: e.target.value })} />
             </Campo>
-            {det.impacto?.itens && (
-              <div className="camp-impacto">
-                <Icon nome="itens" size={20} />
-                <div><strong>{det.impacto.itens}</strong><br /><small className="camp-sub">Itens doados entregues à comunidade · contabilizados separadamente dos recursos financeiros.</small></div>
-              </div>
-            )}
           </div>
 
           <div className="camp-card">
@@ -166,22 +181,13 @@ export default function PrestacaoContas() {
             <span><StatusBadge valor={campanha.status} /></span>
             {campanha.imagem && <img className="camp-capa" src={campanha.imagem} alt="" />}
             <h2>{campanha.nome}</h2>
-            <p className="camp-sub">{campanha.entidade} · {campanha.categoria}</p>
-            {det.impacto && (
-              <>
-                <hr className="camp-sep" />
-                <span className="rotulo-caps">Impacto alcançado</span>
-                <strong className="valor-grande">{det.impacto.pessoas} pessoas</strong>
-                <span>{det.impacto.texto}</span>
-                <span className="camp-sub">{det.impacto.detalhe}</span>
-              </>
-            )}
+            <p className="camp-sub">{[campanha.entidade, campanha.categoria].filter(Boolean).join(' · ')}</p>
             {encerrada && (
               <>
                 <hr className="camp-sep" />
                 <span className="rotulo-caps">Encerramento</span>
                 <strong>{formatarData(campanha.encerraEm)}{campanha.arrecadado >= campanha.meta ? ' · Meta alcançada' : ''}</strong>
-                <span className="camp-sub">Recebimento de doações finalizado. Relatório preparado por Ana Silva.</span>
+                <span className="camp-sub">Recebimento de doações finalizado. Relatório preparado por {usuario.nome}.</span>
               </>
             )}
           </div>
@@ -200,8 +206,10 @@ export default function PrestacaoContas() {
                   <input type="checkbox" checked={declaracao} onChange={(e) => setDeclaracao(e.target.checked)} />{' '}
                   Declaro que o relatório e os comprovantes refletem a aplicação dos recursos recebidos.
                 </label>
-                <Botao disabled={!pronta} onClick={() => persistir({ ...prestacao, publicada: true }, 'Prestação de contas publicada.')}>Publicar prestação de contas</Botao>
-                <Botao secundario onClick={() => persistir(prestacao, 'Relatório salvo nesta sessão de demonstração.')}>Salvar relatório</Botao>
+                <Botao disabled={!pronta || publicando} aria-busy={publicando} onClick={publicar}>
+                  {publicando ? 'Publicando…' : 'Publicar prestação de contas'}
+                </Botao>
+                <Botao secundario onClick={() => persistir(prestacao, 'Relatório salvo nesta sessão.')}>Salvar relatório</Botao>
                 <small className="camp-sub">Ao publicar, o relatório ficará visível na campanha e os doadores serão notificados.</small>
               </>
             )}

@@ -85,162 +85,9 @@ describe('campanhas públicas e navegação', () => {
       screen.getByRole('heading', { name: 'Campanha não encontrada' }),
     ).toBeTruthy()
   })
-  it('salva os dados básicos como rascunho e volta à gestão', async () => {
-    const user = await abrir('/campanhas/nova')
-    await user.type(screen.getByLabelText(/Nome da campanha/), 'Uma nova causa')
-    await user.selectOptions(screen.getByLabelText('Categoria'), 'Alimentação')
-    await user.type(
-      screen.getByLabelText('Descrição da campanha'),
-      'Uma causa de demonstração para famílias.',
-    )
-    fireEvent.change(screen.getByLabelText(/Início/), {
-      target: { value: '2026-10-01' },
-    })
-    fireEvent.change(screen.getByLabelText(/Encerramento/), {
-      target: { value: '2026-11-01' },
-    })
-    await user.type(screen.getByLabelText(/Meta financeira/), '500')
-    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
-    expect(
-      await screen.findByRole('heading', { name: 'Gestão de campanhas' }),
-    ).toBeTruthy()
-    expect(screen.getByText('Uma nova causa')).toBeTruthy()
-    const linha = screen.getByText('Uma nova causa').closest('tr')
-    expect(linha.textContent).toContain('Rascunho')
-  })
-})
-
-describe('doação financeira', () => {
-  it('valida valor, mantém a escolha ao voltar e não registra pagamento', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(
-      screen.getByRole('button', { name: /Continuar com doação financeira/ }),
-    )
-    const valor = screen.getByLabelText(/Outro valor/)
-    await user.clear(valor)
-    await user.type(valor, '0')
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByRole('alert').textContent).toContain('maior que zero')
-    await user.click(screen.getByRole('button', { name: /R\$\s50,00/ }))
-    await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    await user.click(screen.getByLabelText('Doação anônima'))
-    await user.click(
-      screen.getByRole('button', { name: 'Continuar para o pagamento' }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Pague com PIX', level: 1 }),
-    ).toBeTruthy()
-    expect(screen.getByText(/Este PIX é uma demonstração/)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Voltar' }))
-    expect(screen.getByLabelText('Doação anônima').checked).toBe(true)
-  })
-  it('doação de itens segue para a seleção de itens', async () => {
-    const user = await abrir('/doar/1')
-    await user.click(screen.getByRole('radio', { name: /Doação de itens/ }))
-    await user.click(
-      screen.getByRole('button', { name: /Continuar com doação de itens/ }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Quais itens você vai doar?', level: 1 }),
-    ).toBeTruthy()
-    expect(screen.getByLabelText('Quantidade de Cesta básica')).toBeTruthy()
-  })
-  it('campanha encerrada não permite iniciar o pagamento', async () => {
-    await abrir('/doar/3')
-    expect(
-      screen.getByRole('heading', {
-        name: 'Campanha indisponível para doação',
-      }),
-    ).toBeTruthy()
-  })
 })
 
 describe('gestão e estados de dados', () => {
-  it('mostra o progresso de itens confirmados e respeita o período na análise', async () => {
-    await abrir('/dashboard/campanha?campanha=1')
-    expect(
-      screen.getByRole('heading', { name: 'Evolução de itens' }),
-    ).toBeTruthy()
-    expect(
-      screen
-        .getByRole('progressbar', { name: 'Cesta básica' })
-        .getAttribute('aria-valuenow'),
-    ).toBe('10')
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2026-10-07' },
-    })
-    expect(
-      screen
-        .getByRole('progressbar', { name: 'Cesta básica' })
-        .getAttribute('aria-valuenow'),
-    ).toBe('0')
-  })
-  it('não inclui campanhas de outra entidade no dashboard administrativo', async () => {
-    await abrir('/dashboard')
-    expect(
-      screen.queryByRole('link', { name: 'Inverno solidário: agasalhos' }),
-    ).toBe(null)
-    expect(
-      screen.getByRole('link', {
-        name: 'Mesa solidária: alimento para 200 famílias',
-      }),
-    ).toBeTruthy()
-  })
-  it('filtra período sem pagamentos e mostra gráfico vazio', async () => {
-    await abrir('/dashboard')
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2030-01-01' },
-    })
-    expect(
-      screen.getByRole('heading', { name: 'Sem arrecadação neste período' }),
-    ).toBeTruthy()
-    expect(screen.getAllByText('R$ 0,00').length).toBeGreaterThan(0)
-  })
-  it('filtra prévia de relatório e impede exportação de um conjunto vazio', async () => {
-    const user = await abrir('/relatorios')
-    // A ausência de contrato impede exportação mesmo com registros na prévia.
-    expect(screen.getAllByRole('row').length).toBeGreaterThan(1)
-    expect(screen.getByRole('button', { name: 'Baixar CSV' }).disabled).toBe(
-      true,
-    )
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2030-01-01' },
-    })
-    await user.click(screen.getByRole('button', { name: 'Gerar prévia' }))
-    expect(
-      screen.getByText('Nenhum registro para os filtros selecionados.'),
-    ).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Baixar CSV' }).disabled).toBe(
-      true,
-    )
-    expect(screen.getByRole('button', { name: 'Baixar PDF' }).disabled).toBe(
-      true,
-    )
-  })
-  it('bloqueia CNPJ inválido e salva informações válidas da entidade', async () => {
-    const user = await abrir('/cadastro-entidade')
-    const cnpj = screen.getByLabelText(/CNPJ \*/)
-    await user.clear(cnpj)
-    await user.type(cnpj, '00000000000000')
-    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
-    expect(screen.getByRole('alert').textContent).toContain('CNPJ')
-    await user.clear(cnpj)
-    await user.type(cnpj, '11.222.333/0001-81')
-    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
-    expect(screen.getByText(/Informações salvas na demonstração/)).toBeTruthy()
-  })
-  it('rejeita arquivo acima de 10 MB sem indicar envio', async () => {
-    await abrir('/cadastro-entidade')
-    const arquivo = new File(['documento'], 'grande.pdf', {
-      type: 'application/pdf',
-    })
-    Object.defineProperty(arquivo, 'size', { value: 11 * 1024 * 1024 })
-    fireEvent.change(screen.getByLabelText('Adicionar documentos'), {
-      target: { files: [arquivo] },
-    })
-    expect(screen.getByRole('alert').textContent).toContain('até 10 MB')
-    expect(screen.queryByText('grande.pdf')).toBe(null)
-  })
   it('bloqueia saída acima do saldo e atualiza quantidade válida', async () => {
     const user = await abrir('/itens')
     await user.click(
@@ -283,16 +130,6 @@ describe('gestão e estados de dados', () => {
     expect(linha.textContent).toContain('Inativo')
     expect(screen.getByText(/Nenhum convite foi enviado/)).toBeTruthy()
   })
-  it('consulta o histórico do doador selecionado', async () => {
-    const user = await abrir('/doadores')
-    await user.click(
-      screen.getByRole('button', { name: 'Ver histórico de Ana Oliveira' }),
-    )
-    expect(
-      screen.getByRole('heading', { name: 'Perfil do doador' }),
-    ).toBeTruthy()
-    expect(screen.getAllByText('R$ 250,00').length).toBeGreaterThan(0)
-  })
   it('mostra erro de carregamento e permite tentar novamente', async () => {
     vi.mocked(fonte.carregarDemo).mockRejectedValueOnce(
       new Error('Falha temporária'),
@@ -310,7 +147,7 @@ describe('gestão e estados de dados', () => {
     )
     await waitFor(() =>
       expect(
-        screen.getByRole('heading', { name: 'Visão geral da Rede Esperança' }),
+        screen.getByRole('heading', { name: 'Visão geral da entidade' }),
       ).toBeTruthy(),
     )
   })

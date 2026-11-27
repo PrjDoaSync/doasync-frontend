@@ -1,0 +1,75 @@
+# DoaSync: navegador -> Nginx (frontend + proxy) -> Spring Boot -> PostgreSQL
+# Layout esperado de diretórios (repositórios adjacentes):
+#   <pasta>/doasync-frontend   (este repositório, onde está este arquivo)
+#   <pasta>/doasync-backend    (repositório do backend; o código fica em backend/)
+# Para outro caminho, defina DOASYNC_BACKEND_DIR no .env. Veja docs/docker.md.
+name: doasync
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doasync}
+      POSTGRES_USER: ${POSTGRES_USER:-doasync}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - doasync-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    networks: [doasync-net]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ${DOASYNC_BACKEND_DIR:-../doasync-backend/backend}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-doasync}
+      DB_USER: ${POSTGRES_USER:-doasync}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+      DOASYNC_JWT_SEGREDO: ${DOASYNC_JWT_SEGREDO:?Defina DOASYNC_JWT_SEGREDO no .env (mínimo 32 caracteres)}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@doasync.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD no .env}
+      PORT: "8080"
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      DOASYNC_CORS_ORIGINS: ${DOASYNC_CORS_ORIGINS:-http://localhost:${WEB_PORT:-8090},http://127.0.0.1:${WEB_PORT:-8090}}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "--max-time", "4", "http://localhost:8080/api/v1/campanhas"]
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    ports:
+      # Somente loopback do host (Swagger/testes). Nunca exponha em 0.0.0.0.
+      - "127.0.0.1:${API_PORT:-8091}:8080"
+    networks: [doasync-net]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    ports:
+      # Loopback por padrão (homologação local). Em produção, publique atrás do proxy TLS (WEB_BIND=0.0.0.0).
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8090}:80"
+    networks: [doasync-net]
+    restart: unless-stopped
+
+networks:
+  doasync-net:
+
+volumes:
+  doasync-pgdata:

@@ -1,35 +1,11 @@
 // TEST-CAM-01 (#80): testes unitários do frontend de Campanhas.
-// Complementa campanhas.test.jsx, criarCampanha.test.jsx e prestacao.test.jsx:
-// lista/filtros da gestão, card público, edição (erros e salvamento) e
-// acompanhamento (indicadores, filtro, publicação de atualização).
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+// Complementa campanhas.test.jsx, criarCampanha.test.jsx e prestacao.test.jsx: card público
+// e regras de prazo. Edição e acompanhamento integrados à API ficam em gestaoApi.test.jsx.
+import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import App from '../App'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
-import * as fonte from '../mocks/gestao'
 import { diasRestantes } from '../utils/campanhas'
-import { formatarMoeda } from '../utils/format'
-
-beforeEach(() =>
-  vi
-    .spyOn(fonte, 'carregarDemo')
-    .mockImplementation(() => Promise.resolve(fonte.criarDadosDemo())),
-)
-
-async function abrir(rota) {
-  render(
-    <MemoryRouter initialEntries={[rota]}>
-      <App />
-    </MemoryRouter>,
-  )
-  await screen.findByRole('heading', { level: 1 })
-  return userEvent.setup()
-}
-const linhaDe = (texto) => screen.getByText(texto).closest('tr')
-const kpi = (rotulo) => screen.getByText(rotulo).closest('.kpi')
-const linhasDaTabela = () => screen.getAllByRole('row').slice(1)
 
 describe('diasRestantes', () => {
   it('conta os dias até o término a partir do relógio de demonstração', () => {
@@ -79,207 +55,21 @@ describe('Progresso e CampanhaCard', () => {
     expect(links).toHaveLength(3)
     expect(links.every((l) => l.getAttribute('href') === '/campanhas/9')).toBe(true)
     expect(screen.getByRole('link', { name: /Conhecer campanha/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Alimentação · Ver campanha Natal solidário' })).toBeTruthy()
     const imagem = container.querySelector('img')
     expect(imagem.getAttribute('alt')).toBe('')
     expect(imagem.getAttribute('loading')).toBe('lazy')
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25')
   })
-})
-
-describe('Gestão de campanhas (DEV-CAM-07)', () => {
-  it('lista só as campanhas da entidade e resume os indicadores do conjunto', async () => {
-    await abrir('/campanhas')
-    const dados = fonte.criarDadosDemo()
-    const minhas = dados.campanhas.filter((c) => c.entidadeId === dados.entidade.id)
-    expect(linhasDaTabela()).toHaveLength(minhas.length)
-    expect(screen.queryByText('Cesta básica mensal')).toBe(null)
-    expect(screen.queryByText('Reforma do abrigo')).toBe(null)
-    expect(kpi('Campanhas ativas').textContent).toContain(
-      String(minhas.filter((c) => c.status === 'Ativa').length),
+  it('CampanhaCard sem categoria nem cidade não mostra separadores vazios e nomeia o link da imagem', () => {
+    render(
+      <MemoryRouter>
+        <CampanhaCard campanha={{ id: 9, nome: 'Natal solidário', entidade: 'Casa Acolher', imagem: '/images/cestas.jpg', arrecadado: 0, meta: 200 }} />
+      </MemoryRouter>,
     )
-    expect(kpi('Arrecadado').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.arrecadado, 0)),
-    )
-    expect(kpi('Meta total').textContent).toContain(
-      formatarMoeda(minhas.reduce((s, c) => s + c.meta, 0)),
-    )
-    expect(
-      screen.getByRole('link', { name: /Criar campanha/ }).getAttribute('href'),
-    ).toBe('/campanhas/nova')
-  })
-  it('mostra o progresso da meta e só oferece as ações permitidas para cada status', async () => {
-    await abrir('/campanhas')
-    const ativa = within(linhaDe('Mesa solidária: alimento para 200 famílias'))
-    expect(ativa.getByRole('img', { name: '61% da meta' })).toBeTruthy()
-    expect(ativa.getByRole('link', { name: 'Acompanhar' }).getAttribute('href')).toBe(
-      '/campanhas/1/acompanhamento',
-    )
-    expect(ativa.getByRole('link', { name: 'Editar' }).getAttribute('href')).toBe(
-      '/campanhas/1/editar',
-    )
-    expect(ativa.queryByRole('link', { name: 'Prestar contas' })).toBe(null)
-    const encerrada = within(linhaDe('Inverno com acolhimento'))
-    expect(encerrada.getByRole('link', { name: 'Prestar contas' }).getAttribute('href')).toBe(
-      '/campanhas/7/prestacao-de-contas',
-    )
-    expect(encerrada.queryByRole('link', { name: 'Editar' })).toBe(null)
-    expect(encerrada.getByRole('img', { name: '100% da meta' })).toBeTruthy()
-  })
-  it('filtra por status e por texto, combinando os dois', async () => {
-    const user = await abrir('/campanhas')
-    const status = screen.getByRole('combobox', { name: 'Todos os status' })
-    await user.selectOptions(status, 'Encerrada')
-    expect(linhasDaTabela()).toHaveLength(1)
-    expect(within(linhasDaTabela()[0]).getByText('Inverno com acolhimento')).toBeTruthy()
-    await user.selectOptions(status, '')
-    const busca = screen.getByRole('searchbox', {
-      name: 'Busque por campanha, entidade ou categoria',
-    })
-    await user.type(busca, 'EDUCAÇÃO')
-    expect(linhasDaTabela()).toHaveLength(1)
-    expect(screen.getByText('Volta às aulas: kits escolares')).toBeTruthy()
-    await user.selectOptions(status, 'Encerrada')
-    expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
-    expect(screen.queryByRole('table')).toBe(null)
-  })
-  it('mantém os indicadores quando o filtro não encontra nada', async () => {
-    const user = await abrir('/campanhas')
-    await user.type(
-      screen.getByRole('searchbox', { name: /Busque por campanha/ }),
-      'zzz',
-    )
-    expect(screen.getByText('Nenhuma campanha encontrada.')).toBeTruthy()
-    expect(kpi('Campanhas ativas')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ver campanha Natal solidário' }).getAttribute('href')).toBe('/campanhas/9')
+    expect(screen.getByText('Casa Acolher')).toBeTruthy()
+    expect(screen.queryByText(/·/)).toBeNull()
   })
 })
 
-describe('Editar campanha (DEV-CAM-08)', () => {
-  it('aponta os campos obrigatórios vazios e os marca como inválidos', async () => {
-    const user = await abrir('/campanhas/1/editar')
-    await user.clear(screen.getByLabelText(/Título da campanha/))
-    await user.clear(screen.getByLabelText(/Descrição/))
-    fireEvent.change(screen.getByLabelText(/Data de término/), { target: { value: '' } })
-    await user.click(screen.getByRole('button', { name: /Salvar alterações/ }))
-    expect(screen.getByText('Título não pode ser vazio.')).toBeTruthy()
-    expect(screen.getByText('Descrição não pode ser vazia.')).toBeTruthy()
-    expect(screen.getByText('Data de término é obrigatória.')).toBeTruthy()
-    expect(screen.getByLabelText(/Título da campanha/).getAttribute('aria-invalid')).toBe('true')
-    expect(screen.queryByText(/Campanha atualizada/)).toBe(null)
-  })
-  it('recusa meta de item menor que a quantidade já recebida', async () => {
-    const user = await abrir('/campanhas/1/editar')
-    const meta = screen.getByLabelText('Meta de Cesta básica')
-    await user.clear(meta)
-    await user.type(meta, '50')
-    await user.click(screen.getByRole('button', { name: /Salvar alterações/ }))
-    expect((await screen.findByRole('alert')).textContent).toBe(
-      'A meta de Cesta básica não pode ser menor que o recebido (120).',
-    )
-    expect(meta.getAttribute('aria-invalid')).toBe('true')
-  })
-  it('bloqueia o formulário durante o salvamento e reflete a alteração depois', async () => {
-    const user = await abrir('/campanhas/1/editar')
-    const titulo = screen.getByLabelText(/Título da campanha/)
-    await user.clear(titulo)
-    await user.type(titulo, 'Mesa solidária ampliada')
-    await user.click(screen.getByRole('button', { name: /Salvar alterações/ }))
-    const salvando = screen.getByRole('button', { name: 'Salvando…' })
-    expect(salvando.disabled).toBe(true)
-    expect(titulo.disabled).toBe(true)
-    expect(
-      (await screen.findByText('Campanha atualizada nesta sessão de demonstração.')).closest('[role]')
-        .getAttribute('role'),
-    ).toBe('status')
-    expect(screen.getByRole('button', { name: /Salvar alterações/ }).disabled).toBe(false)
-    expect(titulo.disabled).toBe(false)
-    expect(screen.getByRole('heading', { level: 2, name: 'Mesa solidária ampliada' })).toBeTruthy()
-  })
-  it('campanha encerrada: explica o motivo e mantém os campos desabilitados', async () => {
-    await abrir('/campanhas/3/editar')
-    expect(
-      screen.getByText('Somente campanhas ativas podem ser editadas. Status atual: Encerrada.'),
-    ).toBeTruthy()
-    expect(screen.getByLabelText(/Título da campanha/).disabled).toBe(true)
-    expect(screen.getByRole('button', { name: /Salvar alterações/ }).disabled).toBe(true)
-    expect(screen.queryByText(/dias restantes/)).toBe(null)
-  })
-  it('campanha inexistente oferece caminho de volta; cancelar volta para a lista', async () => {
-    await abrir('/campanhas/999/editar')
-    expect(screen.getByRole('heading', { level: 1, name: 'Campanha não encontrada' })).toBeTruthy()
-    expect(
-      screen.getByRole('link', { name: 'Voltar para campanhas' }).getAttribute('href'),
-    ).toBe('/campanhas')
-  })
-  it('mostra o link de cancelar e o resumo lateral da campanha', async () => {
-    await abrir('/campanhas/1/editar')
-    expect(screen.getByRole('link', { name: 'Cancelar' }).getAttribute('href')).toBe('/campanhas')
-    expect(screen.getByText('40 dias restantes')).toBeTruthy()
-    expect(screen.getByText('260 de 480 itens recebidos')).toBeTruthy()
-  })
-})
-
-describe('Acompanhamento da campanha (DEV-CAM-09)', () => {
-  it('apresenta prazo, indicadores financeiros, de itens e de famílias', async () => {
-    await abrir('/campanhas/1/acompanhamento')
-    expect(screen.getByText('40 dias restantes')).toBeTruthy()
-    const financeiro = kpi('Arrecadação financeira')
-    expect(financeiro.textContent).toContain(formatarMoeda(18400))
-    expect(financeiro.textContent).toMatch(/61% da meta de R\$\s30\.000,00 · 86 doações/)
-    expect(kpi('Itens recebidos').textContent).toContain('260 de 480')
-    expect(kpi('Famílias beneficiadas').textContent).toContain('40 de 200')
-    expect(screen.getByRole('link', { name: /Editar/ }).getAttribute('href')).toBe(
-      '/campanhas/1/editar',
-    )
-  })
-  it('filtra as doações por modalidade e informa o total exibido', async () => {
-    const user = await abrir('/campanhas/1/acompanhamento')
-    expect(linhasDaTabela()).toHaveLength(5)
-    const modalidade = screen.getByRole('combobox', { name: 'Modalidade' })
-    await user.selectOptions(modalidade, 'Itens')
-    expect(linhasDaTabela()).toHaveLength(2)
-    expect(screen.getByText('2 de 128 doações · Página 1')).toBeTruthy()
-    await user.selectOptions(modalidade, 'Cartão')
-    expect(linhasDaTabela()).toHaveLength(1)
-    expect(screen.getByText('Doador anônimo')).toBeTruthy()
-    await user.selectOptions(modalidade, '')
-    expect(linhasDaTabela()).toHaveLength(5)
-  })
-  it('mantém desabilitadas as ações sem contrato de API (exportar, período e paginação)', async () => {
-    await abrir('/campanhas/1/acompanhamento')
-    expect(screen.getByRole('button', { name: /Exportar/ }).disabled).toBe(true)
-    expect(screen.getByRole('button', { name: /Próxima/ }).disabled).toBe(true)
-    expect(screen.getByRole('combobox', { name: 'Período' }).disabled).toBe(true)
-  })
-  it('exige mensagem antes de publicar e acrescenta a atualização à timeline', async () => {
-    const user = await abrir('/campanhas/1/acompanhamento')
-    await user.click(screen.getByRole('button', { name: /Publicar atualização/ }))
-    expect(screen.getByText('Escreva a mensagem antes de publicar.')).toBeTruthy()
-    expect(screen.getByLabelText(/Mensagem aos doadores/).getAttribute('aria-invalid')).toBe('true')
-    const antes = document.querySelectorAll('.camp-tl li').length
-    await user.type(
-      screen.getByLabelText(/Mensagem aos doadores/),
-      'Entrega concluída. Obrigado a todos!',
-    )
-    await user.click(screen.getByRole('button', { name: /Publicar atualização/ }))
-    expect(screen.getByText('Atualização publicada nesta sessão de demonstração.')).toBeTruthy()
-    expect(screen.getByLabelText(/Mensagem aos doadores/).value).toBe('')
-    expect(document.querySelectorAll('.camp-tl li')).toHaveLength(antes + 1)
-    expect(document.querySelector('.camp-tl li strong').textContent).toBe('Entrega concluída')
-  })
-  it('campanha sem detalhamento mostra os estados vazios em vez de tabelas e listas', async () => {
-    await abrir('/campanhas/2/acompanhamento')
-    expect(screen.getByText('Nenhuma doação confirmada ainda.')).toBeTruthy()
-    expect(screen.getByText('Nenhuma atualização publicada ainda.')).toBeTruthy()
-    expect(kpi('Doações confirmadas').textContent).toContain('0')
-    expect(kpi('Itens recebidos').textContent).toContain('80 de 480')
-    expect(screen.queryByRole('heading', { name: 'Progresso dos itens' })).toBe(null)
-  })
-  it('campanha encerrada não oferece edição nem contagem regressiva', async () => {
-    await abrir('/campanhas/3/acompanhamento')
-    expect(screen.queryByRole('link', { name: /Editar/ })).toBe(null)
-    expect(screen.queryByText(/dias restantes/)).toBe(null)
-    expect(screen.getByRole('link', { name: /Ver campanha/ }).getAttribute('href')).toBe(
-      '/campanhas/3',
-    )
-  })
-})

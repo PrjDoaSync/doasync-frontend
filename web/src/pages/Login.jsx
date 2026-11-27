@@ -1,10 +1,49 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import AvisoIndisponivel from '../components/AvisoIndisponivel'
 import { Aviso, Botao, Campo, Secao } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
+import { authService } from '../services/authService'
+import { destinoPorTipo } from '../utils/auth'
+
+const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Login() {
+  const { entrar } = useAuth(),
+    navigate = useNavigate(),
+    location = useLocation()
   const [recuperar, setRecuperar] = useState(false),
-    [aviso, setAviso] = useState('')
+    [pendencia, setPendencia] = useState(null),
+    [erroEmail, setErroEmail] = useState(''),
+    [erro, setErro] = useState(''),
+    [enviando, setEnviando] = useState(false)
+
+  async function acessar(form) {
+    const dados = new FormData(form)
+    setErro('')
+    setEnviando(true)
+    try {
+      const usuario = await entrar(String(dados.get('email')), String(dados.get('senha')))
+      navigate(location.state?.de ?? destinoPorTipo(usuario.tipo), { replace: true })
+    } catch (e) {
+      setErro(e?.message ?? 'Não foi possível entrar. Tente novamente.')
+      setEnviando(false)
+    }
+  }
+  async function solicitarRecuperacao(form) {
+    const email = String(new FormData(form).get('email')).trim()
+    setPendencia(null)
+    if (!email) return setErroEmail('Informe o e-mail da sua conta.')
+    if (!FORMATO_EMAIL.test(email)) return setErroEmail('Informe um e-mail válido, como nome@exemplo.com.')
+    setErroEmail('')
+    setEnviando(true)
+    try {
+      await authService.solicitarRecuperacaoSenha(email)
+    } catch (e) {
+      setPendencia(e)
+    }
+    setEnviando(false)
+  }
   return (
     <section className="public-section acesso">
       <div className="public-page-title">
@@ -33,17 +72,15 @@ export default function Login() {
           descricao={
             recuperar
               ? 'Informe seu e-mail para solicitar a recuperação do acesso.'
-              : 'Acesse a área de gestão da sua entidade.'
+              : 'Acesse com a conta da sua entidade, de doador ou de administrador.'
           }
         >
           <form
+            noValidate={recuperar}
             onSubmit={(e) => {
               e.preventDefault()
-              setAviso(
-                recuperar
-                  ? 'O serviço de recuperação ainda não está integrado. Nenhum e-mail foi enviado.'
-                  : 'A autenticação ainda não está integrada. Use o acesso de demonstração abaixo.',
-              )
+              if (recuperar) return solicitarRecuperacao(e.currentTarget)
+              acessar(e.currentTarget)
             }}
             className="pilha"
           >
@@ -53,6 +90,8 @@ export default function Login() {
               name="email"
               autoComplete="email"
               required
+              aria-invalid={recuperar && erroEmail ? 'true' : undefined}
+              ajuda={recuperar ? erroEmail || undefined : undefined}
             />
             {!recuperar && (
               <Campo
@@ -63,28 +102,34 @@ export default function Login() {
                 required
               />
             )}
-            <Botao type="submit">
-              {recuperar ? 'Solicitar recuperação' : 'Entrar'}
+            <Botao type="submit" disabled={enviando} aria-busy={enviando}>
+              {recuperar ? 'Solicitar recuperação' : enviando ? 'Entrando…' : 'Entrar'}
             </Botao>
-            {aviso && <Aviso>{aviso}</Aviso>}
+            {erro && !recuperar && <Aviso erro>{erro}</Aviso>}
+            {recuperar && pendencia &&
+              (pendencia.indisponivel ? (
+                <AvisoIndisponivel recurso="recuperacaoSenha">Nenhum e-mail foi enviado.</AvisoIndisponivel>
+              ) : (
+                <Aviso erro>{pendencia.message}</Aviso>
+              ))}
             <button
               className="link-botao"
               type="button"
               onClick={() => {
                 setRecuperar(!recuperar)
-                setAviso('')
+                setPendencia(null)
+                setErroEmail('')
+                setErro('')
               }}
             >
               {recuperar ? 'Voltar para o acesso' : 'Esqueci minha senha'}
             </button>
           </form>
           <hr />
-          <Botao para="/dashboard" secundario>
-            Acessar demonstração
-          </Botao>
-          <small>Dados fictícios · nenhum acesso autenticado.</small>
           <p>
             Ainda não tem uma conta?{' '}
+            <Link to="/cadastro-doador" state={location.state}>Criar conta de doador</Link>
+            {' · '}
             <Link to="/cadastro-entidade">Cadastrar entidade</Link>
           </p>
         </Secao>

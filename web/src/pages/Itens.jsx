@@ -3,6 +3,7 @@ import { useDemo } from '../hooks/useDemo'
 import PageHeader from '../components/PageHeader'
 import KpiCard from '../components/KpiCard'
 import DataTable from '../components/DataTable'
+import AvisoIndisponivel from '../components/AvisoIndisponivel'
 import { Aviso, Botao, Campo, Icon, Modal, Secao } from '../components/Ui'
 import { movimentarEstoque } from '../utils/estoque'
 import { formatarData } from '../utils/format'
@@ -47,6 +48,9 @@ export default function Itens() {
           Registrar movimentação
         </Botao>
       </PageHeader>
+      <AvisoIndisponivel recurso="estoqueItens">
+        Os saldos e movimentações abaixo são de demonstração e valem só nesta sessão.
+      </AvisoIndisponivel>
       <section className="kpis">
         <KpiCard icone="itens" rotulo="Total recebido" valor={`${recebido} unidades`} />
         <KpiCard icone="enviar" rotulo="Total destinado" valor={`${destinado} unidades`} />

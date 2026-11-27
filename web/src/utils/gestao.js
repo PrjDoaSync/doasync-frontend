@@ -103,3 +103,29 @@ export function valorDoacao(valor) {
     ? Math.round(numero * 100) / 100
     : null
 }
+
+// Doadores identificados a partir das doações recebidas (GET /entidades/{id}/doacoes).
+// Não existe rota de doadores no MVP: agrupamos por `doadorId`. Anônimas não são agrupadas
+// por pessoa (a API não identifica o doador para a entidade) e entram só na contagem.
+export function agruparDoadores(doacoes) {
+  const porDoador = new Map()
+  for (const d of doacoes) {
+    if (d.anonima || !d.doadorId) continue
+    const atual = porDoador.get(d.doadorId) ?? { id: d.doadorId, nome: d.doador, doacoes: [] }
+    atual.doacoes.push(d)
+    porDoador.set(d.doadorId, atual)
+  }
+  return [...porDoador.values()]
+    .map((p) => ({
+      ...p,
+      quantidade: p.doacoes.length,
+      total: p.doacoes.filter((d) => d.status === 'Confirmada').reduce((s, d) => s + d.valor, 0),
+      ultima: p.doacoes.map((d) => String(d.data).slice(0, 10)).sort().at(-1) ?? '',
+    }))
+    .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'))
+}
+
+// Telas da gestão que ainda usam dados de demonstração (sem contrato na API): só nelas a
+// faixa "Ambiente de demonstração" aparece.
+const ROTAS_DEMONSTRACAO = [/^\/itens/, /^\/configuracoes\/usuarios/]
+export const emDemonstracao = (pathname) => ROTAS_DEMONSTRACAO.some((r) => r.test(pathname))

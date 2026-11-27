@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
+import { limparSessao, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() => {
   vi.spyOn(fonte, 'carregarDemo').mockImplementation(() =>
@@ -23,6 +25,7 @@ async function abrir(rota) {
 
 describe('Layout e componentes compartilhados', () => {
   it('renderiza o layout público sem impor navegação administrativa', async () => {
+    limparSessao() // visitante
     await abrir('/')
 
     // Deve ter banner/header público
@@ -36,7 +39,7 @@ describe('Layout e componentes compartilhados', () => {
     expect(navPublica).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Início' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Campanhas' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
 
     // Ações públicas: Área da entidade e botão Entrar
     expect(
@@ -100,8 +103,8 @@ describe('Layout e componentes compartilhados', () => {
     ).toBe(null)
 
     // Topo administrativo com informações do perfil
-    expect(screen.getByText('Ana Silva')).toBeTruthy()
-    expect(screen.getByText('Administradora · demonstração')).toBeTruthy()
+    expect(screen.getAllByText('Ana Silva').length).toBeGreaterThan(0)
+    expect(screen.getByText('Conta da entidade')).toBeTruthy()
 
     // Interação com o menu de perfil do usuário
     const botaoPerfil = screen.getByRole('button', {
@@ -127,6 +130,8 @@ describe('Layout e componentes compartilhados', () => {
   })
 
   it('abre as páginas institucionais e o histórico pela navegação', async () => {
+    // "Meu histórico" é de doador (GET /usuarios/me/doacoes).
+    salvarSessao({ ...SESSAO_ENTIDADE_TESTE, usuario: { ...SESSAO_ENTIDADE_TESTE.usuario, tipo: 'PESSOA_FISICA' } })
     const user = await abrir('/')
     for (const nome of ['Ajuda', 'Privacidade', 'Termos de uso']) {
       await user.click(screen.getByRole('link', { name: nome, exact: true }))
@@ -147,6 +152,6 @@ describe('Layout e componentes compartilhados', () => {
     await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: 'Notificações da entidade' }))
     expect(screen.getByRole('dialog', { name: 'Notificações da entidade' })).toBeTruthy()
-    expect(screen.getByText('Nenhuma notificação nesta demonstração.')).toBeTruthy()
+    expect(screen.getByText('Nenhuma notificação.')).toBeTruthy()
   })
 })

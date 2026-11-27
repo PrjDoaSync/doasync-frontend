@@ -1,189 +1,178 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Ico } from '../components/IconesCampanha'
+import CamposCampanha from '../components/CamposCampanha'
 import PageHeader from '../components/PageHeader'
+import CampanhaNaoEncontrada from '../components/CampanhaNaoEncontrada'
+import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import CampaignImages from '../components/CampaignImages'
-import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
-import { useDemo } from '../hooks/useDemo'
-import { detalheCampanha } from '../mocks/campanhasDetalhe'
-import { categorias } from '../mocks/gestao'
-import { diasRestantes, validarEdicao } from '../utils/campanhas'
+import { Aviso, Botao, Icon, Secao } from '../components/Ui'
+import { useAuth } from '../hooks/useAuth'
+import { useRequest } from '../hooks/useRequest'
+import { campanhasService } from '../services/campanhasService'
+import { podeEditar } from '../utils/campanhas'
+import { corpoCampanha, validarCampanha } from '../utils/criarCampanha'
 import { formatarData, formatarMoeda, percentual } from '../utils/format'
-import '../styles/campanhas.css'
+import '../styles/criar-campanha.css'
 
-// [DEV-CAM-08] Editar campanha (#92). Persiste só na sessão de demonstração;
-// na integração (#35) o salvamento vira PATCH /campanhas/{id}.
-// SEM CONTRATO na API: categoria, metas por item, imagem de capa e última atualização.
+// [DEV-CAM-08] Editar campanha (#92): GET /campanhas/{id} lê a campanha e a `versao`;
+// PATCH /campanhas/{id} envia a mesma `versao` (lock otimista). Versão desatualizada → 409,
+// e o usuário recarrega a versão atual. Só a entidade dona edita.
+// SEM CONTRATO na API: metas por item e galeria/upload (a capa é uma URL).
 export default function EditarCampanha() {
   const { id } = useParams()
-  const { dados, atualizar } = useDemo()
-  const campanha = dados.campanhas.find((c) => c.id === Number(id))
-  const det = campanha ? detalheCampanha(campanha) : null
-  const [form, setForm] = useState(() =>
-    campanha && {
-      nome: campanha.nome, descricao: campanha.descricao, categoria: campanha.categoria,
-      imagem: campanha.imagem, galeria: campanha.galeria ?? [],
-      encerraEm: campanha.encerraEm, meta: String(campanha.meta), itens: det.itens.map((i) => String(i.meta)),
-    },
+  const request = useRequest((config) => campanhasService.buscarGestao(id, config), [id])
+
+  return (
+    <RequestState {...request} naoEncontrado={<CampanhaNaoEncontrada />}>
+      {(campanha) => <Edicao key={campanha.id} campanha={campanha} recarregar={request.reload} />}
+    </RequestState>
   )
+}
+
+const paraFormulario = (c) => ({
+  titulo: c.nome,
+  categoria: c.categoria,
+  descricao: c.descricao,
+  dataInicio: c.iniciaEm,
+  dataFim: c.encerraEm,
+  metaValor: String(c.meta),
+  imagemUrl: c.imagemUrl,
+})
+
+function Edicao({ campanha, recarregar }) {
+  const { usuario } = useAuth()
+  const [f, setF] = useState(() => paraFormulario(campanha))
   const [erros, setErros] = useState({})
   const [salvando, setSalvando] = useState(false)
-  const [lendoImagens, setLendoImagens] = useState(false)
   const [resultado, setResultado] = useState(null)
+  // Depois de um conflito (409), a nova leitura do detalhe substitui o formulário pela versão atual.
+  const aguardandoLeitura = useRef(null)
+  useEffect(() => {
+    if (!aguardandoLeitura.current || aguardandoLeitura.current === campanha) return
+    aguardandoLeitura.current = null
+    setF(paraFormulario(campanha))
+    setErros({})
+    setResultado(null)
+  }, [campanha])
 
-  if (!campanha)
-    return (
-      <>
-        <Vazio titulo="Campanha não encontrada" principal>Verifique o endereço ou volte para a lista de campanhas.</Vazio>
-        <Botao para="/campanhas">Voltar para campanhas</Botao>
-      </>
-    )
+  function carregarVersaoAtual() {
+    aguardandoLeitura.current = campanha
+    recarregar()
+  }
 
-  const editavel = campanha.status === 'Ativa'
+  const dona = usuario.tipo === 'ENTIDADE' && usuario.entidadeId === campanha.entidadeId
+  const semVersao = campanha.versao == null
+  const editavel = dona && podeEditar(campanha.status) && !semVersao
   const pct = percentual(campanha.arrecadado, campanha.meta)
-  const itensRec = det.itens.reduce((s, i) => s + i.recebido, 0)
-  const itensMeta = det.itens.reduce((s, i) => s + i.meta, 0)
-  const dias = diasRestantes(campanha.encerraEm)
-  const ligar = (chave) => ({
-    value: form[chave],
-    onChange: (e) => setForm({ ...form, [chave]: e.target.value }),
-    disabled: !editavel || salvando,
-    'aria-invalid': !!erros[chave],
-  })
+
+  const motivoBloqueio = !dona
+    ? 'Somente a entidade responsável pode editar esta campanha.'
+    : !podeEditar(campanha.status)
+      ? `Esta campanha não pode mais ser editada. Status atual: ${campanha.status}.`
+      : semVersao
+        ? 'A edição está indisponível: o servidor não informou a versão da campanha, necessária para salvar sem sobrescrever outra alteração.'
+        : null
 
   async function salvar(e) {
     e.preventDefault()
-    if (salvando || lendoImagens) return // evita submissão duplicada
-    const novos = validarEdicao(form, campanha)
-    det.itens.forEach((i, k) => {
-      const meta = Number(String(form.itens[k]).replace(',', '.'))
-      if (!(meta >= i.recebido && meta > 0)) novos[`item${k}`] = `A meta de ${i.nome} não pode ser menor que o recebido (${i.recebido}).`
-    })
+    if (!editavel || salvando) return
+    const novos = validarCampanha(f)
+    const meta = Number(String(f.metaValor).replace(',', '.'))
+    if (!novos.metaValor && meta < campanha.arrecadado)
+      novos.metaValor = `A meta não pode ser menor que o total recebido (${formatarMoeda(campanha.arrecadado)}).`
     setErros(novos)
     setResultado(null)
-    if (Object.keys(novos).length) return
+    if (Object.keys(novos).length) {
+      setResultado({ erro: true, texto: 'Revise os campos destacados.' })
+      return
+    }
     setSalvando(true)
     try {
-      await new Promise((r) => setTimeout(r, 400)) // latência simulada
-      atualizar(
-        'campanhas',
-        dados.campanhas.map((c) =>
-          c.id === campanha.id
-            ? {
-                ...c, nome: form.nome.trim(), descricao: form.descricao.trim(), categoria: form.categoria,
-                imagem: form.imagem, galeria: form.galeria,
-                encerraEm: form.encerraEm, meta: Number(String(form.meta).replace(',', '.')),
-                itens: det.itens.map((i, k) => ({ ...i, meta: Number(String(form.itens[k]).replace(',', '.')) })),
-              }
-            : c,
-        ),
-      )
-      setResultado({ erro: false, texto: 'Campanha atualizada nesta sessão de demonstração.' })
-    } catch (err) {
-      setResultado({ erro: true, texto: err?.message ?? 'Não foi possível salvar. Seus dados foram mantidos no formulário.' })
-    } finally {
+      await campanhasService.atualizar(campanha.id, corpoCampanha(f), campanha.versao)
       setSalvando(false)
+      setResultado({ erro: false, texto: 'Campanha atualizada com sucesso.' })
+      // A resposta do PATCH não traz a nova `versao`: relemos o detalhe para a próxima edição.
+      recarregar()
+    } catch (falha) {
+      setSalvando(false)
+      if (falha?.campos) setErros(falha.campos)
+      setResultado({
+        erro: true,
+        conflito: falha?.status === 409,
+        texto:
+          falha?.status === 409
+            ? `${falha.message} Carregue a versão atual para continuar; as alterações não salvas serão descartadas.`
+            : falha?.campos
+              ? 'Revise os campos destacados.'
+              : (falha?.message ?? 'Não foi possível salvar. Seus dados foram mantidos no formulário.'),
+      })
     }
   }
 
   return (
-    <div className="camp">
+    <>
       <nav className="breadcrumb" aria-label="Você está em">
-        <Link to="/campanhas">Campanhas</Link> / <span>{campanha.nome.split(':')[0]}</span> / Editar
+        <Link to="/campanhas">Campanhas</Link>
+        <span>/</span>
+        <Link to={`/campanhas/${campanha.id}/acompanhamento`}>{campanha.nome}</Link>
+        <span>/</span>Editar
       </nav>
-      <PageHeader titulo="Editar campanha" descricao="Atualize as informações de uma campanha já publicada.">
-        <Botao para={`/campanhas/${campanha.id}`} secundario><Icon nome="externo" size={16} /> Ver campanha pública</Botao>
+      <PageHeader titulo="Editar campanha" descricao="Atualize as informações de uma campanha da sua entidade.">
+        <Botao para={`/campanhas/${campanha.id}/acompanhamento`} secundario>
+          <Icon nome="relatorios" size={16} /> Acompanhar campanha
+        </Botao>
       </PageHeader>
-      <Aviso>
-        {editavel
-          ? 'Esta campanha está ativa. As alterações serão exibidas na vitrine após o salvamento. Doações recebidas e histórico serão preservados.'
-          : `Somente campanhas ativas podem ser editadas. Status atual: ${campanha.status}.`}
-      </Aviso>
-
-      <div className="camp-grid" style={{ marginTop: 20 }}>
-        <form className="camp-card" onSubmit={salvar} noValidate>
-          <div className="camp-cab"><h2>Informações da campanha</h2><StatusBadge valor={campanha.status} /></div>
-          <p className="camp-sub">{campanha.nome.split(':')[0]} · Publicada em {formatarData(campanha.criadaEm)} · Os campos com * são obrigatórios.</p>
-          <Campo rotulo="Título da campanha" required ajuda={erros.nome}><input {...ligar('nome')} /></Campo>
-          <Campo rotulo="Descrição" required ajuda={erros.descricao}><textarea rows={4} {...ligar('descricao')} /></Campo>
-          <div className="camp-campos">
-            <Campo rotulo="Entidade responsável" ajuda="Não pode ser alterada após a publicação."><input value={campanha.entidade} disabled readOnly /></Campo>
-            <Campo rotulo="Categoria" required>
-              <select {...ligar('categoria')}>
-                {[...new Set([campanha.categoria, ...categorias])].map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </Campo>
-            <Campo rotulo="Data de início" ajuda="Não pode ser alterada após a publicação."><input value={formatarData(campanha.criadaEm)} disabled readOnly /></Campo>
-            <Campo rotulo="Data de término" required ajuda={erros.encerraEm}><input type="date" {...ligar('encerraEm')} /></Campo>
-          </div>
-
-          <hr className="camp-sep" />
-          <h2>Meta financeira e itens</h2>
-          <p className="camp-sub">Modalidade: dinheiro e itens · As metas não podem ser menores que o total recebido.</p>
-          <Campo rotulo="Meta financeira (R$)" required ajuda={erros.meta ?? `${formatarMoeda(campanha.arrecadado)} já recebidos. O progresso será recalculado se a meta mudar.`}>
-            <input inputMode="decimal" {...ligar('meta')} />
-          </Campo>
-          {det.itens.length > 0 && (
-            <div>
-              <div className="camp-itens__linha camp-itens__linha--cab"><span>Item e especificação</span><span>Meta</span><span>Recebidos</span></div>
-              {det.itens.map((i, k) => (
-                <div key={i.nome}>
-                  <div className="camp-itens__linha">
-                    <div><strong>{i.nome}</strong><br /><small className="camp-sub">{i.especificacao}</small></div>
-                    <input
-                      inputMode="numeric" aria-label={`Meta de ${i.nome}`} aria-invalid={!!erros[`item${k}`]}
-                      value={form.itens[k]} disabled={!editavel || salvando || lendoImagens}
-                      onChange={(e) => setForm({ ...form, itens: form.itens.map((v, j) => (j === k ? e.target.value : v)) })}
-                    />
-                    <span className="camp-sub">{i.recebido} un.</span>
-                  </div>
-                  {erros[`item${k}`] && <small role="alert" className="camp-sub">{erros[`item${k}`]}</small>}
-                </div>
-              ))}
+      {motivoBloqueio ? (
+        <Aviso>{motivoBloqueio}</Aviso>
+      ) : (
+        <Aviso>As alterações aparecem na vitrine depois de salvas. Doações recebidas e o histórico são preservados.</Aviso>
+      )}
+      <div className="dashboard-grid">
+        <Secao
+          titulo="Informações da campanha"
+          descricao="Os campos com * são obrigatórios."
+          acao={<StatusBadge valor={campanha.status} />}
+        >
+          <form noValidate onSubmit={salvar} aria-busy={salvando}>
+            <fieldset disabled={!editavel || salvando} className="campos-edicao">
+              <legend className="sr-only">Dados editáveis</legend>
+              <CamposCampanha f={f} setF={setF} erros={erros} bloquearInicio={campanha.status === 'Ativa'} />
+            </fieldset>
+            {resultado && (
+              <Aviso erro={resultado.erro}>
+                {resultado.texto}
+                {resultado.conflito && (
+                  <>
+                    {' '}
+                    <button type="button" className="link-botao" onClick={carregarVersaoAtual}>
+                      Carregar versão atual
+                    </button>
+                  </>
+                )}
+              </Aviso>
+            )}
+            <div className="acoes">
+              <Botao para="/campanhas" secundario>Cancelar</Botao>
+              <Botao type="submit" disabled={!editavel || salvando}>
+                {salvando ? 'Salvando…' : <><Icon nome="check" size={16} /> Salvar alterações</>}
+              </Botao>
             </div>
-          )}
-
-          <hr className="camp-sep" />
-          <div className="camp-cab">
-            <h2>Imagem de capa</h2>
+          </form>
+        </Secao>
+        <Secao titulo={campanha.nome} className="cam-previa">
+          <img src={campanha.imagem} alt="" />
+          <p>{campanha.entidade}{campanha.categoria && ` · ${campanha.categoria}`}</p>
+          <hr />
+          <small>ARRECADADO ATÉ AGORA</small>
+          <strong className="numero-destaque">{formatarMoeda(campanha.arrecadado)}</strong>
+          <div className="progresso" role="img" aria-label={`${pct}% da meta`}>
+            <div className="progresso__barra" style={{ width: `${pct}%` }} />
           </div>
-          <CampaignImages imagem={form.imagem} onImagem={(imagem) => setForm((atual) => ({ ...atual, imagem }))} galeria={form.galeria} onGaleria={(galeria) => setForm((atual) => ({ ...atual, galeria }))} disabled={!editavel || salvando || lendoImagens} onBusy={setLendoImagens} />
-
-          {resultado && <Aviso erro={resultado.erro}>{resultado.texto}</Aviso>}
-          <div className="camp-acoes">
-            <Botao para="/campanhas" secundario>Cancelar</Botao>
-            <Botao type="submit" disabled={!editavel || salvando || lendoImagens}>{salvando ? 'Salvando…' : <><Icon nome="check" size={16} /> Salvar alterações</>}</Botao>
-          </div>
-        </form>
-
-        <aside className="camp-aside">
-          <div className="camp-card">
-            <span><span className="badge badge--sucesso">{campanha.status} · publicada</span></span>
-            <h2>{campanha.nome}</h2>
-            <p className="camp-sub">{campanha.entidade} · {campanha.categoria}</p>
-            <hr className="camp-sep" />
-            <span className="rotulo-caps">Arrecadado até agora</span>
-            <strong className="valor-grande">{formatarMoeda(campanha.arrecadado)}</strong>
-            <div className="progresso" role="img" aria-label={`${pct}% da meta`}><div className="progresso__barra" style={{ width: `${pct}%` }} /></div>
-            <span className="camp-link">{pct}% da meta de {formatarMoeda(campanha.meta)}</span>
-            {itensMeta > 0 && <span className="camp-sub">{itensRec} de {itensMeta} itens recebidos</span>}
-            <hr className="camp-sep" />
-            <span className="rotulo-caps">Período da campanha</span>
-            <strong>{formatarData(campanha.criadaEm)} a {formatarData(campanha.encerraEm)}</strong>
-            {editavel && <span><span className="badge badge--alerta">{dias <= 14 ? 'Urgente · ' : ''}{dias} dias restantes</span></span>}
-            <Botao para={`/campanhas/${campanha.id}/acompanhamento`} secundario><Icon nome="relatorios" size={16} /> Acompanhar campanha</Botao>
-          </div>
-          <p className="camp-nota"><Ico nome="info" /> A data de início e a entidade responsável não podem ser alteradas após a publicação. Itens com doações recebidas não podem ser removidos.</p>
-          {det.ultima && (
-            <div className="camp-card">
-              <span className="rotulo-caps">Última atualização</span>
-              <strong>{det.ultima.autor} · {det.ultima.quando}</strong>
-              <span className="camp-sub">{det.ultima.texto}</span>
-            </div>
-          )}
-        </aside>
+          <p>{pct}% da meta de {formatarMoeda(campanha.meta)}</p>
+          <small>PERÍODO DA CAMPANHA</small>
+          <p>{formatarData(campanha.iniciaEm)} a {formatarData(campanha.encerraEm)}</p>
+        </Secao>
       </div>
-    </div>
+    </>
   )
 }

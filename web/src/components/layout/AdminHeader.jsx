@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Icon, Modal } from '../Ui'
+import { useAuth } from '../../hooks/useAuth'
 
 const TITULOS_ROTAS = [
   { prefixo: '/dashboard/campanha', titulo: 'Dashboard analítico por campanha' },
@@ -18,10 +19,16 @@ const TITULOS_ROTAS = [
   { prefixo: '/configuracoes', titulo: 'Perfil da entidade e configurações' },
   { prefixo: '/cadastro-entidade', titulo: 'Cadastro da entidade' },
   { prefixo: '/entidades', titulo: 'Gestão de entidades' },
+  { prefixo: '/usuarios', titulo: 'Usuários da plataforma' },
 ]
 
 export default function AdminHeader() {
   const { pathname } = useLocation()
+  const { usuario, sair } = useAuth()
+  const admin = usuario?.tipo === 'ADMIN'
+  const nome = usuario?.nome ?? ''
+  const iniciais = nome.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('')
+  const perfil = admin ? 'Administração da plataforma' : 'Conta da entidade'
   const [menuAberto, setMenuAberto] = useState(false)
   const [notificacoes, setNotificacoes] = useState(false)
   const menuRef = useRef(null)
@@ -33,7 +40,7 @@ export default function AdminHeader() {
     if (item.prefixo && pathname.startsWith(item.prefixo)) return true
     return false
   })
-  const titulo = correspondente ? correspondente.titulo : 'Gestão da entidade'
+  const titulo = correspondente ? correspondente.titulo : admin ? 'Administração' : 'Gestão da entidade'
 
   useEffect(() => {
     if (menuAberto) menuRef.current?.querySelector('[role="menuitem"]')?.focus()
@@ -112,11 +119,11 @@ export default function AdminHeader() {
             aria-label="Perfil do usuário e ações comuns"
           >
             <span className="topo__avatar" aria-hidden="true">
-              AS
+              {iniciais}
             </span>
             <span className="topo__usuario-info">
-              <strong>Ana Silva</strong>
-              <small>Administradora · demonstração</small>
+              <strong>{nome}</strong>
+              <small>{perfil}</small>
             </span>
             <Icon
               nome="seta"
@@ -135,37 +142,42 @@ export default function AdminHeader() {
               aria-label="Opções do perfil"
             >
               <div className="topo__menu-cabecalho">
-                <strong>Ana Silva</strong>
-                <small>ana.silva@redeesperanca.org.br</small>
+                <strong>{nome}</strong>
+                <small>{usuario?.email}</small>
               </div>
               <hr className="topo__menu-divisor" />
-              <Link
-                to="/configuracoes"
-                role="menuitem"
-                tabIndex={-1}
-                className="topo__menu-item"
-                onClick={() => setMenuAberto(false)}
-              >
-                <Icon nome="configuracoes" size={16} />
-                <span>Perfil da entidade</span>
-              </Link>
-              <Link
-                to="/configuracoes/usuarios"
-                role="menuitem"
-                tabIndex={-1}
-                className="topo__menu-item"
-                onClick={() => setMenuAberto(false)}
-              >
-                <Icon nome="doadores" size={16} />
-                <span>Gerenciar equipe</span>
-              </Link>
+              {(admin
+                ? [
+                    ['/entidades', 'doadores', 'Gestão de entidades'],
+                    ['/usuarios', 'configuracoes', 'Usuários da plataforma'],
+                  ]
+                : [
+                    ['/configuracoes', 'configuracoes', 'Perfil da entidade'],
+                    ['/configuracoes/usuarios', 'doadores', 'Gerenciar equipe'],
+                  ]
+              ).map(([para, icone, rotulo]) => (
+                <Link
+                  key={para}
+                  to={para}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className="topo__menu-item"
+                  onClick={() => setMenuAberto(false)}
+                >
+                  <Icon nome={icone} size={16} />
+                  <span>{rotulo}</span>
+                </Link>
+              ))}
               <hr className="topo__menu-divisor" />
               <Link
                 to="/login"
                 role="menuitem"
                 tabIndex={-1}
                 className="topo__menu-item topo__menu-item--sair"
-                onClick={() => setMenuAberto(false)}
+                onClick={() => {
+                  setMenuAberto(false)
+                  sair()
+                }}
               >
                 <Icon nome="sair" size={16} />
                 <span>Sair da conta</span>
@@ -176,8 +188,8 @@ export default function AdminHeader() {
       </div>
       {notificacoes && (
         <Modal titulo="Notificações da entidade" fechar={() => setNotificacoes(false)}>
-          <p role="status">Nenhuma notificação nesta demonstração.</p>
-          <p>As alterações ficam nesta sessão. Não são enviados avisos ou mensagens reais.</p>
+          <p role="status">Nenhuma notificação.</p>
+          <p>A API do DoaSync ainda não envia notificações; acompanhe as doações pelo painel.</p>
         </Modal>
       )}
     </header>

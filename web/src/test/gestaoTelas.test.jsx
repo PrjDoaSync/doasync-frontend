@@ -8,11 +8,13 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import Grafico from '../components/Grafico'
-import * as mocks from '../mocks'
 import * as fonte from '../mocks/gestao'
 import { movimentarEstoque } from '../utils/estoque'
 import { formatarMoeda } from '../utils/format'
-import { calcularIndicadores } from '../utils/gestao'
+import api from '../services/api'
+import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
+import { limparSessao, salvarSessao } from '../services/token'
+import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 
 beforeEach(() =>
   vi
@@ -49,18 +51,77 @@ describe('Login e recuperação de senha (GES-01)', () => {
     expect(email.type).toBe('email')
     expect(email.required).toBe(true)
     expect(screen.getByLabelText(/Senha/).type).toBe('password')
-    expect(screen.getByRole('link', { name: 'Acessar demonstração' }).getAttribute('href')).toBe('/dashboard')
+    expect(screen.queryByRole('link', { name: 'Acessar demonstração' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Cadastrar entidade' }).getAttribute('href')).toBe('/cadastro-entidade')
-    expect(screen.getByText('Dados fictícios · nenhum acesso autenticado.')).toBeTruthy()
   })
-  it('não envia com campos vazios e informa que a autenticação não está integrada', async () => {
+  it('não envia com campos vazios e mostra o erro de credenciais da API', async () => {
+    const chamadas = []
+    api.defaults.adapter = (config) => {
+      chamadas.push(config)
+      return Promise.reject({ response: { status: 401, data: { error: 'E-mail ou senha inválidos.' } }, config })
+    }
     const user = await abrir('/login')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(screen.queryByText(/autenticação ainda não está integrada/)).toBe(null)
+    expect(chamadas).toHaveLength(0)
     await user.type(screen.getByLabelText(/E-mail/), 'ana@redeesperanca.org.br')
     await user.type(screen.getByLabelText(/Senha/), 'segredo')
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(screen.getByRole('status').textContent).toContain('A autenticação ainda não está integrada')
+    expect((await screen.findByRole('alert')).textContent).toContain('E-mail ou senha inválidos.')
+    expect(chamadas[0]).toMatchObject({ url: '/auth/login', method: 'post' })
+  })
+  it.each([
+    ['ENTIDADE', 'Visão geral da entidade'],
+    ['PESSOA_FISICA', 'Encontre uma causa. Faça a diferença.'],
+  ])('login de %s entra e redireciona; o cabeçalho público mostra o usuário e "Sair"', async (tipo, titulo) => {
+    api.defaults.adapter = (config) => {
+      if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
+      const entidade = tipo === 'ENTIDADE'
+      const usuario = {
+        id: 'u1',
+        nome: 'Ana Silva',
+        email: 'ana@x.org',
+        tipo,
+        entidadeId: entidade ? SESSAO_ENTIDADE_TESTE.usuario.entidadeId : null,
+        statusEntidade: entidade ? 'APROVADA' : null,
+      }
+      const data = { data: { token: 't', tipoToken: 'Bearer', expiraEm: '2999-01-01T00:00:00Z', usuario } }
+      return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    const user = await abrir('/login')
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@x.org')
+    await user.type(screen.getByLabelText(/Senha/), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: titulo })).toBeTruthy()
+    if (tipo === 'PESSOA_FISICA') {
+      expect(screen.getByText('Olá, Ana')).toBeTruthy()
+      await user.click(screen.getByRole('button', { name: 'Sair' }))
+      expect(screen.getByRole('link', { name: 'Entrar' })).toBeTruthy()
+    }
+  })
+  it('visitante em rota de gestão vai para o login e volta à rota de origem depois de entrar', async () => {
+    limparSessao()
+    api.defaults.adapter = (config) => {
+      if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
+      const data = { data: { ...SESSAO_ENTIDADE_TESTE, tipoToken: 'Bearer' } }
+      return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
+    }
+    const user = await abrir('/doadores')
+    expect(screen.getByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeTruthy()
+    await user.type(screen.getByLabelText(/E-mail/), 'ana@redeesperanca.org.br')
+    await user.type(screen.getByLabelText(/Senha/), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /Doadores/ })).toBeTruthy()
+  })
+  it('doador autenticado não acessa a gestão', async () => {
+    salvarSessao({ ...SESSAO_ENTIDADE_TESTE, usuario: { ...SESSAO_ENTIDADE_TESTE.usuario, tipo: 'PESSOA_FISICA' } })
+    await abrir('/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeTruthy()
+  })
+  it('o cadastro de entidade continua público', async () => {
+    limparSessao()
+    await abrir('/cadastro-entidade')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Bem-vindo ao DoaSync' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Acesso restrito' })).toBeNull()
   })
   it('alterna para a recuperação, avisa que nenhum e-mail foi enviado e volta ao acesso', async () => {
     const user = await abrir('/login')
@@ -74,99 +135,6 @@ describe('Login e recuperação de senha (GES-01)', () => {
     expect(screen.queryByText(/Nenhum e-mail foi enviado/)).toBe(null)
     expect(screen.getByRole('heading', { level: 2, name: 'Entre na sua conta' })).toBeTruthy()
     expect(screen.getByLabelText(/Senha/)).toBeTruthy()
-  })
-})
-
-describe('Entidades (carregamento assíncrono)', () => {
-  it('mostra o carregamento e depois os indicadores e a tabela', async () => {
-    await abrir('/entidades')
-    expect(screen.getByRole('status').textContent).toBe('Carregando...')
-    await screen.findByRole('table')
-    expect(screen.queryByText('Carregando...')).toBe(null)
-    expect(kpi('Entidades ativas').textContent).toContain('3')
-    expect(kpi('Em análise').textContent).toContain('1')
-    expect(kpi('Total de entidades').textContent).toContain('5')
-    expect(linhasDe()).toHaveLength(5)
-  })
-  it('filtra por status e texto e informa quando não há resultado', async () => {
-    const user = await abrir('/entidades')
-    await screen.findByRole('table')
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Todos os status' }), 'Inativa')
-    expect(linhasDe()).toHaveLength(1)
-    expect(screen.getByText('Instituto Semear')).toBeTruthy()
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Todos os status' }), '')
-    await user.type(screen.getByRole('searchbox', { name: /Busque por entidade/ }), 'CAMPINAS')
-    expect(linhasDe()).toHaveLength(1)
-    expect(screen.getByText('Amor Inclusivo')).toBeTruthy()
-    await user.clear(screen.getByRole('searchbox', { name: /Busque por entidade/ }))
-    await user.type(screen.getByRole('searchbox', { name: /Busque por entidade/ }), 'zzz')
-    expect(screen.getByText('Nenhuma entidade encontrada.')).toBeTruthy()
-  })
-  it('mostra o erro da requisição e recupera com "Tentar novamente"', async () => {
-    vi.spyOn(mocks.entidadesService, 'listar').mockRejectedValueOnce({ message: 'Falha ao listar entidades' })
-    const user = await abrir('/entidades')
-    expect((await screen.findByRole('alert')).textContent).toContain('Falha ao listar entidades')
-    expect(screen.queryByRole('table')).toBe(null)
-    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
-    await screen.findByRole('table')
-    expect(screen.queryByRole('alert')).toBe(null)
-  })
-})
-
-describe('Doadores e histórico (GES-06)', () => {
-  it('agrupa por doador somando só o financeiro confirmado', async () => {
-    await abrir('/doadores')
-    expect(celulas(screen.getByText('Ana Oliveira').closest('tr'))).toEqual([
-      'Ana Oliveira',
-      '1',
-      formatarMoeda(250),
-      '07/10/2026',
-      'Ver histórico',
-    ])
-    expect(celulas(screen.getByText('Studio ambiente').closest('tr'))).toEqual([
-      'Studio ambiente',
-      '2',
-      formatarMoeda(0),
-      '08/10/2026',
-      'Ver histórico',
-    ])
-  })
-  it('busca por nome sem diferenciar maiúsculas e avisa quando nada é encontrado', async () => {
-    const user = await abrir('/doadores')
-    const busca = screen.getByRole('searchbox', { name: 'Buscar doador pelo nome' })
-    await user.type(busca, 'MERCADO')
-    expect(linhasDe()).toHaveLength(1)
-    expect(screen.getByText('Mercado São José')).toBeTruthy()
-    await user.clear(busca)
-    await user.type(busca, 'zzz')
-    expect(screen.getByText('Nenhum registro encontrado.')).toBeTruthy()
-  })
-  it('abre o perfil com todas as contribuições do doador e permite fechar', async () => {
-    const user = await abrir('/doadores')
-    await user.click(screen.getByRole('button', { name: 'Ver histórico de Studio ambiente' }))
-    expect(screen.getByRole('heading', { name: 'Perfil do doador' })).toBeTruthy()
-    const historico = [...document.querySelectorAll('.historico-item')].map((i) => i.textContent)
-    expect(historico).toHaveLength(2)
-    expect(historico.join('|')).toMatch(/Pendente/)
-    expect(historico.join('|')).toMatch(/Cancelada/)
-    await user.click(screen.getByRole('button', { name: 'Fechar' }))
-    expect(screen.queryByRole('heading', { name: 'Perfil do doador' })).toBe(null)
-  })
-})
-
-describe('Preferências da entidade', () => {
-  it('salva preferências locais e permite descartar alterações', async () => {
-    const user = await abrir('/configuracoes')
-    const local = screen.getByLabelText('Local de recebimento')
-    await user.type(local, 'Sede de teste')
-    await user.click(screen.getByRole('switch', { name: 'Resumo semanal' }))
-    await user.click(screen.getByRole('button', { name: 'Salvar informações' }))
-    expect(await screen.findByText(/Informações salvas na demonstração/)).toBeTruthy()
-    await user.clear(local)
-    await user.type(local, 'Descartar')
-    await user.click(screen.getByRole('button', { name: 'Descartar alterações' }))
-    expect(local.value).toBe('Sede de teste')
-    expect(screen.getByRole('switch', { name: 'Resumo semanal' }).checked).toBe(true)
   })
 })
 
@@ -329,89 +297,7 @@ describe('Controle de itens doados (GES-07)', () => {
   })
 })
 
-describe('Relatórios e exportação (GES-08)', () => {
-  const dados = fonte.criarDadosDemo()
-  const minhas = dados.doacoes.filter((d) => d.entidadeId === dados.entidade.id)
-
-  it('gera a prévia para o tipo escolhido e a limpa depois', async () => {
-    const user = await abrir('/relatorios')
-    const todas = linhasDe().length
-    expect(todas).toBe(minhas.length)
-    await user.selectOptions(screen.getByRole('combobox', { name: /^Tipo/ }), 'Itens')
-    await user.click(screen.getByRole('button', { name: /Gerar prévia/ }))
-    expect(screen.getByText('Prévia atualizada para os filtros selecionados.')).toBeTruthy()
-    const itens = minhas.filter((d) => d.tipo === 'Itens')
-    expect(linhasDe()).toHaveLength(itens.length)
-    expect(kpi('Financeiro confirmado').textContent).toContain(formatarMoeda(0))
-    expect(kpi('Itens recebidos').textContent).toContain(
-      `${calcularIndicadores([], itens).itens} unidades`,
-    )
-    await user.click(screen.getByRole('button', { name: 'Limpar' }))
-    expect(screen.getByText('Filtros limpos.')).toBeTruthy()
-    expect(linhasDe()).toHaveLength(todas)
-  })
-  it('o navegador barra o período invertido antes de gerar a prévia', async () => {
-    const user = await abrir('/relatorios')
-    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-10-10' } })
-    fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-10-01' } })
-    expect(screen.getByLabelText('Data final').validity.rangeUnderflow).toBe(true)
-    await user.click(screen.getByRole('button', { name: /Gerar prévia/ }))
-    expect(screen.queryByText(/Prévia atualizada/)).toBe(null)
-  })
-  it('mantém a exportação indisponível e explica o motivo', async () => {
-    await abrir('/relatorios')
-    for (const nome of ['Baixar PDF', 'Baixar CSV']) {
-      const botao = screen.getByRole('button', { name: nome })
-      expect(botao.disabled).toBe(true)
-      expect(botao.getAttribute('aria-describedby')).toBe('exportacao-pendente')
-    }
-    expect(document.getElementById('exportacao-pendente').textContent).toMatch(/serviço de geração de arquivos ainda não foi integrado/)
-  })
-})
-
-describe('Dashboard (GES-03 e GES-04)', () => {
-  const dados = fonte.criarDadosDemo()
-  const minhasCampanhas = dados.campanhas.filter((c) => c.entidadeId === dados.entidade.id)
-  const minhasDoacoes = dados.doacoes.filter((d) => d.entidadeId === dados.entidade.id)
-  const geral = calcularIndicadores(minhasCampanhas, minhasDoacoes)
-
-  it('visão geral: indicadores calculados só com dados confirmados da entidade', async () => {
-    await abrir('/dashboard')
-    expect(kpi('Arrecadação financeira').textContent).toContain(formatarMoeda(geral.arrecadado))
-    expect(kpi('Doadores').textContent).toContain(String(geral.doadores))
-    expect(kpi('Campanhas ativas').textContent).toContain(String(geral.ativas))
-    expect(kpi('Taxa de conclusão').textContent).toContain(`${geral.concluidas}%`)
-    expect(screen.getByRole('link', { name: /Ver relatórios/ }).getAttribute('href')).toBe('/relatorios')
-  })
-  it('período invertido mostra alerta e zera os indicadores até voltar a todo o período', async () => {
-    const user = await abrir('/dashboard')
-    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-10-10' } })
-    fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-10-01' } })
-    expect(screen.getByRole('alert').textContent).toContain('A data inicial deve ser anterior ou igual à data final.')
-    expect(kpi('Arrecadação financeira').textContent).toContain(formatarMoeda(0))
-    expect(screen.getByText(/Período selecionado/)).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: 'Todo o período' }))
-    expect(screen.queryByRole('alert')).toBe(null)
-    expect(kpi('Arrecadação financeira').textContent).toContain(formatarMoeda(geral.arrecadado))
-    expect(screen.getByLabelText('Data inicial').value).toBe('')
-  })
-  it('análise por campanha: situação, progresso e troca de campanha', async () => {
-    const user = await abrir('/dashboard/campanha?campanha=2')
-    expect(kpi('Situação da campanha').textContent).toContain('Ativa')
-    expect(kpi('Situação da campanha').textContent).toContain('Educação')
-    const progresso = () => secao('Progresso da campanha').getByRole('progressbar')
-    expect(progresso().getAttribute('aria-valuenow')).toBe('80')
-    await user.selectOptions(screen.getByRole('combobox', { name: /^Campanha/ }), '1')
-    expect(progresso().getAttribute('aria-valuenow')).toBe('61')
-    expect(screen.getByRole('link', { name: /Ver campanha/ }).getAttribute('href')).toBe('/campanhas/1')
-  })
-  it('análise por campanha de outra entidade ou inexistente informa que não foi encontrada', async () => {
-    await abrir('/dashboard/campanha?campanha=999')
-    expect(screen.getByRole('heading', { name: 'Campanha não encontrada' })).toBeTruthy()
-    expect(kpi('Situação da campanha').textContent).toContain('—')
-    expect(screen.queryByRole('progressbar')).toBe(null)
-  })
-})
+// Relatórios integrados à API: ver relatorios.test.jsx.
 
 describe('Grafico', () => {
   const pagamento = (data, valor, status = 'Confirmada') => ({ tipo: 'Financeira', status, data, valor })

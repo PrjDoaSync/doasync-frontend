@@ -5,6 +5,11 @@ import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
 import { checklist, prestacaoInicial, totalAplicado, validarDespesa } from '../utils/prestacao'
+import { campanhasApi, campanhasPrivadasApi } from './fixtures/apiCampanhas'
+
+// A prestação de contas abre campanhas reais da API (UUID): ATIVA e ENCERRADA (R$ 15.000 arrecadados).
+const ATIVA = campanhasApi[0].id
+const ENCERRADA = campanhasPrivadasApi[0].id
 
 beforeEach(() =>
   vi.spyOn(fonte, 'carregarDemo').mockImplementation(() => Promise.resolve(fonte.criarDadosDemo())),
@@ -33,19 +38,15 @@ describe('regras da prestação de contas (#94)', () => {
 })
 
 describe('tela de prestação de contas (#94)', () => {
-  it('chega à tela pelo link "Prestar contas" da lista de campanhas', async () => {
-    const user = await abrir('/campanhas')
-    await user.click(await screen.findByRole('link', { name: /Prestar contas/ }))
-    expect(await screen.findByRole('heading', { level: 1, name: /Encerramento e prestação de contas/ })).toBeTruthy()
-  })
   it('só permite prestar contas de campanha encerrada', async () => {
-    await abrir('/campanhas/1/prestacao-de-contas')
-    expect(screen.getByText(/só está disponível para campanhas encerradas/)).toBeTruthy()
+    await abrir(`/campanhas/${ATIVA}/prestacao-de-contas`)
+    expect(await screen.findByText(/só está disponível para campanhas encerradas/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Publicar prestação/ })).toBeNull()
   })
-  it('mantém a publicação bloqueada até cumprir o checklist e publica', async () => {
-    const user = await abrir('/campanhas/3/prestacao-de-contas')
-    const publicar = screen.getByRole('button', { name: /Publicar prestação de contas/ })
+  it('mantém a publicação bloqueada até cumprir o checklist e mostra a pendência da API', async () => {
+    const user = await abrir(`/campanhas/${ENCERRADA}/prestacao-de-contas`)
+    const publicar = await screen.findByRole('button', { name: /Publicar prestação de contas/ })
+    expect(screen.getByText(/Aguardando integração · Prestação de contas/)).toBeTruthy()
     expect(publicar.disabled).toBe(true)
     await user.click(screen.getByRole('button', { name: /Adicionar despesa/ }))
     await user.type(screen.getByLabelText(/Descrição da despesa/), 'Compra de agasalhos')
@@ -56,13 +57,16 @@ describe('tela de prestação de contas (#94)', () => {
     await user.click(screen.getByLabelText(/Declaro que/))
     expect(publicar.disabled).toBe(false)
     await user.click(publicar)
-    expect(await screen.findByText(/Prestação de contas publicada\. O relatório/)).toBeTruthy()
+    // Sem rota na API: não publica, avisa e mantém o relatório editável nesta sessão.
+    expect(await screen.findByText(/O relatório continua salvo nesta sessão/)).toBeTruthy()
+    expect(screen.queryByText(/Prestação de contas publicada\. O relatório/)).toBeNull()
+    expect(screen.getByRole('button', { name: /Adicionar despesa/ })).toBeTruthy()
   })
   it('recusa despesa acima do arrecadado', async () => {
-    const user = await abrir('/campanhas/3/prestacao-de-contas')
-    await user.click(screen.getByRole('button', { name: /Adicionar despesa/ }))
+    const user = await abrir(`/campanhas/${ENCERRADA}/prestacao-de-contas`)
+    await user.click(await screen.findByRole('button', { name: /Adicionar despesa/ }))
     await user.type(screen.getByLabelText(/Descrição da despesa/), 'Excesso')
-    await user.type(screen.getByLabelText(/Valor \(R\$\)/), '9000')
+    await user.type(screen.getByLabelText(/Valor \(R\$\)/), '15000,01')
     await user.click(screen.getByRole('button', { name: /Salvar despesa/ }))
     expect(await screen.findByText(/não pode passar do arrecadado/)).toBeTruthy()
   })

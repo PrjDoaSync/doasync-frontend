@@ -6,6 +6,7 @@ import DataTable from '../components/DataTable'
 import KpiCard from '../components/KpiCard'
 import Filtros from '../components/Filtros'
 import StatusBadge from '../components/StatusBadge'
+import AvisoIndisponivel from '../components/AvisoIndisponivel'
 import { Aviso, Botao, Campo, Icon, Modal, Secao } from '../components/Ui'
 
 const papeis = ['Administradora', 'Operador', 'Consulta']
@@ -81,6 +82,9 @@ export default function Usuarios() {
           Convidar pessoa
         </Botao>
       </PageHeader>
+      <AvisoIndisponivel recurso="equipeEntidade">
+        As alterações valem só nesta sessão e nenhum convite é enviado.
+      </AvisoIndisponivel>
       <div className="abas">
         <Link to="/configuracoes">Perfil da entidade</Link>
         <Link to="/configuracoes/usuarios" className="ativa">
