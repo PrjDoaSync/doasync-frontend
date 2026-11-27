@@ -6,12 +6,12 @@ import CamposCampanha from '../components/CamposCampanha'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../hooks/useDemo'
 import { campanhasService } from '../services/campanhasService'
+import { hojeISO } from '../utils/campanhas'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { CAMPANHA_VAZIA, IMAGENS_CAMPANHA, corpoCampanha, validarCampanha } from '../utils/criarCampanha'
 import '../styles/criar-campanha.css'
 
 const ETAPAS = ['Dados da campanha', 'Revisão e publicação']
-const hojeISO = () => new Date().toISOString().slice(0, 10)
 
 // Criar campanha (POST /campanhas): só ENTIDADE aprovada. "Salvar rascunho" envia rascunho: true;
 // "Publicar" cria ATIVA, ou AGENDADA quando o início é futuro. Sem API: itens necessários,

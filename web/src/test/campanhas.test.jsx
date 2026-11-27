@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { validarEdicao } from '../utils/campanhas'
+import { hojeISO, validarEdicao } from '../utils/campanhas'
+
+describe('hojeISO', () => {
+  it('usa a data local com zeros à esquerda, mesmo no fim do dia', () => {
+    expect(hojeISO(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
+    expect(hojeISO(new Date(2026, 10, 27, 0, 1))).toBe('2026-11-27')
+  })
+})
 
 describe('validarEdicao (#92)', () => {
   const campanha = { arrecadado: 18400, criadaEm: '2026-10-01' }

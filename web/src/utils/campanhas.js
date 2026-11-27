@@ -25,7 +25,12 @@ export function diasRestantes(fim, hoje = '2026-10-06') {
 // A API só permite editar campanha que ainda não terminou (e só a entidade dona edita).
 export const podeEditar = (status) => ['Rascunho', 'Agendada', 'Ativa'].includes(status)
 
-export const hojeISO = () => new Date().toISOString().slice(0, 10)
+// Data de hoje no fuso do navegador (AAAA-MM-DD). toISOString() usaria UTC e, entre 21h e
+// 24h no Brasil, já devolveria o dia seguinte.
+export function hojeISO(agora = new Date()) {
+  const p = (n) => String(n).padStart(2, '0')
+  return `${agora.getFullYear()}-${p(agora.getMonth() + 1)}-${p(agora.getDate())}`
+}
 
 // Ações de status oferecidas na tela (PATCH /campanhas/{id}/status), por perfil, conforme o
 // contrato (rota 17): a dona publica o rascunho e encerra a campanha ativa; o ADMIN encerra,

@@ -4,6 +4,7 @@ import { Aviso, Botao, Campo, Secao } from '../components/Ui'
 import { useAuth } from '../hooks/useAuth'
 import { authService } from '../services/authService'
 import { corpoCadastroDoador, validarCadastroDoador } from '../utils/cadastroDoador'
+import { hojeISO } from '../utils/campanhas'
 
 const VAZIO = {
   tipo: 'PESSOA_FISICA', nome: '', email: '', senha: '', confirmacao: '', telefone: '',
@@ -34,7 +35,7 @@ export default function CadastroDoador() {
   async function cadastrar(e) {
     e.preventDefault()
     setErro('')
-    const encontrados = validarCadastroDoador(f, new Date().toISOString().slice(0, 10))
+    const encontrados = validarCadastroDoador(f, hojeISO())
     setErros(encontrados)
     if (Object.keys(encontrados).length) {
       setErro('Revise os campos destacados.')

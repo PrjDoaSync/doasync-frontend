@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampanhaCard, { Progresso } from '../components/CampanhaCard'
 import { Aviso, Botao, Campo, Icon, Vazio } from '../components/Ui'
+import { hojeISO } from '../utils/campanhas'
 import { formatarData, formatarMoeda } from '../utils/format'
 import { useCampanhaPublica, useCampanhasPublicas } from '../hooks/useCampanhasPublicas'
 import RequestState from '../components/RequestState'
 import '../styles/cam-publico.css'
 
-const hojeISO = () => new Date().toISOString().slice(0, 10)
 
 export function Home() {
   const request = useCampanhasPublicas()
