@@ -18,7 +18,7 @@
 .revisao > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--borda); }
 .revisao dt { color: var(--texto-suave); font-size: 13px; }
 .revisao dd { margin: 0; font-weight: 600; text-align: right; }
-.confirmacao { display: flex; align-items: center; gap: 10px; margin: 8px 0 14px; font-size: 14px; }
+.campanha-confirmacao { display: flex; align-items: center; gap: 10px; margin: 8px 0 14px; font-size: 14px; }
 @media (max-width: 760px) {
   .novo-item { grid-template-columns: 1fr; }
   .imagens-campanha { grid-template-columns: 1fr 1fr; }

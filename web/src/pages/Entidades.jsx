@@ -51,6 +51,7 @@ function Administracao() {
         {(contas) => (
           <Lista
             contas={contas.filter((c) => c.entidadeId)}
+            bloqueado={request.loading || Boolean(request.error)}
             concluir={(mensagem) => {
               setAviso(mensagem)
               request.reload()
@@ -62,7 +63,7 @@ function Administracao() {
   )
 }
 
-function Lista({ contas, concluir }) {
+function Lista({ contas, bloqueado, concluir }) {
   const [busca, setBusca] = useState('')
   const [status, setStatus] = useState('')
   const [acao, setAcao] = useState(null)
@@ -96,7 +97,7 @@ function Lista({ contas, concluir }) {
       render: (c) => (
         <span className="acoes-status">
           {(ACOES[c.statusEntidadeApi] ?? []).map((a) => (
-            <button key={a.status} type="button" className="link-botao" onClick={() => setAcao({ ...a, conta: c })} aria-label={`${a.rotulo} ${c.razaoSocial || c.nome}`}>
+            <button key={a.status} type="button" className="link-botao" disabled={bloqueado} onClick={() => setAcao({ ...a, conta: c })} aria-label={`${a.rotulo} ${c.razaoSocial || c.nome}`}>
               {a.rotulo}
             </button>
           ))}

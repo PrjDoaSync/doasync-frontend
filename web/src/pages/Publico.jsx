@@ -165,7 +165,7 @@ function ExplorarConteudo({ todas }) {
       </div>
       <div className="public-page-title">
         <h1>Campanhas para transformar realidades</h1>
-        <p>Encontre uma causa por entidade, categoria ou localização.</p>
+        <p>Encontre uma causa por entidade, categoria{cidades.length > 0 && ' ou localização'}.</p>
       </div>
       <div className="cartao filtros-publicos">
         <Campo rotulo="Buscar campanha">
@@ -309,9 +309,9 @@ function DetalheConteudo({ campanha }) {
       <div className="breadcrumb">
         <Link to="/explorar">Campanhas</Link>
         <span>/</span>
-        {campanha.categoria}
+        {campanha.categoria || campanha.nome}
       </div>
-      <span className="badge badge--sucesso">{campanha.categoria}</span>
+      {campanha.categoria && <span className="badge badge--sucesso">{campanha.categoria}</span>}
       <div className="public-page-title">
         <h1>{campanha.nome}</h1>
         <p>

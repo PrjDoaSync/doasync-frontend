@@ -289,4 +289,26 @@ describe('Usuários da plataforma (ADMIN, passo 24)', () => {
     expect(await screen.findByText('Maria Souza: Usuário desativado.')).toBeTruthy()
     expect(JSON.parse(chamadas.find((c) => c.method === 'patch').data)).toEqual({ status: 'INATIVO' })
   })
+  it('entidade não consulta GET /usuarios e vê o aviso de área exclusiva', async () => {
+    const chamadas = espionarApi()
+    await abrir('/usuarios')
+    expect(screen.getByText('Esta área é exclusiva da administração da plataforma.')).toBeTruthy()
+    expect(chamadas.some((c) => c.url === '/usuarios')).toBe(false)
+  })
+  it('trava as ações de status enquanto a lista não pode ser confirmada', async () => {
+    salvarSessao(SESSAO_ADMIN)
+    let falhar = false
+    api.defaults.adapter = (config) =>
+      falhar && config.url === '/usuarios'
+        ? Promise.reject({ response: { status: 500, data: { error: 'Falha temporária.' } }, config })
+        : adaptadorApiPadrao(config)
+    const user = await abrir('/usuarios')
+    await screen.findByRole('table', { name: 'Usuários da plataforma' })
+    expect(screen.getByRole('button', { name: 'Desativar Maria Souza' }).disabled).toBe(false)
+    falhar = true
+    await user.click(screen.getByRole('button', { name: 'Desativar Maria Souza' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar desativação' }))
+    expect(await screen.findByText('Falha temporária.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Maria Souza/ }).disabled).toBe(true)
+  })
 })

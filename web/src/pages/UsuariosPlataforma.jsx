@@ -20,8 +20,7 @@ const TIPOS = ['Pessoa física', 'Pessoa jurídica', 'Entidade', 'Administrador'
 // Conta INATIVO não faz login. O administrador não desativa a própria conta (409 do servidor).
 export default function UsuariosPlataforma() {
   const { usuario } = useAuth()
-  const request = useRequest((config) => usuariosService.listar({}, config), [])
-  const [aviso, setAviso] = useState('')
+  // Só o ADMIN consulta GET /usuarios: os demais perfis nem disparam a requisição.
   if (usuario.tipo !== 'ADMIN')
     return (
       <>
@@ -29,6 +28,12 @@ export default function UsuariosPlataforma() {
         <Aviso>Esta área é exclusiva da administração da plataforma.</Aviso>
       </>
     )
+  return <Administracao proprioId={usuario.id} />
+}
+
+function Administracao({ proprioId }) {
+  const request = useRequest((config) => usuariosService.listar({}, config), [])
+  const [aviso, setAviso] = useState('')
   return (
     <>
       <PageHeader titulo="Usuários da plataforma" descricao="Contas de doadores, entidades e administradores." />
@@ -37,7 +42,8 @@ export default function UsuariosPlataforma() {
         {(contas) => (
           <Lista
             contas={contas}
-            proprioId={usuario.id}
+            proprioId={proprioId}
+            bloqueado={request.loading || Boolean(request.error)}
             concluir={(mensagem) => {
               setAviso(mensagem)
               request.reload()
@@ -49,7 +55,7 @@ export default function UsuariosPlataforma() {
   )
 }
 
-function Lista({ contas, proprioId, concluir }) {
+function Lista({ contas, proprioId, bloqueado, concluir }) {
   const [busca, setBusca] = useState('')
   const [tipo, setTipo] = useState('')
   const [status, setStatus] = useState('')
@@ -82,7 +88,7 @@ function Lista({ contas, proprioId, concluir }) {
         c.id === proprioId ? (
           <small>Sua conta</small>
         ) : (
-          <button type="button" className="link-botao" onClick={() => setAlvo(c)} aria-label={`${c.statusApi === 'ATIVO' ? 'Desativar' : 'Ativar'} ${c.nome}`}>
+          <button type="button" className="link-botao" disabled={bloqueado} onClick={() => setAlvo(c)} aria-label={`${c.statusApi === 'ATIVO' ? 'Desativar' : 'Ativar'} ${c.nome}`}>
             {c.statusApi === 'ATIVO' ? 'Desativar' : 'Ativar'}
           </button>
         ),
