@@ -33,6 +33,10 @@ async function todasAsPaginas(params, config) {
 }
 
 export const usuariosService = {
+  // GET /usuarios/me e PATCH /usuarios/me (qualquer conta autenticada). O PATCH aceita nome,
+  // telefone e, juntos, senhaAtual e novaSenha; e-mail, CPF e CNPJ não são editáveis.
+  meuPerfil: (config) => api.get('/usuarios/me', config).then((r) => r.data.data),
+  atualizarPerfil: (corpo) => api.patch('/usuarios/me', corpo).then((r) => r.data.data),
   // GET /usuarios (ADMIN), com filtro opcional por tipo (ex.: ENTIDADE para a aprovação).
   listar: ({ tipo } = {}, config) => todasAsPaginas(tipo ? { tipo } : {}, config),
   // PATCH /usuarios/{id}/status (ADMIN): ATIVO | INATIVO. O admin não desativa a própria conta (409).

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AuthContext } from './authContextValue'
 import { authService } from '../services/authService'
-import { EVENTO_SESSAO_ENCERRADA, obterSessao } from '../services/token'
+import { EVENTO_SESSAO_ENCERRADA, obterSessao, salvarSessao } from '../services/token'
 
 // Sessão do usuário autenticado (POST /auth/login). `usuario` segue o contrato:
 // { id, nome, email, tipo, entidadeId, statusEntidade }.
@@ -18,6 +18,16 @@ export function AuthProvider({ children }) {
     setSessao(nova)
     return nova.usuario
   }
+
+  // Reflete na sessão os dados editados em Minha conta (PATCH /usuarios/me), como o nome.
+  const atualizarUsuario = useCallback((parcial) => {
+    setSessao((atual) => {
+      if (!atual) return atual
+      const nova = { ...atual, usuario: { ...atual.usuario, ...parcial } }
+      salvarSessao(nova)
+      return nova
+    })
+  }, [])
 
   // 401 da API com token encerra a sessão (interceptor em services/api.js).
   useEffect(() => {
@@ -37,7 +47,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuario: sessao?.usuario ?? null, autenticado: Boolean(sessao), entrar, sair }}
+      value={{ usuario: sessao?.usuario ?? null, autenticado: Boolean(sessao), entrar, sair, atualizarUsuario }}
     >
       {children}
     </AuthContext.Provider>

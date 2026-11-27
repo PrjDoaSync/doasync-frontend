@@ -13,6 +13,11 @@ export const campanhasService = {
     api
       .get('/campanhas', { params: { limit: LIMITE_VITRINE }, ...config })
       .then((r) => mapPaginado(r.data, mapCampanha).itens),
+  // Campanhas públicas de uma entidade (perfil público): GET /campanhas?entidadeId= sem status.
+  daEntidadePublica: (entidadeId, config) =>
+    api
+      .get('/campanhas', { params: { entidadeId, limit: LIMITE_VITRINE }, ...config })
+      .then((r) => mapPaginado(r.data, mapCampanha).itens),
   // Campanhas da gestão em todos os status. Sem `status` a API devolve só a visão pública,
   // então pedimos um status por vez: a entidade dona filtra pelo próprio entidadeId; o ADMIN, sem ele.
   daGestao: ({ entidadeId } = {}, config) =>

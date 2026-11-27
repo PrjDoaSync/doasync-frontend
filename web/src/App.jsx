@@ -26,6 +26,8 @@ import Itens from './pages/Itens'
 import Usuarios from './pages/Usuarios'
 import UsuariosPlataforma from './pages/UsuariosPlataforma'
 import Informacoes from './pages/Informacoes'
+import PerfilUsuario from './pages/PerfilUsuario'
+import EntidadesPublicas, { PerfilEntidadePublico } from './pages/EntidadesPublicas'
 import { Vazio } from './components/Ui'
 
 function RotaAcessivel() {
@@ -54,6 +56,11 @@ export default function App() {
             <Route path="campanhas/:id" element={<DetalheCampanha />} />
             <Route path="doar/:id" element={<FluxoDoacao />} />
             <Route path="doar/:id/confirmacao/:doacaoId" element={<ConfirmacaoDoacao />} />
+            <Route path="doar/entidade/:id" element={<FluxoDoacao direta />} />
+            <Route path="doar/entidade/:id/confirmacao/:doacaoId" element={<ConfirmacaoDoacao />} />
+            <Route path="entidades-publicas" element={<EntidadesPublicas />} />
+            <Route path="entidades-publicas/:id" element={<PerfilEntidadePublico />} />
+            <Route path="perfil-usuario" element={<PerfilUsuario />} />
             <Route path="minhas-doacoes" element={<MinhasDoacoes />} />
             <Route path="minhas-doacoes/:doacaoId" element={<ConfirmacaoDoacao historico />} />
             <Route path="login" element={<Login />} />

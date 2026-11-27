@@ -888,9 +888,10 @@ describe('DemoProvider e layouts', () => {
     await screen.findByRole('heading', { name: 'Início' })
     const nav = screen.getByRole('navigation', { name: 'Navegação pública' })
     expect(within(nav).getByRole('link', { name: 'Campanhas' }).getAttribute('href')).toBe('/explorar')
-    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(within(nav).getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
     expect(screen.getByRole('link', { name: 'Entrar' }).getAttribute('href')).toBe('/login')
-    expect(screen.getByText(/Ambiente de demonstração/)).toBeTruthy()
+    // As telas públicas usam a API: a faixa de demonstração não aparece no layout público.
+    expect(screen.queryByText(/Ambiente de demonstração/)).toBeNull()
     expect(screen.getByText(/Projeto de extensão/)).toBeTruthy()
     expect(document.querySelector('main#conteudo')).toBeTruthy()
   })

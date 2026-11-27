@@ -39,7 +39,7 @@ describe('Layout e componentes compartilhados', () => {
     expect(navPublica).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Início' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Campanhas' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/cadastro-entidade')
+    expect(screen.getByRole('link', { name: 'Entidades' }).getAttribute('href')).toBe('/entidades-publicas')
 
     // Ações públicas: Área da entidade e botão Entrar
     expect(

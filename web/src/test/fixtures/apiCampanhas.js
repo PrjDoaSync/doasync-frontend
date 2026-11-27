@@ -69,8 +69,10 @@ const doacoesCriadas = new Map()
 export const DOACAO_EXISTENTE_ID = 'd0000000-0000-4000-8000-000000000009'
 
 // DoacaoResponse de POST /doacoes (a API registra direto como CONFIRMADA).
-export function doacaoCriadaApi({ campanhaId, valor, anonima, observacao }) {
+export function doacaoCriadaApi({ campanhaId, entidadeId, valor, anonima, observacao }) {
+  // Doação direta à entidade (entidadeId): sem campanha.
   const c = campanhasApi.find((item) => item.id === campanhaId)
+  const direta = !c && [REDE, AMOR, MAOS].find((e) => e.id === entidadeId)
   return {
     id: 'd0000000-0000-4000-8000-000000000001',
     codigoComprovante: 'DS-2E95E189B340',
@@ -80,8 +82,8 @@ export function doacaoCriadaApi({ campanhaId, valor, anonima, observacao }) {
     anonima: Boolean(anonima),
     ...(observacao && { observacao }),
     dataDoacao: '2026-11-23T22:08:59Z',
-    campanha: { id: c.id, titulo: c.titulo },
-    entidade: c.entidade,
+    campanha: c ? { id: c.id, titulo: c.titulo } : null,
+    entidade: c ? c.entidade : direta,
     doador: { id: 'u0000000-0000-4000-8000-000000000002', nome: 'Maria Souza' },
   }
 }
@@ -140,8 +142,16 @@ const usuarioApi = (n, nome, tipo, extra = {}) => ({
   cnpj: null, razaoSocial: null, entidadeId: null, statusEntidade: null, ...extra,
 })
 const usuariosStore = new Map()
+// GET/PATCH /usuarios/me (rotas 3 e 4) da doadora da sessão de doação; a senha atual é "senha-atual".
+const PERFIL_INICIAL = {
+  id: 'u2', nome: 'Maria Souza', email: 'maria@doasync.local', tipo: 'PESSOA_FISICA', telefone: '15999990000',
+  cpf: '529.982.247-25', cnpj: null, status: 'ATIVO',
+}
+export const SENHA_ATUAL_TESTE = 'senha-atual'
+let perfilApi = { ...PERFIL_INICIAL }
 
 export function resetarApiSimulada() {
+  perfilApi = { ...PERFIL_INICIAL }
   entidadesApi.clear()
   for (const e of [REDE, AMOR, MAOS]) entidadesApi.set(e.id, entidadeApi(e))
   campanhasStore.clear()
@@ -314,6 +324,15 @@ function rotasDoacoes(config) {
 }
 
 function rotasAdministracao(config) {
+  if (config.method === 'get' && config.url === '/usuarios/me') return resposta(config, 200, { data: perfilApi })
+  if (config.method === 'patch' && config.url === '/usuarios/me') {
+    const { nome, telefone, senhaAtual, novaSenha } = JSON.parse(config.data)
+    if (novaSenha && novaSenha.length < 8) return resposta(config, 422, { erros: { novaSenha: 'Nova senha deve ter no mínimo 8 caracteres.' } })
+    if (novaSenha && !senhaAtual) return resposta(config, 422, { erros: { senhaAtual: 'Senha atual é obrigatória para alterar a senha.' } })
+    if (novaSenha && senhaAtual !== SENHA_ATUAL_TESTE) return resposta(config, 422, { erros: { senhaAtual: 'Senha atual incorreta.' } })
+    perfilApi = { ...perfilApi, ...(nome && { nome }), ...(telefone !== undefined && { telefone }) }
+    return resposta(config, 200, { message: 'Perfil atualizado.', data: perfilApi })
+  }
   if (config.method === 'get' && config.url === '/dashboard/kpis') return resposta(config, 200, { data: kpisApi })
   if (config.method === 'get' && config.url === '/usuarios') {
     const { tipo, status } = config.params ?? {}
