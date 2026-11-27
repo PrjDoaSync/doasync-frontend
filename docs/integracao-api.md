@@ -114,13 +114,13 @@ npm run dev                      # http://localhost:5173
 | 17 | Perfil da entidade (`/configuracoes` → `GET` + `PATCH /entidades/{id}`); preferências e documentos removidos | ✅ |
 | 18 | Gestão de campanhas (`/campanhas` → `GET /campanhas` por status; entidade = as próprias, ADMIN = todas) | ✅ |
 | 19 | Criar campanha (`/campanhas/nova` → `POST /campanhas`); itens, galeria e upload saem; capa = URL | ✅ |
-| 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | ⏳ |
-| 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | ⏳ |
-| 22 | Doações recebidas (`/doacoes` → `GET /entidades/{id}/doacoes`) e arrecadação (`GET /entidades/{id}/arrecadacao`) no dashboard | ⏳ |
+| 20 | Editar campanha (`PATCH /campanhas/{id}` com `versao`) — **depende do backend expor `versao`** (§5) | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
+| 21 | Trocar status da campanha (`PATCH /campanhas/{id}/status`, `motivo` obrigatório para `DESATIVADA`) | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
+| 22 | Doações recebidas (`/doacoes` → `GET /entidades/{id}/doacoes`) e arrecadação (`GET /entidades/{id}/arrecadacao`) no dashboard | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
 | **Fase 5** | **Administração** | |
-| 23 | Dashboard do ADMIN (`GET /dashboard/kpis`) | ⏳ |
-| 24 | Usuários (`GET /usuarios`, `PATCH /usuarios/{id}/status`) | ⏳ |
-| 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | ⏳ |
+| 23 | Dashboard do ADMIN (`GET /dashboard/kpis`) | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
+| 24 | Usuários (`GET /usuarios`, `PATCH /usuarios/{id}/status`) | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
+| 25 | Aprovação de entidades (`GET /entidades` + `PATCH /entidades/{id}/status`, `motivo` em `REPROVADA`) | 🔄 implementado em `feature/finalizacao-frontend`, não validado |
 
 ### Próximo passo
 **Passo 20** — editar campanha (`/campanhas/:id/editar` → `GET /campanhas/{id}` para ler `versao` + `PATCH /campanhas/{id}`), reaproveitando `CamposCampanha`. Precisa do backend na branch `feat/campanha-versao` (§5).
