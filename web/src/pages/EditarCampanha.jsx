@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import CamposCampanha from '../components/CamposCampanha'
 import PageHeader from '../components/PageHeader'
+import CampanhaNaoEncontrada from '../components/CampanhaNaoEncontrada'
 import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { Aviso, Botao, Icon, Secao, Vazio } from '../components/Ui'
+import { Aviso, Botao, Icon, Secao } from '../components/Ui'
 import { useAuth } from '../hooks/useAuth'
 import { useRequest } from '../hooks/useRequest'
 import { campanhasService } from '../services/campanhasService'
@@ -22,19 +23,8 @@ export default function EditarCampanha() {
   const request = useRequest((config) => campanhasService.buscarGestao(id, config), [id])
 
   return (
-    <RequestState {...request}>
-      {(campanha) =>
-        campanha ? (
-          <Edicao key={campanha.id} campanha={campanha} recarregar={request.reload} />
-        ) : (
-          <>
-            <Vazio titulo="Campanha não encontrada" principal>
-              Verifique o endereço ou volte para a lista de campanhas.
-            </Vazio>
-            <Botao para="/campanhas">Voltar para campanhas</Botao>
-          </>
-        )
-      }
+    <RequestState {...request} naoEncontrado={<CampanhaNaoEncontrada />}>
+      {(campanha) => <Edicao key={campanha.id} campanha={campanha} recarregar={request.reload} />}
     </RequestState>
   )
 }

@@ -4,9 +4,10 @@ import DataTable from '../components/DataTable'
 import KpiCard from '../components/KpiCard'
 import PageHeader from '../components/PageHeader'
 import Paginacao from '../components/Paginacao'
+import CampanhaNaoEncontrada from '../components/CampanhaNaoEncontrada'
 import RequestState from '../components/RequestState'
 import StatusBadge from '../components/StatusBadge'
-import { Aviso, Botao, Campo, Icon, Modal, Vazio } from '../components/Ui'
+import { Aviso, Botao, Campo, Icon, Modal } from '../components/Ui'
 import { useAuth } from '../hooks/useAuth'
 import { useRequest } from '../hooks/useRequest'
 import { campanhasService } from '../services/campanhasService'
@@ -26,19 +27,8 @@ export default function AcompanhamentoCampanha() {
   const { id } = useParams()
   const request = useRequest((config) => campanhasService.buscarGestao(id, config), [id])
   return (
-    <RequestState {...request}>
-      {(campanha) =>
-        campanha ? (
-          <Acompanhamento campanha={campanha} recarregar={request.reload} />
-        ) : (
-          <>
-            <Vazio titulo="Campanha não encontrada" principal>
-              Verifique o endereço ou volte para a lista de campanhas.
-            </Vazio>
-            <Botao para="/campanhas">Voltar para campanhas</Botao>
-          </>
-        )
-      }
+    <RequestState {...request} naoEncontrado={<CampanhaNaoEncontrada />}>
+      {(campanha) => <Acompanhamento campanha={campanha} recarregar={request.reload} />}
     </RequestState>
   )
 }

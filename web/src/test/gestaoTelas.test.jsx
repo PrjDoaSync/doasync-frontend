@@ -71,12 +71,20 @@ describe('Login e recuperação de senha (GES-01)', () => {
     expect(chamadas[0]).toMatchObject({ url: '/auth/login', method: 'post' })
   })
   it.each([
-    ['ENTIDADE', 'Visão geral da Rede Esperança'],
+    ['ENTIDADE', 'Visão geral da entidade'],
     ['PESSOA_FISICA', 'Encontre uma causa. Faça a diferença.'],
   ])('login de %s entra e redireciona; o cabeçalho público mostra o usuário e "Sair"', async (tipo, titulo) => {
     api.defaults.adapter = (config) => {
       if (config.url !== '/auth/login') return adaptadorApiPadrao(config)
-      const usuario = { id: 'u1', nome: 'Ana Silva', email: 'ana@x.org', tipo, entidadeId: null, statusEntidade: null }
+      const entidade = tipo === 'ENTIDADE'
+      const usuario = {
+        id: 'u1',
+        nome: 'Ana Silva',
+        email: 'ana@x.org',
+        tipo,
+        entidadeId: entidade ? SESSAO_ENTIDADE_TESTE.usuario.entidadeId : null,
+        statusEntidade: entidade ? 'APROVADA' : null,
+      }
       const data = { data: { token: 't', tipoToken: 'Bearer', expiraEm: '2999-01-01T00:00:00Z', usuario } }
       return Promise.resolve({ data, status: 200, statusText: 'OK', headers: {}, config })
     }
