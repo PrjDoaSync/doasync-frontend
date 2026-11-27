@@ -1,6 +1,7 @@
 // Gestão de campanhas integrada a GET /campanhas por status (passo 18).
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
+import axios from 'axios'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
@@ -40,6 +41,42 @@ async function abrir() {
 
 const daSessao = [...campanhasApi, ...campanhasPrivadasApi].filter((c) => c.entidade.id === ENTIDADE_SESSAO_ID)
 
+// Estados de lista vazia e de erro com nova tentativa (porta dos testes do PR #147, Gustavo).
+function renderizar() {
+  render(
+    <MemoryRouter initialEntries={['/campanhas']}>
+      <App />
+    </MemoryRouter>,
+  )
+  return userEvent.setup()
+}
+
+describe('gestão de campanhas: estados', () => {
+  it('entidade sem campanhas vê a lista vazia com indicadores zerados', async () => {
+    api.defaults.adapter = (config) =>
+      config.url === '/campanhas' && config.params?.status
+        ? Promise.resolve({ data: { data: [], meta: { total: 0, page: 1, limit: 50, totalPages: 1 } }, status: 200, headers: {}, config })
+        : adaptadorApiPadrao(config)
+    renderizar()
+    expect(await screen.findByText('Nenhuma campanha cadastrada ainda.')).toBeTruthy()
+    expect(kpi('Campanhas ativas').textContent).toContain('0')
+  })
+
+  it('falha de rede mostra o erro e "Tentar novamente" recarrega a lista', async () => {
+    let falhar = true
+    api.defaults.adapter = (config) =>
+      falhar && config.url === '/campanhas' && config.params?.status
+        ? Promise.reject(new axios.AxiosError('Network Error', 'ERR_NETWORK', config))
+        : adaptadorApiPadrao(config)
+    const user = renderizar()
+    expect(await screen.findByText('Não foi possível conectar ao servidor.')).toBeTruthy()
+    expect(screen.queryByRole('table')).toBeNull()
+    falhar = false
+    await user.click(screen.getByRole('button', { name: /Tentar novamente/ }))
+    expect(await screen.findByText('Mesa solidária: alimento para 200 famílias')).toBeTruthy()
+  })
+})
+
 describe('gestão de campanhas', () => {
   it('a entidade vê as próprias campanhas em todos os status (uma chamada por status)', async () => {
     const chamadas = espionar()
@@ -47,6 +84,7 @@ describe('gestão de campanhas', () => {
     const pedidos = chamadas.filter((c) => c.url === '/campanhas')
     expect(pedidos.map((c) => c.params.status).sort()).toEqual(['AGENDADA', 'ATIVA', 'DESATIVADA', 'ENCERRADA', 'RASCUNHO'])
     expect(pedidos.every((c) => c.params.entidadeId === ENTIDADE_SESSAO_ID)).toBe(true)
+    expect(pedidos.every((c) => c.headers.Authorization === `Bearer ${SESSAO_ENTIDADE_TESTE.token}`)).toBe(true)
     expect(linhas()).toHaveLength(daSessao.length)
     expect(screen.queryByText('Cesta básica mensal')).toBeNull() // de outra entidade
     expect(kpi('Campanhas ativas').textContent).toContain(String(daSessao.filter((c) => c.status === 'ATIVA').length))

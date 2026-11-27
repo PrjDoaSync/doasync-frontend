@@ -69,13 +69,16 @@ async function abrir() {
   return userEvent.setup()
 }
 
+// Etapa 1 (Dados básicos) e, depois de Continuar, a meta da etapa 2 (Metas e itens).
 async function preencher(user, { inicio = hoje } = {}) {
   await user.type(screen.getByLabelText(/Título da campanha/), 'Uma nova causa')
   await user.type(screen.getByLabelText(/^Categoria/), 'Educação')
-  await user.type(screen.getByLabelText(/Meta financeira/), '500')
   await user.type(screen.getByLabelText(/Descrição da campanha/), 'Kits para alunos.')
   fireEvent.change(screen.getByLabelText(/^Início/), { target: { value: inicio } })
   fireEvent.change(screen.getByLabelText(/^Encerramento/), { target: { value: emDias(30) } })
+  await user.click(screen.getByRole('button', { name: 'Continuar' }))
+  expect(screen.getByRole('heading', { level: 2, name: 'Metas e itens' })).toBeTruthy()
+  await user.type(screen.getByLabelText(/Meta financeira/), '500')
 }
 
 describe('tela Criar campanha', () => {
@@ -84,18 +87,29 @@ describe('tela Criar campanha', () => {
     const user = await abrir()
     await preencher(user)
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByRole('heading', { name: 'Revisão e publicação' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Imagens e publicação' })).toBeTruthy()
+    expect(screen.getByText(/Aguardando integração · Envio de imagens/)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
     expect(screen.getByRole('alert').textContent).toContain('Confirme')
     await user.click(screen.getByLabelText(/Confirmo que as informações/))
     await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
     expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
     const post = chamadas.find((c) => c.method === 'post' && c.url === '/campanhas')
-    expect(JSON.parse(post.data)).toMatchObject({ titulo: 'Uma nova causa', metaValor: 500, rascunho: false, dataInicio: hoje })
+    // Corpo exato do contrato: itens, galeria e localização não vão para a API.
+    expect(JSON.parse(post.data)).toEqual({
+      titulo: 'Uma nova causa',
+      descricao: 'Kits para alunos.',
+      metaValor: 500,
+      dataInicio: hoje,
+      dataFim: emDias(30),
+      imagemUrl: `${window.location.origin}/images/alimentos.jpg`,
+      categoria: 'Educação',
+      rascunho: false,
+    })
     expect((await screen.findByText('Uma nova causa')).closest('tr').textContent).toContain('Ativa')
   })
 
-  it('salva rascunho direto da primeira etapa', async () => {
+  it('salva rascunho antes da revisão', async () => {
     const chamadas = espionar()
     const user = await abrir()
     await preencher(user)
@@ -131,6 +145,53 @@ describe('tela Criar campanha', () => {
     await preencher(user)
     await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
     expect(await screen.findByText('Título já usado.')).toBeTruthy()
+  })
+
+  it('itens necessários ficam só na tela: entram na revisão e não vão no POST', async () => {
+    const chamadas = espionar()
+    const user = await abrir()
+    await preencher(user)
+    expect(screen.getByText(/Aguardando integração · Itens da campanha/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    expect(screen.getByText('Informe o nome do item.')).toBeTruthy()
+    await user.type(screen.getByLabelText(/^Item/), 'Cesta básica')
+    await user.type(screen.getByLabelText(/^Quantidade/), '20')
+    await user.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    expect(screen.getByRole('button', { name: 'Remover Cesta básica' })).toBeTruthy()
+    await user.type(screen.getByLabelText(/^Item/), 'cesta básica')
+    await user.type(screen.getByLabelText(/^Quantidade/), '5')
+    await user.click(screen.getByRole('button', { name: 'Adicionar item' }))
+    expect(screen.getByText('Este item já está na lista.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(screen.getByText('1 (não enviados)')).toBeTruthy()
+    await user.click(screen.getByLabelText(/Confirmo que as informações/))
+    await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
+    expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
+    const corpo = JSON.parse(chamadas.find((c) => c.method === 'post').data)
+    expect(corpo).not.toHaveProperty('itens')
+  })
+
+  it('409 da API (entidade não aprovada) mantém o formulário preenchido com a mensagem', async () => {
+    espionar((config) => Promise.reject({ response: { status: 409, data: { error: 'Entidade não aprovada não pode criar campanhas.' } }, config }))
+    const user = await abrir()
+    await preencher(user)
+    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('Entidade não aprovada não pode criar campanhas.')
+    expect(screen.getByLabelText(/Meta financeira/).value).toBe('500')
+    expect(screen.getByRole('heading', { level: 1, name: 'Criar campanha' })).toBeTruthy()
+  })
+
+  it('rascunho sem meta leva à etapa da meta com o campo marcado', async () => {
+    const chamadas = espionar()
+    const user = await abrir()
+    await user.type(screen.getByLabelText(/Título da campanha/), 'Uma nova causa')
+    await user.type(screen.getByLabelText(/Descrição da campanha/), 'Kits para alunos.')
+    fireEvent.change(screen.getByLabelText(/^Início/), { target: { value: hoje } })
+    fireEvent.change(screen.getByLabelText(/^Encerramento/), { target: { value: emDias(30) } })
+    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+    expect(screen.getByRole('heading', { level: 2, name: 'Metas e itens' })).toBeTruthy()
+    expect(screen.getByLabelText(/Meta financeira/).getAttribute('aria-invalid')).toBe('true')
+    expect(chamadas.some((c) => c.method === 'post')).toBe(false)
   })
 
   it('entidade pendente não cria campanha', async () => {

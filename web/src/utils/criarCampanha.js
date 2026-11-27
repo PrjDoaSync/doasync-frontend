@@ -63,3 +63,24 @@ export function corpoCampanha(f) {
     ...(f.categoria.trim() && { categoria: f.categoria.trim() }),
   }
 }
+
+// Campos validados em cada etapa do assistente (Dados básicos → Metas e itens → Imagens e revisão).
+export const CAMPOS_POR_ETAPA = [
+  ['titulo', 'categoria', 'descricao', 'dataInicio', 'dataFim'],
+  ['metaValor'],
+  ['imagemUrl', 'confirmado'],
+]
+
+// Primeira etapa que tem erro (ou -1). Usada para levar o usuário ao campo a corrigir.
+export const etapaDoErro = (erros) => CAMPOS_POR_ETAPA.findIndex((campos) => campos.some((c) => erros[c]))
+
+// Item necessário da campanha (só na tela: a API ainda não guarda metas por item).
+export function validarItemCampanha({ nome, quantidade }, existentes = []) {
+  const erros = {}
+  const limpo = String(nome ?? '').trim()
+  if (!limpo) erros.nome = 'Informe o nome do item.'
+  else if (existentes.some((i) => i.nome.toLocaleLowerCase('pt-BR') === limpo.toLocaleLowerCase('pt-BR')))
+    erros.nome = 'Este item já está na lista.'
+  if (!/^\d+$/.test(String(quantidade ?? '')) || Number(quantidade) < 1) erros.quantidade = 'Informe uma quantidade inteira maior que zero.'
+  return erros
+}
