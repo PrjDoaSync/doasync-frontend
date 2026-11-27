@@ -55,3 +55,7 @@ O frontend Web está em `web/` e usa React 19, Vite 8, JavaScript/JSX, React Rou
 | Matheus D. P.    | CSTADS125N4-T | Front-end / Back-end |
 | nick0lasrm       | CSTADS125N4-T | Front-end            |
 | João Pedro Matias | CSTADS125N4-T | Front-end / Testes   |
+
+## Execução com Docker
+
+Frontend, backend e PostgreSQL sobem juntos com `docker compose up -d --build` (copie `.env.example` para `.env` antes). Detalhes, backup e publicação em [docs/docker.md](docs/docker.md).
