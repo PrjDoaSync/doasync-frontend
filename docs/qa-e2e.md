@@ -34,7 +34,11 @@ O `--seed` cria 2 entidades aprovadas, 1 pendente, campanhas ativa/rascunho/agen
 
 ## Resultados
 
-Execução em 2026-11-27, backend local de desenvolvimento (H2), `http://localhost:8080/api/v1`: **74 passos, 70 PASS, 4 FAIL**.
+**Resultado atual (2026-11-27 16:47, Docker + PostgreSQL 16, `http://localhost:8090/api/v1`, backend `ff7fe5a`): 74 passos, 74 PASS, 0 FAIL, nenhuma resposta 5xx.**
+
+As falhas abaixo, da primeira execução (H2, backend `5fcac93`), foram corrigidas no backend pelos commits `9f1fc87` (dígitos verificadores de CPF/CNPJ) e `ff7fe5a` (período da campanha validado antes de persistir: 422 em vez de 500).
+
+Execução anterior em 2026-11-27, backend local de desenvolvimento (H2), `http://localhost:8080/api/v1`: **74 passos, 70 PASS, 4 FAIL**.
 
 | Passo | Esperado | Recebido |
 |---|---|---|
@@ -45,4 +49,4 @@ Execução em 2026-11-27, backend local de desenvolvimento (H2), `http://localho
 
 Os 4 FAIL são achados reais da API (a suíte está correta). Detalhes e correções sugeridas na entrega do QA.
 
-Docker/PostgreSQL (`http://localhost:8090`): **não executado** — o ambiente não subiu durante a janela de espera (~8 min). Rodar com `API_URL=http://localhost:8090/api/v1` e o admin do `.env` assim que estiver no ar.
+Docker/PostgreSQL (`http://localhost:8090`): executado depois das correções, 74/74 PASS (ver resultado atual acima). Comando: `API_URL=http://localhost:8090/api/v1 node --env-file=.env web/scripts/e2e-api.mjs` na raiz do frontend.

@@ -46,6 +46,19 @@ A CI (`.github/workflows/frontend-qa.yml`) roda lint, testes e build em `feature
 - Git: trabalhe em branch derivada da `develop`, PR para a `develop`, commits semânticos, nunca *force push* nem merge na `main`. Identidade: `LucasIanovski <ianovskilucas@gmail.com>`.
 - Não declare algo validado sem rodar lint, testes e build.
 
-## Estado atual
+## Estado atual (checkpoint 27/11/2026 16:50)
 
-Branch `feature/finalizacao-frontend`: as 30 telas do Figma estão implementadas (20 integradas; as demais indicam a pendência do backend), além de Minha conta, entidades públicas, doação direta e páginas de erro. Validado em 27/11/2026 (lint, 312 testes e build). Ver `docs/frontend-estado-execucao.md` e `docs/frontend-matriz-rastreabilidade.md`.
+- Frontend: branch `feature/finalizacao-frontend` (PR #148 → `develop`, rascunho). 30 telas do Figma (20 integradas; demais com pendência do backend indicada), Minha conta, entidades públicas, doação direta, páginas de erro, Docker e suíte E2E.
+- Backend: `PrjDoaSync/doasync-backend`, branch `codex/doasync-versao-postgres` (PR #71 → `main`), commit `ff7fe5a`: inclui `versao` no detalhe da campanha, correções PostgreSQL, validação de CPF/CNPJ (422) e período da campanha (422 em vez de 500).
+- Validação: lint sem avisos; Vitest 312 passando (+1 integração real opcional); build ok; npm audit 0; Maven verify 277 testes ok; E2E `web/scripts/e2e-api.mjs` 74/74 PASS no Docker/PostgreSQL sem 5xx; serviços do front contra a API real ok; Playwright 1440/390 em 64 visitas sem erros de console/CSP/rede/overflow; persistência confirmada após restart.
+- Detalhes: `docs/frontend-estado-execucao.md`, `docs/frontend-matriz-rastreabilidade.md`, `docs/docker.md`, `docs/qa-e2e.md`.
+
+## Ambiente integrado (Docker) e retomada em outra máquina
+
+1. Clone lado a lado: `doasync-frontend` (branch `feature/finalizacao-frontend`) e `doasync-backend` (branch `codex/doasync-versao-postgres`).
+2. Na raiz do frontend: `cp .env.example .env` e preencha segredos próprios (senha do banco, `DOASYNC_JWT_SEGREDO` ≥ 32 bytes, admin inicial). Ajuste `DOASYNC_BACKEND_DIR` (padrão `../doasync-backend/backend`). Nunca versione o `.env`.
+3. `docker compose up -d --build --wait` → app em http://localhost:8090, API em http://localhost:8090/api/v1, Swagger em http://127.0.0.1:8091/swagger-ui.html.
+4. Dados de homologação: `API_URL=http://localhost:8090/api/v1 node --env-file=.env web/scripts/e2e-api.mjs --seed`; testes: o mesmo sem `--seed`. Só em homologação.
+5. Nunca use `docker compose down -v` (apaga o banco). Backup/restauração e deploy em `docs/docker.md`.
+
+Pendências: revisão e merge dos PRs #148 e #71 por outro integrante; recursos sem rota no backend (pagamento real, itens/estoque/agendamento, upload, prestação de contas, recuperação de senha por e-mail, equipe, PDF) seguem identificados em `web/src/services/indisponivel.js`.
