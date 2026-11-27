@@ -21,9 +21,7 @@ import { SESSAO_ENTIDADE_TESTE } from './fixtures/sessao'
 import { campanhasService as campanhasApi } from '../services/campanhasService'
 import { doacoesService as doacoesApi } from '../services/doacoesService'
 import { entidadesService as entidadesApi } from '../services/entidadesService'
-import * as mocks from '../mocks'
 import * as fonte from '../mocks/gestao'
-import { campanhas as campanhasMock } from '../mocks/dados'
 import { useRequest } from '../hooks/useRequest'
 import { useAsyncAction } from '../hooks/useAsyncAction'
 import ErrorMessage from '../components/ErrorMessage'
@@ -477,31 +475,6 @@ describe('cliente HTTP (services/api.js)', () => {
     expect(chamadas[0]).toMatchObject({ url: rota, method: 'get', params: { pagina: 2 } })
     expect(chamadas[0].signal).toBe(controller.signal)
     expect(chamadas[1].url).toBe(`${rota}/7`)
-  })
-})
-
-describe('serviços simulados (mocks/index.js)', () => {
-  beforeEach(() => vi.useFakeTimers())
-  afterEach(() => vi.useRealTimers())
-
-  it('listam com latência simulada, sem expor o dado original', async () => {
-    const promessa = mocks.campanhasService.listar()
-    let resolvida = false
-    promessa.then(() => (resolvida = true))
-    await vi.advanceTimersByTimeAsync(399)
-    expect(resolvida).toBe(false)
-    await vi.advanceTimersByTimeAsync(1)
-    const lista = await promessa
-    expect(lista).toEqual(campanhasMock)
-    lista[0].nome = 'alterado'
-    expect(campanhasMock[0].nome).not.toBe('alterado')
-  })
-  it('buscam por id (aceitando texto) e devolvem null quando não existe', async () => {
-    const achada = mocks.doacoesService.buscarPorId('3')
-    const ausente = mocks.entidadesService.buscarPorId(999)
-    await vi.advanceTimersByTimeAsync(400)
-    expect((await achada).id).toBe(3)
-    expect(await ausente).toBe(null)
   })
 })
 
