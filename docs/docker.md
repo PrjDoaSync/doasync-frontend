@@ -33,7 +33,7 @@ Copie `.env.example` para `.env` (não versionado) e troque todos os valores. Se
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Administrador inicial (senha obrigatória) |
 | `SWAGGER_ENABLED` | `false` em produção |
 | `DOASYNC_CORS_ORIGINS` | Origens permitidas (padrão: `http://localhost:WEB_PORT`) |
-| `WEB_PORT` / `API_PORT` | Portas no host (8090 / 8091 em loopback) |
+| `WEB_BIND` / `WEB_PORT` / `API_PORT` | Interface e portas no host (padrão `127.0.0.1`, 8090 / 8091 em loopback). Em produção, `WEB_BIND=0.0.0.0` só atrás do proxy TLS |
 
 ## Comandos
 

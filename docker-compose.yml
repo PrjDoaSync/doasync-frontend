@@ -63,7 +63,8 @@ services:
       timeout: 3s
       retries: 5
     ports:
-      - "${WEB_PORT:-8090}:80"
+      # Loopback por padrão (homologação local). Em produção, publique atrás do proxy TLS (WEB_BIND=0.0.0.0).
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8090}:80"
     networks: [doasync-net]
     restart: unless-stopped
 
