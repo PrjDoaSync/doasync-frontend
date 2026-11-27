@@ -1,15 +1,18 @@
 import { useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useDemo } from '../hooks/useDemo'
+import { useAuth } from '../hooks/useAuth'
 import { Aviso, Botao, Campo, Etapas, Secao } from '../components/Ui'
 import PageHeader from '../components/PageHeader'
 import CampaignImages from '../components/CampaignImages'
 import { categorias } from '../mocks/gestao'
-import { HOJE_DEMO } from '../mocks/campanhasDetalhe'
+import { campanhasService } from '../services/campanhasService'
 import { formatarData, formatarMoeda } from '../utils/format'
 import {
   IMAGENS_CAMPANHA,
-  montarCampanha,
+  corpoCriacaoApi,
+  hojeISO,
+  mensagemCriacao,
   validarBasicos,
   validarMetas,
   validarNovoItem,
@@ -27,10 +30,10 @@ const VAZIO = {
   meta: '',
 }
 const ETAPAS = ['Dados básicos', 'Metas e necessidades', 'Revisão e publicação']
-const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
+// Criar campanha (#89, #90): POST /campanhas com o token da entidade aprovada.
 export default function CriarCampanha() {
-  const { dados, atualizar, notificar } = useDemo(),
+  const { notificar } = useDemo(),
+    { usuario } = useAuth(),
     navigate = useNavigate(),
     formRef = useRef(null),
     [etapa, setEtapa] = useState(0),
@@ -91,7 +94,7 @@ export default function CriarCampanha() {
     const f = etapa === 0 ? validarEtapa1() : basicos
     if (!f) return
     if (status === 'Ativa') {
-      const mensagem = validarPublicacao({ encerraEm: f.encerraEm, confirmado }, HOJE_DEMO)
+      const mensagem = validarPublicacao({ encerraEm: f.encerraEm, confirmado }, hojeISO())
       if (mensagem) {
         setErro(mensagem)
         return
@@ -100,25 +103,14 @@ export default function CriarCampanha() {
     setSalvando(true)
     setErro('')
     try {
-      await pausa(300)
-      const nova = montarCampanha({
-        id: Date.now(),
-        basicos: f,
-        meta: f.meta,
-        itens,
-        imagem,
-        entidade: dados.entidade,
-        status,
-      })
-      atualizar('campanhas', [...dados.campanhas, { ...nova, galeria }])
-      notificar(
-        status === 'Ativa'
-          ? 'Campanha publicada nesta sessão de demonstração.'
-          : 'Rascunho salvo nesta sessão de demonstração.',
+      const criada = await campanhasService.criar(
+        corpoCriacaoApi(f, { rascunho: status === 'Rascunho' }),
       )
+      notificar(mensagemCriacao(criada.status))
       navigate('/campanhas')
-    } catch {
-      setErro('Não foi possível salvar. Tente novamente.')
+    } catch (falha) {
+      // 409: entidade ainda não aprovada; 422: a API aponta o campo inválido na mensagem.
+      setErro(falha?.message || 'Não foi possível salvar. Tente novamente.')
     } finally {
       setSalvando(false)
     }
@@ -207,8 +199,9 @@ export default function CriarCampanha() {
               />
               <div className="campo--inteiro">
                 <Aviso>
-                  A campanha ficará apenas nesta sessão de demonstração. O
-                  envio de imagens e a publicação real dependem da integração.
+                  A campanha é salva na sua conta. Localização, itens
+                  necessários e imagens ainda não são enviados: a API não tem
+                  esses campos.
                 </Aviso>
               </div>
               {erro && (
@@ -369,14 +362,14 @@ export default function CriarCampanha() {
         <Secao titulo={etapa === 2 ? 'Prévia da campanha' : basicos.nome || 'Sua campanha'} className="cam-previa">
           <span className="badge">Rascunho · não publicado</span>
           {etapa === 2 && <img src={imagem} alt="Prévia da imagem de capa" />}
-          <p>{dados.entidade.nome} · {basicos.categoria || 'Categoria a definir'}</p>
+          <p>{usuario?.nome ?? 'Sua entidade'} · {basicos.categoria || 'Categoria a definir'}</p>
           <hr />
           <small>PERÍODO DA CAMPANHA</small>
           <p>{basicos.inicio ? formatarData(basicos.inicio) : 'Início a definir'} a {basicos.encerraEm ? formatarData(basicos.encerraEm) : 'término a definir'}</p>
           <p>{basicos.descricao || 'Conte a história e as necessidades da sua campanha.'}</p>
           {basicos.meta && <strong className="numero-destaque">{formatarMoeda(Number(basicos.meta))}</strong>}
           {itens.length > 0 && <p>Itens previstos: {itens.map((i) => `${i.nome}: ${i.meta}`).join(' · ')}</p>}
-          <Aviso>A prévia é local. A publicação e o envio de imagens dependem da integração com o backend.</Aviso>
+          <Aviso>A prévia é local. Itens e imagens aparecem aqui, mas ainda não são salvos pela API.</Aviso>
         </Secao>
       </div>
     </>

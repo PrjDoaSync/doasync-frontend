@@ -38,4 +38,7 @@ export const campanhasService = {
           .then((r) => mapPaginado(r.data, mapCampanha).itens),
       ),
     ).then((listas) => listas.flat().sort(porCriacao)),
+  // Criar campanha (#89, #90): POST /campanhas; o status (RASCUNHO, AGENDADA ou ATIVA) vem do servidor.
+  criar: (corpo, config) =>
+    api.post('/campanhas', corpo, config).then((r) => mapCampanha(r.data.data)),
 }

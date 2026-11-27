@@ -4,7 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import * as fonte from '../mocks/gestao'
+import api from '../services/api'
+import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
 import {
+  corpoCriacaoApi,
+  hojeISO,
+  mensagemCriacao,
   montarCampanha,
   validarBasicos,
   validarMetas,
@@ -73,10 +78,13 @@ async function preencherEtapa1(user) {
   await user.type(screen.getByLabelText(/Nome da campanha/), 'Uma nova causa')
   await user.selectOptions(screen.getByLabelText('Categoria'), 'Alimentação')
   await user.type(screen.getByLabelText('Descrição da campanha'), 'Uma causa de demonstração.')
+  // Início no passado (a API cria como ATIVA) e término no futuro (a publicação exige).
   fireEvent.change(screen.getByLabelText(/Início/), { target: { value: '2026-10-01' } })
-  fireEvent.change(screen.getByLabelText(/Encerramento/), { target: { value: '2026-11-01' } })
+  fireEvent.change(screen.getByLabelText(/Encerramento/), { target: { value: '2099-12-31' } })
   await user.type(screen.getByLabelText(/Meta financeira/), '500')
 }
+// Depois de salvar, a lista é recarregada da API.
+const linhaNaLista = async (titulo) => (await screen.findByText(titulo)).closest('tr')
 
 describe('assistente de criação de campanha', () => {
   it('não avança com dados básicos incompletos', async () => {
@@ -129,9 +137,9 @@ describe('assistente de criação de campanha', () => {
     expect(screen.getByRole('alert').textContent).toContain('Confirme')
     await user.click(screen.getByLabelText(/Confirmo que as informações/))
     await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
-    // Parcial (#91): a lista já lê a API, mas a criação ainda é de demonstração; a conferência
-    // da campanha nova na lista volta com a integração de POST /campanhas (#89, #90).
     expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
+    expect((await linhaNaLista('Uma nova causa')).textContent).toContain('Ativa')
+    expect(screen.getByText('Campanha publicada.')).toBeTruthy()
   })
   it('salva rascunho a partir da etapa de revisão', async () => {
     const user = await abrir('/campanhas/nova')
@@ -139,8 +147,90 @@ describe('assistente de criação de campanha', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByRole('button', { name: 'Continuar' }))
     await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
-    // Parcial (#91): a lista já lê a API, mas a criação ainda é de demonstração; a conferência
-    // da campanha nova na lista volta com a integração de POST /campanhas (#89, #90).
     expect(await screen.findByRole('heading', { name: 'Gestão de campanhas' })).toBeTruthy()
+    expect((await linhaNaLista('Uma nova causa')).textContent).toContain('Rascunho')
+  })
+})
+
+describe('criar campanha na API (POST /campanhas)', () => {
+  function capturar(responder) {
+    const enviados = []
+    api.defaults.adapter = (config) => {
+      if (config.method === 'post' && config.url === '/campanhas') {
+        enviados.push(JSON.parse(config.data))
+        if (responder) return responder(config)
+      }
+      return adaptadorApiPadrao(config)
+    }
+    return enviados
+  }
+  it('envia só os campos do contrato, com o token e rascunho: false ao publicar', async () => {
+    const enviados = capturar()
+    const user = await abrir('/campanhas/nova')
+    await preencherEtapa1(user)
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByLabelText(/Confirmo que as informações/))
+    await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
+    await screen.findByRole('heading', { name: 'Gestão de campanhas' })
+    expect(enviados).toEqual([
+      {
+        titulo: 'Uma nova causa',
+        descricao: 'Uma causa de demonstração.',
+        metaValor: 500,
+        dataInicio: '2026-10-01',
+        dataFim: '2099-12-31',
+        categoria: 'Alimentação',
+        rascunho: false,
+      },
+    ])
+  })
+  it('início no futuro: a API agenda a campanha e a tela avisa', async () => {
+    const user = await abrir('/campanhas/nova')
+    await preencherEtapa1(user)
+    fireEvent.change(screen.getByLabelText(/Início/), { target: { value: '2099-01-01' } })
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByLabelText(/Confirmo que as informações/))
+    await user.click(screen.getByRole('button', { name: 'Publicar campanha' }))
+    expect((await linhaNaLista('Uma nova causa')).textContent).toContain('Agendada')
+    expect(screen.getByText(/Campanha agendada/)).toBeTruthy()
+  })
+  it('entidade ainda não aprovada (409) vê a mensagem da API e continua no formulário', async () => {
+    capturar((config) =>
+      Promise.reject({
+        response: { status: 409, data: { error: 'A entidade ainda não foi aprovada.' } },
+        config,
+        isAxiosError: true,
+      }),
+    )
+    const user = await abrir('/campanhas/nova')
+    await preencherEtapa1(user)
+    await user.click(screen.getByRole('button', { name: 'Salvar rascunho' }))
+    expect(await screen.findByText('A entidade ainda não foi aprovada.')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Dados básicos' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Salvar rascunho' }).disabled).toBe(false)
+  })
+})
+
+describe('corpo de POST /campanhas', () => {
+  const basicos = { nome: ' Causa ', descricao: ' Texto ', inicio: '2026-10-01', encerraEm: '2026-11-01', meta: '10.5', categoria: '' }
+  it('apara textos, converte a meta e omite a categoria vazia', () => {
+    expect(corpoCriacaoApi(basicos, { rascunho: true })).toEqual({
+      titulo: 'Causa',
+      descricao: 'Texto',
+      metaValor: 10.5,
+      dataInicio: '2026-10-01',
+      dataFim: '2026-11-01',
+      rascunho: true,
+    })
+  })
+  it('hojeISO usa a data local com zeros à esquerda', () => {
+    expect(hojeISO(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
+  })
+  it('mensagem de sucesso segue o status devolvido pela API', () => {
+    expect(mensagemCriacao('Rascunho')).toBe('Rascunho salvo.')
+    expect(mensagemCriacao('Agendada')).toMatch(/agendada/)
+    expect(mensagemCriacao('Ativa')).toBe('Campanha publicada.')
   })
 })
