@@ -11,7 +11,6 @@ import Grafico from '../components/Grafico'
 import * as fonte from '../mocks/gestao'
 import { movimentarEstoque } from '../utils/estoque'
 import { formatarMoeda } from '../utils/format'
-import { calcularIndicadores } from '../utils/gestao'
 import api from '../services/api'
 import { adaptadorApiPadrao } from './fixtures/apiCampanhas'
 import { limparSessao, salvarSessao } from '../services/token'
@@ -298,45 +297,7 @@ describe('Controle de itens doados (GES-07)', () => {
   })
 })
 
-describe('Relatórios e exportação (GES-08)', () => {
-  const dados = fonte.criarDadosDemo()
-  const minhas = dados.doacoes.filter((d) => d.entidadeId === dados.entidade.id)
-
-  it('gera a prévia para o tipo escolhido e a limpa depois', async () => {
-    const user = await abrir('/relatorios')
-    const todas = linhasDe().length
-    expect(todas).toBe(minhas.length)
-    await user.selectOptions(screen.getByRole('combobox', { name: /^Tipo/ }), 'Itens')
-    await user.click(screen.getByRole('button', { name: /Gerar prévia/ }))
-    expect(screen.getByText('Prévia atualizada para os filtros selecionados.')).toBeTruthy()
-    const itens = minhas.filter((d) => d.tipo === 'Itens')
-    expect(linhasDe()).toHaveLength(itens.length)
-    expect(kpi('Financeiro confirmado').textContent).toContain(formatarMoeda(0))
-    expect(kpi('Itens recebidos').textContent).toContain(
-      `${calcularIndicadores([], itens).itens} unidades`,
-    )
-    await user.click(screen.getByRole('button', { name: 'Limpar' }))
-    expect(screen.getByText('Filtros limpos.')).toBeTruthy()
-    expect(linhasDe()).toHaveLength(todas)
-  })
-  it('o navegador barra o período invertido antes de gerar a prévia', async () => {
-    const user = await abrir('/relatorios')
-    fireEvent.change(screen.getByLabelText('Data inicial'), { target: { value: '2026-10-10' } })
-    fireEvent.change(screen.getByLabelText('Data final'), { target: { value: '2026-10-01' } })
-    expect(screen.getByLabelText('Data final').validity.rangeUnderflow).toBe(true)
-    await user.click(screen.getByRole('button', { name: /Gerar prévia/ }))
-    expect(screen.queryByText(/Prévia atualizada/)).toBe(null)
-  })
-  it('mantém a exportação indisponível e explica o motivo', async () => {
-    await abrir('/relatorios')
-    for (const nome of ['Baixar PDF', 'Baixar CSV']) {
-      const botao = screen.getByRole('button', { name: nome })
-      expect(botao.disabled).toBe(true)
-      expect(botao.getAttribute('aria-describedby')).toBe('exportacao-pendente')
-    }
-    expect(document.getElementById('exportacao-pendente').textContent).toMatch(/serviço de geração de arquivos ainda não foi integrado/)
-  })
-})
+// Relatórios integrados à API: ver relatorios.test.jsx.
 
 describe('Grafico', () => {
   const pagamento = (data, valor, status = 'Confirmada') => ({ tipo: 'Financeira', status, data, valor })

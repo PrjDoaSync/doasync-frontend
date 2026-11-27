@@ -88,27 +88,6 @@ describe('campanhas públicas e navegação', () => {
 })
 
 describe('gestão e estados de dados', () => {
-  it('filtra prévia de relatório e impede exportação de um conjunto vazio', async () => {
-    const user = await abrir('/relatorios')
-    // A ausência de contrato impede exportação mesmo com registros na prévia.
-    expect(screen.getAllByRole('row').length).toBeGreaterThan(1)
-    expect(screen.getByRole('button', { name: 'Baixar CSV' }).disabled).toBe(
-      true,
-    )
-    fireEvent.change(screen.getByLabelText('Data inicial'), {
-      target: { value: '2030-01-01' },
-    })
-    await user.click(screen.getByRole('button', { name: 'Gerar prévia' }))
-    expect(
-      screen.getByText('Nenhum registro para os filtros selecionados.'),
-    ).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Baixar CSV' }).disabled).toBe(
-      true,
-    )
-    expect(screen.getByRole('button', { name: 'Baixar PDF' }).disabled).toBe(
-      true,
-    )
-  })
   it('bloqueia saída acima do saldo e atualiza quantidade válida', async () => {
     const user = await abrir('/itens')
     await user.click(

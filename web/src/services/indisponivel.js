@@ -44,6 +44,10 @@ export const RECURSOS_PENDENTES = {
     titulo: 'Equipe da entidade',
     motivo: 'A API ainda não permite convidar pessoas nem definir permissões: cada entidade tem um único gestor.',
   },
+  relatorioPdf: {
+    titulo: 'Relatório em PDF',
+    motivo: 'A API ainda não gera relatórios oficiais (exportação no servidor fora do MVP). Use a exportação CSV.',
+  },
   estoqueItens: {
     titulo: 'Controle de itens doados',
     motivo: 'A API ainda não oferece cadastro nem movimentação de estoque.',
