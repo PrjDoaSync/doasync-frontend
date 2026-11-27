@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import AvisoIndisponivel from '../components/AvisoIndisponivel'
 import { Aviso, Botao, Campo, Secao } from '../components/Ui'
 import { useAuth } from '../hooks/useAuth'
+import { authService } from '../services/authService'
 import { destinoPorTipo } from '../utils/auth'
+
+const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Login() {
   const { entrar } = useAuth(),
     navigate = useNavigate(),
     location = useLocation()
   const [recuperar, setRecuperar] = useState(false),
-    [aviso, setAviso] = useState(''),
+    [pendencia, setPendencia] = useState(null),
+    [erroEmail, setErroEmail] = useState(''),
     [erro, setErro] = useState(''),
     [enviando, setEnviando] = useState(false)
 
@@ -24,6 +29,20 @@ export default function Login() {
       setErro(e?.message ?? 'Não foi possível entrar. Tente novamente.')
       setEnviando(false)
     }
+  }
+  async function solicitarRecuperacao(form) {
+    const email = String(new FormData(form).get('email')).trim()
+    setPendencia(null)
+    if (!email) return setErroEmail('Informe o e-mail da sua conta.')
+    if (!FORMATO_EMAIL.test(email)) return setErroEmail('Informe um e-mail válido, como nome@exemplo.com.')
+    setErroEmail('')
+    setEnviando(true)
+    try {
+      await authService.solicitarRecuperacaoSenha(email)
+    } catch (e) {
+      setPendencia(e)
+    }
+    setEnviando(false)
   }
   return (
     <section className="public-section acesso">
@@ -57,12 +76,10 @@ export default function Login() {
           }
         >
           <form
+            noValidate={recuperar}
             onSubmit={(e) => {
               e.preventDefault()
-              if (recuperar) {
-                setAviso('O serviço de recuperação ainda não está integrado. Nenhum e-mail foi enviado.')
-                return
-              }
+              if (recuperar) return solicitarRecuperacao(e.currentTarget)
               acessar(e.currentTarget)
             }}
             className="pilha"
@@ -73,6 +90,8 @@ export default function Login() {
               name="email"
               autoComplete="email"
               required
+              aria-invalid={recuperar && erroEmail ? 'true' : undefined}
+              ajuda={recuperar ? erroEmail || undefined : undefined}
             />
             {!recuperar && (
               <Campo
@@ -87,13 +106,19 @@ export default function Login() {
               {recuperar ? 'Solicitar recuperação' : enviando ? 'Entrando…' : 'Entrar'}
             </Botao>
             {erro && !recuperar && <Aviso erro>{erro}</Aviso>}
-            {aviso && <Aviso>{aviso}</Aviso>}
+            {recuperar && pendencia &&
+              (pendencia.indisponivel ? (
+                <AvisoIndisponivel recurso="recuperacaoSenha">Nenhum e-mail foi enviado.</AvisoIndisponivel>
+              ) : (
+                <Aviso erro>{pendencia.message}</Aviso>
+              ))}
             <button
               className="link-botao"
               type="button"
               onClick={() => {
                 setRecuperar(!recuperar)
-                setAviso('')
+                setPendencia(null)
+                setErroEmail('')
                 setErro('')
               }}
             >
